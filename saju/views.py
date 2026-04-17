@@ -6,7 +6,7 @@ from rest_framework import status
 
 from .models import User, Dog, SajuBasics, AIInterpretation, DailyWalkingLuck, ArchetypeSaju, DailyElementLuck, Compatibility, CompatibilityArchetype
 from .serializers import DogSerializer, SajuBasicsSerializer, AIInterpretationSerializer, DailyWalkingLuckSerializer
-from .services.manseryeok import get_saju_for_dog, get_secondary_influence_text, get_relationship_type
+from .services.manseryeok import get_saju_for_dog, get_secondary_influence_text, get_relationship_type, add_hanja_to_terms
 
 class DogRegisterView(APIView):
     """
@@ -140,12 +140,12 @@ class AIInterpretationView(APIView):
         try:
             interpretation = AIInterpretation.objects.create(
                 dog=dog,
-                personality_summary=replace_name(archetype.personality_summary),
-                personality_keywords=keywords,
-                vitality_analysis=replace_name(archetype.vitality_analysis),
-                social_analysis=replace_name(archetype.social_analysis),
-                treat_luck=replace_name(archetype.treat_luck),
-                care_tips=care_tips_with_secondary  # 2위 오행 보조 내용 포함
+                personality_summary=add_hanja_to_terms(replace_name(archetype.personality_summary)),
+                personality_keywords=[add_hanja_to_terms(k) for k in keywords],
+                vitality_analysis=add_hanja_to_terms(replace_name(archetype.vitality_analysis)),
+                social_analysis=add_hanja_to_terms(replace_name(archetype.social_analysis)),
+                treat_luck=add_hanja_to_terms(replace_name(archetype.treat_luck)),
+                care_tips=add_hanja_to_terms(care_tips_with_secondary)  # 2위 오행 보조 내용 포함
             )
         except Exception as e:
             return Response({"error": f"DB 저장 중 오류 발생: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -204,8 +204,11 @@ class DailyWalkingLuckView(APIView):
             lucky_direction=luck_data.get('lucky_direction')
         )
 
+        # 기존 캐시 조회 시에도 필터 적용하여 반환
         serializer = DailyWalkingLuckSerializer(luck)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        data = serializer.data
+        data['message'] = add_hanja_to_terms(data['message'])
+        return Response(data, status=status.HTTP_201_CREATED)
 
 
 class CompatibilityView(APIView):
@@ -322,9 +325,9 @@ class CompatibilityView(APIView):
         return Response({
             'dog_element': dog_element,
             'owner_element': owner_element,
-            'relationship_type': relationship_type,
+            'relationship_type': add_hanja_to_terms(relationship_type),
             'score': archetype.score,
-            'title': result_title,
-            'description': result_description,
-            'advice': result_advice,
+            'title': add_hanja_to_terms(result_title),
+            'description': add_hanja_to_terms(result_description),
+            'advice': add_hanja_to_terms(result_advice),
         }, status=status.HTTP_200_OK)

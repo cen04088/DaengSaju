@@ -215,3 +215,31 @@ def get_saju_for_dog(birth_date, birth_time=None):
         'relationship_type': relationship_type,
         'secondary_element': secondary_element,
     }
+import re
+
+def add_hanja_to_terms(text: str) -> str:
+    """
+    텍스트 내의 주요 명리 용어(십성)에 한자를 병기합니다.
+    사용자의 오해(예: 비겁하다)를 방지하기 위함입니다.
+    """
+    if not text:
+        return text
+    
+    # 치환 맵
+    replacements = {
+        '비겁': '비겁(比劫)',
+        '인성': '인성(印星)',
+        '식상': '식상(食傷)',
+        '재성': '재성(財星)',
+        '관성': '관성(官星)'
+    }
+    
+    # 이미 한자가 병기된 경우(예: 비겁(比劫))는 중복 치환하지 않도록 정규표현식 사용
+    # 단어 뒤에 바로 ( 가 오는지 확인
+    for term, hanja_term in replacements.items():
+        # term 뒤에 '('가 오지 않는 경우만 치환
+        #(?!\() 는 뒤에 ( 가 오지 않아야 함을 의미
+        pattern = re.compile(f"{term}(?!\\()", re.U)
+        text = pattern.sub(hanja_term, text)
+        
+    return text
