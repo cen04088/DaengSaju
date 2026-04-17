@@ -6,8 +6,8 @@
   --color-bg: #0B1121; /* Deep space navy */
   --color-card: rgba(30, 41, 59, 0.6); /* Dark Glass */
   --color-text-title: #FFFFFF;
-  --color-text-body: #E2E8F0;
-  --color-text-hint: #94A3B8;
+  --color-text-body: #FFFFFF;
+  --color-text-hint: #F1F5F9; /* Very light, almost white */
   --color-border: rgba(255, 255, 255, 0.1);
   
   /* Modern Shadow (Layered Glows in dark mode) */
@@ -469,7 +469,7 @@ input[type="time"]:focus {
   margin: 0;
   font-size: 15px;
   font-weight: 700;
-  color: var(--color-text-hint);
+  color: #F1F5F9;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -829,7 +829,7 @@ input[type="time"]:focus {
   font-size: 14px;
   line-height: 1.6;
   text-align: center;
-  color: var(--color-text-body);
+  color: #FFFFFF;
 }
 
 /* Utils */

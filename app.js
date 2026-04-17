@@ -360,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
               grid: { color: 'rgba(255, 255, 255, 0.05)' },
               pointLabels: {
                 font: { family: 'Pretendard', size: 13, weight: '700' },
-                color: '#CBD5E1'
+                color: '#FFFFFF'
               },
               ticks: { display: false, min: 0 }
             }
