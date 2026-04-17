@@ -798,16 +798,19 @@ input[type="time"]:focus {
 
 .chemistry-match {
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   align-items: center;
-  margin: 24px 0;
+  margin: 20px 0;
+  gap: 12px;
 }
 
 .chem-profile {
+  flex: 1;
   text-align: center;
   font-size: 15px;
   font-weight: 700;
   color: var(--color-text-title);
+  min-width: 0; /* Allow shrinking for long text */
 }
 
 .chem-profile span {
@@ -831,6 +834,11 @@ input[type="time"]:focus {
   line-height: 1.6;
   text-align: center;
   color: #FFFFFF;
+  opacity: 0.9;
+  max-width: 280px;
+  margin: 0 auto;
+  text-wrap: balance; /* Modern browser support for balanced text */
+  word-break: keep-all; /* Prevent awkward breaks in Korean */
 }
 
 /* Utils */

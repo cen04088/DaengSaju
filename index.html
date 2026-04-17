@@ -51,7 +51,12 @@
     <!-- 2. 입력 화면 -->
     <section id="input-screen" class="screen">
       <div class="header">
-        <button class="back-btn" id="back-from-input">❮</button>
+        <button class="back-btn" id="back-from-input">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </button>
         <h1></h1>
       </div>
       <div class="body-content">
@@ -81,9 +86,9 @@
             <label>강아지 성별</label>
             <div class="segment-control">
               <input type="radio" name="dog-gender" id="dog-m" value="M" checked>
-              <label for="dog-m">수컷</label>
+              <label for="dog-m">남아</label>
               <input type="radio" name="dog-gender" id="dog-f" value="F">
-              <label for="dog-f">암컷</label>
+              <label for="dog-f">여아</label>
             </div>
           </div>
 
@@ -121,7 +126,12 @@
     <!-- 4. 결과 화면 -->
     <section id="result-screen" class="screen bg-gray">
       <div class="header sticky">
-        <button class="back-btn" id="back-from-result">❮ 홈으로</button>
+        <button class="back-btn" id="back-from-result">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </button>
         <h1>결과 리포트</h1>
       </div>
 

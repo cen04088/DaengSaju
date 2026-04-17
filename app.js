@@ -28,6 +28,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const targetTab = document.getElementById(btn.dataset.tab);
       targetTab.classList.add('active');
 
+      // Reset scroll position to top when switching tabs
+      const scrollContainer = document.querySelector('.result-scroll');
+      if (scrollContainer) {
+        scrollContainer.scrollTop = 0;
+      }
+
       // Re-trigger reveal for the new tab
       revealCards();
 
