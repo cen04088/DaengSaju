@@ -356,11 +356,11 @@ document.addEventListener('DOMContentLoaded', () => {
           maintainAspectRatio: false,
           scales: {
             r: {
-              angleLines: { color: 'rgba(139, 149, 161, 0.2)' },
-              grid: { color: 'rgba(139, 149, 161, 0.1)' },
+              angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
               pointLabels: {
                 font: { family: 'Pretendard', size: 13, weight: '700' },
-                color: '#4E5968'
+                color: '#CBD5E1'
               },
               ticks: { display: false, min: 0 }
             }
