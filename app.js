@@ -25,7 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Add active to clicked tab
       btn.classList.add('active');
-      document.getElementById(btn.dataset.tab).classList.add('active');
+      const targetTab = document.getElementById(btn.dataset.tab);
+      targetTab.classList.add('active');
+
+      // Re-trigger reveal for the new tab
+      revealCards();
 
       // Update Chart visually if changed to lifetime tab
       if(btn.dataset.tab === 'tab-lifetime') {
@@ -75,8 +79,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tabBtns && tabBtns.length > 0) {
           tabBtns[0].click();
         }
+        // Staggered Reveal Cards
+        revealCards();
       }
     }
+  }
+
+  function revealCards() {
+    const cards = document.querySelectorAll('.tab-content.active .fade-in, #chemistry-result-section.fade-in');
+    cards.forEach(c => c.classList.remove('reveal'));
+    
+    cards.forEach((card, index) => {
+      setTimeout(() => {
+        card.classList.add('reveal');
+      }, index * 150);
+    });
   }
 
   // Event Listeners
@@ -168,18 +185,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const hanjaEl = elementHanjaMap[basicData.main_element] || '火';
       
       document.querySelector('.result-img').src = `./assets/${imgName}_dog.png`;
-      document.getElementById('res-summary').innerHTML = `${perData.personality_summary}<br><span class="${colorClass}">${basicData.main_element}(${hanjaEl})</span>의 기운을 타고난 <span class="dog-name-display">${dogName}</span>!`;
-      document.getElementById('res-food').innerHTML = perData.treat_luck.replace(/\n/g, '<br>');
-      document.getElementById('res-energy').innerHTML = perData.vitality_analysis.replace(/\n/g, '<br>');
-      document.getElementById('res-love').innerHTML = perData.care_tips.replace(/\n/g, '<br>');
-      document.getElementById('res-social').innerHTML = perData.social_analysis.replace(/\n/g, '<br>');
+      document.getElementById('res-summary').innerHTML = `${formatText(perData.personality_summary)}<br><span class="${colorClass}">${basicData.main_element}(${hanjaEl})</span>의 기운을 타고난 <span class="dog-name-display">${dogName}</span>!`;
+      document.getElementById('res-food').innerHTML = formatText(perData.treat_luck);
+      document.getElementById('res-energy').innerHTML = formatText(perData.vitality_analysis);
+      document.getElementById('res-love').innerHTML = formatText(perData.care_tips);
+      document.getElementById('res-social').innerHTML = formatText(perData.social_analysis);
 
       // 4. 오늘의 산책운 (GET /daily-luck/)
       const luckRes = await fetch(`/api/saju/dogs/${dogId}/daily-luck/`);
       const luckData = await luckRes.json();
       
       document.getElementById('res-luck-score').textContent = luckData.luck_score;
-      document.getElementById('res-luck-msg').innerHTML = luckData.message.replace(/\n/g, '<br>');
+      document.getElementById('res-luck-msg').innerHTML = formatText(luckData.message);
       document.getElementById('res-luck-color').textContent = luckData.lucky_color;
       document.getElementById('res-luck-dir').textContent = luckData.lucky_direction;
 
@@ -205,10 +222,10 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('res-chem-owner-element').textContent = `(${chemData.owner_element})`;
             document.getElementById('res-chem-dog-element').textContent = `(${chemData.dog_element})`;
             document.getElementById('res-chem-rel').textContent = `✨ ${chemData.relationship_type} 관계 ✨`;
-            document.getElementById('res-chem-desc').innerHTML = (chemData.description || '').replace(/\n/g, '<br>');
+            document.getElementById('res-chem-desc').innerHTML = formatText(chemData.description || '');
             
             if (chemData.advice) {
-              document.getElementById('res-chem-advice').innerHTML = `<strong>💡 어드바이스:</strong><br>${chemData.advice.replace(/\n/g, '<br>')}`;
+              document.getElementById('res-chem-advice').innerHTML = `<strong>💡 어드바이스:</strong><br>${formatText(chemData.advice)}`;
               document.getElementById('res-chem-advice').style.display = 'block';
             } else {
               document.getElementById('res-chem-advice').style.display = 'none';
@@ -324,11 +341,14 @@ document.addEventListener('DOMContentLoaded', () => {
           datasets: [{
             label: '기질 밸런스',
             data: dataValues,
-            backgroundColor: 'rgba(49, 130, 246, 0.2)', // Toss Blue light
-            borderColor: 'rgba(49, 130, 246, 1)',
-            pointBackgroundColor: 'rgba(49, 130, 246, 1)',
-            borderWidth: 2,
-            pointRadius: 4,
+            backgroundColor: 'rgba(49, 130, 246, 0.15)',
+            borderColor: 'rgba(49, 130, 246, 0.8)',
+            pointBackgroundColor: '#fff',
+            pointBorderColor: 'rgba(49, 130, 246, 1)',
+            pointHoverBackgroundColor: 'rgba(49, 130, 246, 1)',
+            borderWidth: 3,
+            pointRadius: 5,
+            pointHoverRadius: 7
           }]
         },
         options: {
@@ -336,10 +356,10 @@ document.addEventListener('DOMContentLoaded', () => {
           maintainAspectRatio: false,
           scales: {
             r: {
-              angleLines: { color: '#E5E8EB' },
-              grid: { color: '#E5E8EB' },
+              angleLines: { color: 'rgba(139, 149, 161, 0.2)' },
+              grid: { color: 'rgba(139, 149, 161, 0.1)' },
               pointLabels: {
-                font: { family: 'Pretendard', size: 14, weight: '600' },
+                font: { family: 'Pretendard', size: 13, weight: '700' },
                 color: '#4E5968'
               },
               ticks: { display: false, min: 0 }
@@ -373,5 +393,13 @@ document.addEventListener('DOMContentLoaded', () => {
         bar.style.width = bar.dataset.targetWidth || '0%';
       });
     }, 50);
+  }
+
+  // 텍스트 포맷팅 함수 (개행 처리 및 **강조** 지원)
+  function formatText(text) {
+    if (!text) return '';
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<span class="highlight-text">$1</span>') // **강조** 처리
+      .replace(/\n/g, '<br>'); // 개행 처리
   }
 });
