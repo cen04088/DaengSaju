@@ -4,10 +4,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import User, Dog, SajuBasics, AIInterpretation, DailyWalkingLuck
+from .models import User, Dog, SajuBasics, AIInterpretation, DailyWalkingLuck, ArchetypeSaju, DailyElementLuck
 from .serializers import DogSerializer, SajuBasicsSerializer, AIInterpretationSerializer, DailyWalkingLuckSerializer
 from .services.manseryeok import get_saju_for_dog
-from .services.gemini_ai import generate_personality, generate_daily_luck
 
 class DogRegisterView(APIView):
     """
@@ -98,23 +97,43 @@ class AIInterpretationView(APIView):
         if saju.hour_pillar:
             saju_text += f" {saju.hour_pillar}시"
 
-        # 3. Gemini API 호출
-        ai_data = generate_personality(
-            dog_name=dog.name,
-            main_element=saju.main_element,
-            element_dist=saju.element_distribution,
-            saju_text=saju_text
-        )
+        # 3. 사전 생성된 ArchetypeSaju 맵핑
+        primary = saju.main_element
+        dist = saju.element_distribution
+        if isinstance(dist, dict) and dist:
+            strongest = max(dist, key=dist.get)
+        else:
+            strongest = primary
+
+        # 버전 선택 (강아지 id 기반으로 일정하게)
+        version_idx = dog.id % 3
+        versions = ['A', 'B', 'C']
+        selected_version = versions[version_idx]
+
+        archetype = ArchetypeSaju.objects.filter(primary_element=primary, strongest_element=strongest, version=selected_version).first()
+        if not archetype:
+            archetype = ArchetypeSaju.objects.filter(primary_element=primary, strongest_element=strongest).first()
+        
+        if not archetype:
+            return Response({"error": "사전 생성된 사주 프로필을 찾을 수 없습니다. (pregenerate_saju 명령어 실행 필요)"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        def replace_name(text):
+            if not text: return ""
+            return text.replace("[강아지이름]", dog.name)
+
+        keywords = []
+        if isinstance(archetype.personality_keywords, list):
+            keywords = [replace_name(k) for k in archetype.personality_keywords]
 
         try:
             interpretation = AIInterpretation.objects.create(
                 dog=dog,
-                personality_summary=ai_data.get('personality_summary', ''),
-                personality_keywords=ai_data.get('personality_keywords', []),
-                vitality_analysis=ai_data.get('vitality_analysis', ''),
-                social_analysis=ai_data.get('social_analysis', ''),
-                treat_luck=ai_data.get('treat_luck', ''),
-                care_tips=ai_data.get('care_tips', '')
+                personality_summary=replace_name(archetype.personality_summary),
+                personality_keywords=keywords,
+                vitality_analysis=replace_name(archetype.vitality_analysis),
+                social_analysis=replace_name(archetype.social_analysis),
+                treat_luck=replace_name(archetype.treat_luck),
+                care_tips=replace_name(archetype.care_tips)
             )
         except Exception as e:
             return Response({"error": f"DB 저장 중 오류 발생: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -145,20 +164,32 @@ class DailyWalkingLuckView(APIView):
         
         today_str = today.strftime("%Y년 %m월 %d일")
 
-        # 3. Gemini API 호출
-        luck_data = generate_daily_luck(
-            dog_name=dog.name,
-            main_element=main_element,
-            today_date_str=today_str
-        )
+        # 3. 오늘의 사전 생성된 오행별 운세 조회
+        daily_luck_record = DailyElementLuck.objects.filter(date=today, element=main_element).first()
+        
+        if not daily_luck_record:
+            # 크론 스케줄러 누락 등의 fallback
+            luck_data = {
+                'luck_score': 80,
+                'message': f"오늘은 {dog.name}이와 동네 한 바퀴 도는 것만으로도 행복해지는 날이에요!",
+                'lucky_color': "보라색",
+                'lucky_direction': "어디든"
+            }
+        else:
+            luck_data = {
+                'luck_score': daily_luck_record.luck_score,
+                'message': daily_luck_record.message.replace("[강아지이름]", dog.name),
+                'lucky_color': daily_luck_record.lucky_color,
+                'lucky_direction': daily_luck_record.lucky_direction
+            }
 
         luck = DailyWalkingLuck.objects.create(
             dog=dog,
             date=today,
-            luck_score=luck_data.get('luck_score', 80),
-            message=luck_data.get('message', ''),
-            lucky_color=luck_data.get('lucky_color', ''),
-            lucky_direction=luck_data.get('lucky_direction', '')
+            luck_score=luck_data.get('luck_score'),
+            message=luck_data.get('message'),
+            lucky_color=luck_data.get('lucky_color'),
+            lucky_direction=luck_data.get('lucky_direction')
         )
 
         serializer = DailyWalkingLuckSerializer(luck)

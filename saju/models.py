@@ -115,3 +115,46 @@ class Compatibility(TimeStampedModel):
 
     def __str__(self):
         return f"{self.dog.name} & {self.user.nickname}: {self.title} ({self.score}점)"
+
+class ArchetypeSaju(TimeStampedModel):
+    """
+    평생 사주 원국 조합의 템플릿(Archetype) 캐싱 모델
+    """
+    primary_element = models.CharField(max_length=10, verbose_name="본질 오행")
+    strongest_element = models.CharField(max_length=10, verbose_name="가장 강한 오행")
+    version = models.CharField(max_length=10, default="A", verbose_name="버전 (A/B/C)")
+
+    personality_summary = models.CharField(max_length=255, verbose_name="성격 요약")
+    personality_keywords = models.JSONField(verbose_name="성격 키워드 목록")
+    vitality_analysis = models.TextField(verbose_name="활력 분석서")
+    social_analysis = models.TextField(verbose_name="사회성 분석서")
+    treat_luck = models.TextField(verbose_name="간식운")
+    care_tips = models.TextField(verbose_name="케어 팁")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['primary_element', 'strongest_element', 'version'], name='unique_archetype_saju')
+        ]
+
+    def __str__(self):
+        return f"[{self.version}] 본질:{self.primary_element} / 최강:{self.strongest_element}"
+
+class DailyElementLuck(TimeStampedModel):
+    """
+    매일 오행(5개) 별로 하루 한 번만 갱신되는 공통 산책운
+    """
+    date = models.DateField(verbose_name="해당 날짜")
+    element = models.CharField(max_length=10, verbose_name="주인공 오행")
+
+    luck_score = models.IntegerField(verbose_name="운세 점수")
+    message = models.TextField(verbose_name="산책운 메시지")
+    lucky_color = models.CharField(max_length=30, verbose_name="행운의 색")
+    lucky_direction = models.CharField(max_length=30, verbose_name="행운의 방향")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['date', 'element'], name='unique_daily_element_luck')
+        ]
+
+    def __str__(self):
+        return f"{self.date} - {self.element} 기운의 산책운"

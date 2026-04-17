@@ -103,6 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     navigateTo(loadingScreen);
 
+    // UX: Labor Illusion (신뢰감을 주기 위한 페이크 로딩 2초)
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     try {
       // 1. 등록 (POST /api/saju/dogs/)
       const dogGender = document.querySelector('input[name="dog-gender"]:checked').value;
@@ -176,8 +179,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  btnShare.addEventListener('click', () => {
-    alert('이미지가 저장되었습니다! 전체 리포트를 친구에게 자랑해보세요.');
+  btnShare.addEventListener('click', async () => {
+    const originalText = btnShare.textContent;
+    btnShare.textContent = "이미지 굽는 중... 🐾";
+    btnShare.disabled = true;
+
+    try {
+      // 캡쳐할 영역 지정 (결과 컨텐츠 전체 영역)
+      const captureArea = document.querySelector('.result-scroll');
+      const canvas = await html2canvas(captureArea, {
+        scale: 2, 
+        backgroundColor: '#F9FAFB',
+        useCORS: true,
+        windowWidth: captureArea.scrollWidth,
+        windowHeight: captureArea.scrollHeight
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `댕사주_운세결과_${Date.now()}.png`;
+      link.href = imgData;
+      link.click();
+    } catch (e) {
+      console.error(e);
+      alert('이미지 저장 중 오류가 발생했습니다.');
+    } finally {
+      btnShare.textContent = originalText;
+      btnShare.disabled = false;
+    }
   });
 
   // 사주 표 파싱 함수
