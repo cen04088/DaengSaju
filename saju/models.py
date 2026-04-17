@@ -178,6 +178,33 @@ class ArchetypeSaju(TimeStampedModel):
     def __str__(self):
         return f"[{self.version}] 본질:{self.primary_element} / 십성:{self.relationship_type}"
 
+class DailyLuckArchetype(TimeStampedModel):
+    """
+    오늘의 운세 사전 생성 템플릿
+    총 75개: 강아지 오행(5) × 오늘의 기운과의 관계(5) × 버전(3)
+    """
+    dog_element = models.CharField(max_length=10, verbose_name="강아지 본질 오행")
+    relationship_type = models.CharField(
+        max_length=10, verbose_name="십성 관계",
+        help_text="비겁/인성/식상/재성/관성"
+    )
+    version = models.CharField(max_length=5, default="A", verbose_name="버전 (A/B/C)")
+    
+    message = models.TextField(verbose_name="산책운 메시지 템플릿")
+    lucky_color = models.CharField(max_length=30, verbose_name="행운의 색")
+    lucky_direction = models.CharField(max_length=30, verbose_name="행운의 방향")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['dog_element', 'relationship_type', 'version'],
+                name='unique_daily_luck_archetype'
+            )
+        ]
+
+    def __str__(self):
+        return f"[{self.version}] 강아지:{self.dog_element} / 관계:{self.relationship_type}"
+
 class DailyElementLuck(TimeStampedModel):
     """
     매일 오행(5개) 별로 하루 한 번만 갱신되는 공통 산책운

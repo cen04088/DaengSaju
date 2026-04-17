@@ -187,3 +187,62 @@ def generate_compatibility(dog_element, relationship_type, version="A"):
             "description": "사주 궁합 데이터를 불러오는 데 실패했어요. 하지만 확실한 건 [강아지이름]과 [보호자이름]은 분명 특별한 인연으로 만난 사이라는 것이에요! 💖",
             "advice": "어떤 궁합이든 가장 중요한 건 매일의 작은 교감이에요. 오늘 [강아지이름]이에게 특별한 간식 하나를 선물해보세요! 🐾"
         }
+def generate_daily_luck_template(dog_element, relationship_type, version="A"):
+    """
+    강아지 오행과 오늘의 일진(기운) 사이의 십성 관계에 따른 산책운 템플릿을 생성합니다.
+    버전(A/B/C)에 따라 톤앤매너를 다르게 가져갑니다.
+    """
+    model = _get_model()
+
+    RELATIONSHIP_CONTEXT = {
+        '비겁': "강아지와 오늘 하루의 기운이 동일한 '동료'의 날입니다. 자신감이 넘치고 사교성이 좋아지는 기운입니다.",
+        '인성': "오늘의 기운이 강아지를 포근하게 감싸고 도와주는 '어머니'와 같은 날입니다. 정서적 안정감이 높고 사랑받는 기운입니다.",
+        '식상': "강아지의 에너지가 밖으로 분출되는 '활동'의 날입니다. 호기심이 왕성해지고 에너지를 발산하고 싶어 하는 기운입니다.",
+        '재성': "강아지가 주변 환경을 주도하고 탐험하는 '성취'의 날입니다. 목표 의식이 생기고 활발하게 움직이는 기운입니다.",
+        '관성': "강아지가 주변을 의식하고 조심스럽게 행동하는 '규칙'의 날입니다. 차분해지고 보호자의 리드를 잘 따르는 기운입니다.",
+    }
+
+    VERSION_GUIDE = {
+        "A": "보호자님에게 다정하고 감성적으로 이야기하는 '따뜻한 공감 스토리텔링' 스타일",
+        "B": "활기차고 위트 있으며 에너지가 넘치는 '신나는 숏폼 멘트' 스타일",
+        "C": "차분하고 논리적이며 명리학적 근거를 부드럽게 곁들인 '신뢰감 있는 전문가' 스타일",
+    }
+
+    context = RELATIONSHIP_CONTEXT.get(relationship_type, "")
+    style = VERSION_GUIDE.get(version, "다정한 스타일")
+
+    prompt = f"""
+당신은 다정하고 통찰력 있는 반려견 전용 사주명리학 전문가입니다.
+강아지의 본질 오행이 '{dog_element}'인 아이에게, 오늘의 기운이 '{relationship_type}'로 작용하는 날의 '산책운' 템플릿(버전 {version})을 작성해 주세요.
+
+[작성 지침]
+1. 강아지 이름 대신 반드시 '[강아지이름]'이라는 플레이스홀더를 사용하세요.
+2. {style}로 작성해 주세요.
+3. '{relationship_type}' 관계의 특성({context})을 산책 상황(다른 강아지와의 만남, 냄새 맡기, 활동량 등)에 녹여내어 아주 구체적으로 작성하세요.
+4. message는 반드시 200자 이상 풍부하게 작성하고, 중요 문구는 **굵게** 표시하세요.
+5. 줄바꿈은 반드시 "\\n" 이스케이프 문자를 사용하세요.
+6. lucky_color와 lucky_direction은 해당 오행 관계에 어울리는 것으로 추천해 주세요.
+
+반드시 아래 JSON 형식으로만 반환하세요:
+{{
+    "message": "오늘의 산책 조언 (200자 이상, \\n 및 이모지 적극 활용)",
+    "lucky_color": "행운의 색상",
+    "lucky_direction": "행운의 방향"
+}}
+"""
+    try:
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                response_mime_type="application/json"
+            )
+        )
+        data = json.loads(response.text)
+        return dict(data)
+    except Exception as e:
+        print(f"Gemini Daily Luck Template Gen Error (Ver {version}):", e)
+        return {
+            "message": f"오늘은 [강아지이름]이가 편안하게 산책을 즐기기 좋은 날이에요! **평소에 좋아하던 코스**로 여유롭게 다녀와 보세요. 🐾",
+            "lucky_color": "편안한 아이보리",
+            "lucky_direction": "익숙한 동네 한 바퀴"
+        }

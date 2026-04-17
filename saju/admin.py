@@ -1,5 +1,10 @@
 from django.contrib import admin
-from .models import User, Dog, SajuBasics, AIInterpretation, DailyWalkingLuck, Compatibility
+from .models import (
+    User, Dog, SajuBasics, AIInterpretation, 
+    DailyWalkingLuck, Compatibility, 
+    ArchetypeSaju, CompatibilityArchetype, DailyElementLuck,
+    DailyLuckArchetype
+)
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
@@ -33,3 +38,26 @@ class CompatibilityAdmin(admin.ModelAdmin):
     list_display = ('id', 'dog', 'user', 'score', 'title', 'created_at')
     list_filter = ('score',)
     search_fields = ('dog__name', 'user__nickname', 'title')
+
+@admin.register(ArchetypeSaju)
+class ArchetypeSajuAdmin(admin.ModelAdmin):
+    list_display = ('id', 'primary_element', 'relationship_type', 'version', 'personality_summary')
+    list_filter = ('primary_element', 'relationship_type', 'version')
+    search_fields = ('personality_summary',)
+
+@admin.register(CompatibilityArchetype)
+class CompatibilityArchetypeAdmin(admin.ModelAdmin):
+    list_display = ('id', 'dog_element', 'relationship_type', 'version', 'score', 'title')
+    list_filter = ('dog_element', 'relationship_type', 'version')
+    search_fields = ('title', 'description')
+
+@admin.register(DailyLuckArchetype)
+class DailyLuckArchetypeAdmin(admin.ModelAdmin):
+    list_display = ('id', 'dog_element', 'relationship_type', 'version', 'lucky_color', 'lucky_direction')
+    list_filter = ('dog_element', 'relationship_type', 'version')
+    search_fields = ('message',)
+
+@admin.register(DailyElementLuck)
+class DailyElementLuckAdmin(admin.ModelAdmin):
+    list_display = ('id', 'date', 'element', 'luck_score')
+    list_filter = ('date', 'element')
