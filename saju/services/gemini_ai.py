@@ -9,6 +9,19 @@ def _get_model():
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel('gemini-2.5-flash')
     return model
+    
+def _get_josa_name(name):
+    """
+    이름의 마지막 글자에 받침이 있으면 '이'를 붙여 반환합니다. (예: 바둑 -> 바둑이, 단비 -> 단비)
+    """
+    if not name:
+        return name
+    last_char = name[-1]
+    # 한글 범위인지 확인
+    if '가' <= last_char <= '힣':
+        if (ord(last_char) - 0xAC00) % 28 > 0:
+            return name + '이'
+    return name
 
 def generate_personality(dog_name, main_element, element_dist, saju_text="알 수 없음"):
     """
@@ -17,13 +30,16 @@ def generate_personality(dog_name, main_element, element_dist, saju_text="알 �
     """
     model = _get_model()
     
+    josa_name = _get_josa_name(dog_name)
+    
     prompt = f"""
 당신은 다정하고 통찰력 있는 반려견 전용 사주명리학 전문가이자 최고의 반려견 스토리텔러입니다.
 강아지의 이름은 '{dog_name}'이며, 일간(타고난 본질) 오행은 '{main_element}', 
 전체 오행의 구성 비율은 다음과 같습니다: {element_dist}.
 (참고 사주 원국: {saju_text})
 
-이제 보호자님에게 직접 따뜻하고 세심하게 말하는 듯한 말투(예: "보호자님! {dog_name}이는 정말 ~한 아이네요!", "~하는 경향이 깊어요 😊")로 다음 항목들을 아주 상세하고 풍부하게 분석해 주세요. 
+이제 보호자님에게 직접 따뜻하고 세심하게 말하는 듯한 말투(예: "보호자님! {josa_name}는 정말 ~한 아이네요!", "~하는 경향이 깊어요 😊")로 다음 항목들을 아주 상세하고 풍부하게 분석해 주세요. 
+강아지 이름 뒤에 붙는 조사(은/는, 이/가, 을/를 등)를 한국어 문법에 맞게(받침 유무에 따라) 자연스럽게 사용해 주세요.
 
 [중요 작성 지침]
 1. 분량: 각 영역(간식운, 에너지, 사회성, 케어팁)마다 무조건 "최소 150자에서 250자 사이"로 매우 길고 디테일하게 작성해야 합니다. 절대 1~2문장으로 끝내지 마세요.
@@ -34,12 +50,12 @@ def generate_personality(dog_name, main_element, element_dist, saju_text="알 �
 반드시 아래에 정의된 Key를 가진 완벽하고 유효한(Valid) JSON 객체로반환하세요.
 
 {{
-    "personality_summary": "{dog_name}이의 성격을 보여주는 아주 매력적이고 위트 있는 한 줄 평",
+    "personality_summary": "{josa_name}의 성격을 보여주는 아주 매력적이고 위트 있는 한 줄 평",
     "personality_keywords": ["재치단어1", "재치단어2", "재치단어3"],
     "vitality_analysis": "에너지 수준, 선호하는 산책 스타일, 호기심, 선천적 건강 체질 등에 관한 프리미엄 분석글 (반드시 150자 이상)",
     "social_analysis": "사회성, 피아식별, 스킨십 선호 등에 관한 꼼꼼한 분석글 (반드시 150자 이상)",
     "treat_luck": "강아지의 간식 취향, 식탐, 식복에 대한 재미있는 풀이 (반드시 150자 이상)",
-    "care_tips": "보호자님이 {dog_name}이와 교감하기 위한 구체적인 케어 솔루션과 꿀팁 (반드시 150자 이상)"
+    "care_tips": "보호자님이 {josa_name}와 교감하기 위한 구체적인 케어 솔루션과 꿀팁 (반드시 150자 이상)"
 }}
 """
     try:
@@ -94,9 +110,77 @@ JSON 응답을 생성할 때, 텍스트 내에서 줄바꿈이 필요하다면 �
         return dict(data)
     except Exception as e:
         print("Gemini Daily Luck Generation Error:", e)
+        josa_name = _get_josa_name(dog_name)
         return {
             "luck_score": 85,
-            "message": f"오늘은 {dog_name}이와 동네 한 바퀴만 돌아도 기분 좋은 에너지를 얻을 수 있을 거예요! 산책 렛츠고! 🐾",
+            "message": f"오늘은 {josa_name}와 동네 한 바퀴만 돌아도 기분 좋은 에너지를 얻을 수 있을 거예요! 산책 렛츠고! 🐾",
             "lucky_color": "초록색",
             "lucky_direction": "어디든"
+        }
+def generate_compatibility(dog_element, relationship_type, version="A"):
+    """
+    강아지 오행과 보호자 오행 사이의 십성 관계를 분석하여 궁합 결과를 생성합니다.
+    [강아지이름], [보호자이름] 플레이스홀더를 사용하여 나중에 치환합니다.
+    """
+    model = _get_model()
+
+    RELATIONSHIP_DESCRIPTIONS = {
+        '비겁': "강아지와 보호자가 같은 오행 에너지를 공유하는 비겁(比劫) 관계입니다. 서로 동질감을 느끼며 공명하지만, 때로는 비슷한 고집으로 부딪히기도 해요.",
+        '인성': "보호자의 오행 에너지가 강아지를 生해주는 인성(印星) 관계입니다. 보호자가 강아지에게 든든한 울타리와 헌신적인 사랑을 쏟아주는 이상적인 보호자-아이 관계예요.",
+        '식상': "강아지의 오행 에너지가 보호자를 生해주는 식상(食傷) 관계입니다. 강아지가 보호자에게 활력과 기쁨을 선물하는, 보호자에게 에너지를 주는 특별한 존재예요.",
+        '재성': "강아지의 오행 에너지가 보호자를 克하는 재성(財星) 관계입니다. 강아지가 보호자의 삶을 이끌고 변화를 주는 당당하고 개성 넘치는 관계예요.",
+        '관성': "보호자의 오행 에너지가 강아지를 克하는 관성(官星) 관계입니다. 보호자가 자연스럽게 리더십을 발휘하고 강아지가 보호자를 따르는 안정적인 주종 관계예요.",
+    }
+
+    rel_desc = RELATIONSHIP_DESCRIPTIONS.get(relationship_type, "")
+    version_guide = {
+        "A": "따뜻하고 감성적인 스토리텔링 방식으로",
+        "B": "재치 있고 유머러스한 방식으로",
+    }.get(version, "다정하게")
+
+    prompt = f"""
+당신은 다정하고 통찰력 있는 반려견 전용 사주명리학 전문가입니다.
+이번에는 강아지와 보호자의 '댕궁합'을 분석합니다.
+
+[분석 대상]
+- 강아지 본질 오행: {dog_element}
+- 십성 관계 유형: {relationship_type}
+- 관계 설명: {rel_desc}
+
+[작성 지침]
+1. {version_guide} 작성해주세요. (버전 {version})
+2. '보호자님'과 '[강아지이름]'이라는 표현을 자연스럽게 활용하세요.
+3. '[강아지이름]', '[보호자이름]' 플레이스홀더를 반드시 사용하세요 (실제 이름 대신).
+4. 명리학 용어(상생, 상극, 인성, 관성 등)를 일반인이 이해하기 쉽게 자연스럽게 녹여주세요.
+5. description은 반드시 200자 이상, advice는 반드시 150자 이상 풍부하게 작성하세요.
+6. 줄바꿈은 반드시 \"\\n\" 이스케이프 문자로 표현하세요 (실제 엔터 금지).
+7. 다채로운 이모지(💖, 🐾, ✨, 🌟 등)를 적극 활용해주세요.
+8. score는 십성 관계의 궁합 점수를 0~100으로 표현하세요.
+   - 비겁: 70~80, 인성: 85~95, 식상: 80~90, 재성: 65~75, 관성: 75~85
+
+반드시 아래 JSON 형식으로만 반환하세요.
+
+{{
+    "score": (0~100 사이 정수),
+    "title": "[강아지이름]과 [보호자이름]의 관계를 한 줄로 표현한 멋진 궁합 타이틀 (20자 이내)",
+    "description": "강아지와 보호자의 십성 관계를 따뜻하고 재치 있게 설명하는 글 (반드시 200자 이상, \\n 활용)",
+    "advice": "이 궁합 관계에서 [보호자이름]이 [강아지이름]과 더 깊이 교감하기 위한 구체적 애정 어드바이스 (반드시 150자 이상, \\n 활용)"
+}}
+"""
+    try:
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                response_mime_type="application/json"
+            )
+        )
+        data = json.loads(response.text)
+        return dict(data)
+    except Exception as e:
+        print("Gemini Compatibility Generation Error:", e)
+        return {
+            "score": 75,
+            "title": "[강아지이름]과 [보호자이름]의 특별한 인연",
+            "description": "사주 궁합 데이터를 불러오는 데 실패했어요. 하지만 확실한 건 [강아지이름]과 [보호자이름]은 분명 특별한 인연으로 만난 사이라는 것이에요! 💖",
+            "advice": "어떤 궁합이든 가장 중요한 건 매일의 작은 교감이에요. 오늘 [강아지이름]이에게 특별한 간식 하나를 선물해보세요! 🐾"
         }

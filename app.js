@@ -55,8 +55,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // reset scroll to top
     if(screenElement === resultScreen) {
       document.querySelector('.result-scroll').scrollTop = 0;
-      // Default to first tab
-      tabBtns[0].click();
+      
+      const tabNav = document.querySelector('.tab-nav');
+      const tabToday = document.getElementById('tab-today');
+      const tabLifetime = document.getElementById('tab-lifetime');
+      const chemSection = document.getElementById('chemistry-result-section');
+      
+      if (testType === 'chemistry') {
+        // 댕궁합 단독 모드
+        if (tabNav) tabNav.style.display = 'none';
+        if (tabToday) tabToday.style.display = 'none';
+        if (tabLifetime) tabLifetime.style.display = 'none';
+        if (chemSection) chemSection.style.display = 'block';
+      } else {
+        // 일반 댕사주 모드: 탭 UI 복원
+        if (tabNav) tabNav.style.display = 'flex';
+        if (chemSection) chemSection.style.display = 'none';
+        // Default to first tab
+        if (tabBtns && tabBtns.length > 0) {
+          tabBtns[0].click();
+        }
+      }
     }
   }
 
@@ -95,7 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.dog-name-display').forEach(el => el.textContent = dogName);
 
     if(testType === 'chemistry') {
-      alert('궁합 결과는 댕궁합 섹션에 추가로 노출됩니다!');
       chemistryResultSection.style.display = 'block';
     } else {
       chemistryResultSection.style.display = 'none';
@@ -164,6 +182,44 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('res-luck-msg').innerHTML = luckData.message.replace(/\n/g, '<br>');
       document.getElementById('res-luck-color').textContent = luckData.lucky_color;
       document.getElementById('res-luck-dir').textContent = luckData.lucky_direction;
+
+      // 5. 댕궁합 분석 (testType이 chemistry일 때만 호출)
+      if (testType === 'chemistry') {
+        const ownerDate = document.getElementById('owner-date').value;
+        const ownerTime = document.getElementById('owner-time').value;
+        
+        try {
+          const chemRes = await fetch(`/api/saju/dogs/${dogId}/compatibility/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              owner_birth_date: ownerDate,
+              owner_birth_time: ownerTime
+            })
+          });
+          const chemData = await chemRes.json();
+          
+          if (chemRes.ok) {
+            document.getElementById('res-chem-score').textContent = chemData.score || '--';
+            document.getElementById('res-chem-title').textContent = chemData.title || '';
+            document.getElementById('res-chem-owner-element').textContent = `(${chemData.owner_element})`;
+            document.getElementById('res-chem-dog-element').textContent = `(${chemData.dog_element})`;
+            document.getElementById('res-chem-rel').textContent = `✨ ${chemData.relationship_type} 관계 ✨`;
+            document.getElementById('res-chem-desc').innerHTML = (chemData.description || '').replace(/\n/g, '<br>');
+            
+            if (chemData.advice) {
+              document.getElementById('res-chem-advice').innerHTML = `<strong>💡 어드바이스:</strong><br>${chemData.advice.replace(/\n/g, '<br>')}`;
+              document.getElementById('res-chem-advice').style.display = 'block';
+            } else {
+              document.getElementById('res-chem-advice').style.display = 'none';
+            }
+            
+            chemistryResultSection.style.display = 'block';
+          }
+        } catch (err) {
+          console.error("궁합 조회 실패:", err);
+        }
+      }
 
       navigateTo(resultScreen);
       // 오행 바 그래프 업데이트 및 애니메이션

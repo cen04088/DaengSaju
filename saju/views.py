@@ -4,9 +4,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import User, Dog, SajuBasics, AIInterpretation, DailyWalkingLuck, ArchetypeSaju, DailyElementLuck
+from .models import User, Dog, SajuBasics, AIInterpretation, DailyWalkingLuck, ArchetypeSaju, DailyElementLuck, Compatibility, CompatibilityArchetype
 from .serializers import DogSerializer, SajuBasicsSerializer, AIInterpretationSerializer, DailyWalkingLuckSerializer
-from .services.manseryeok import get_saju_for_dog
+from .services.manseryeok import get_saju_for_dog, get_secondary_influence_text, get_relationship_type
 
 class DogRegisterView(APIView):
     """
@@ -60,7 +60,7 @@ class SajuBasicsView(APIView):
         
         saju_data = get_saju_for_dog(dog.birth_date, dog.birth_time)
         
-        # SajuBasics 레코드 생성
+        # SajuBasics 레코드 생성 (3단계: relationship_type, secondary_element 포함)
         saju_basics = SajuBasics.objects.create(
             dog=dog,
             year_pillar=saju_data['year_pillar'],
@@ -68,7 +68,9 @@ class SajuBasicsView(APIView):
             day_pillar=saju_data['day_pillar'],
             hour_pillar=saju_data['hour_pillar'],
             main_element=saju_data['main_element'],
-            element_distribution=saju_data['element_distribution']
+            element_distribution=saju_data['element_distribution'],
+            relationship_type=saju_data.get('relationship_type', '비겁'),
+            secondary_element=saju_data.get('secondary_element', ''),
         )
         
         serializer = SajuBasicsSerializer(saju_basics)
@@ -97,23 +99,27 @@ class AIInterpretationView(APIView):
         if saju.hour_pillar:
             saju_text += f" {saju.hour_pillar}시"
 
-        # 3. 사전 생성된 ArchetypeSaju 맵핑
+        # 3단계: 십성(十星) 기반 ArchetypeSaju 맵핑
         primary = saju.main_element
-        dist = saju.element_distribution
-        if isinstance(dist, dict) and dist:
-            strongest = max(dist, key=dist.get)
-        else:
-            strongest = primary
+        relationship_type = saju.relationship_type or '비겁'
+        secondary_element = saju.secondary_element or primary
 
         # 버전 선택 (강아지 id 기반으로 일정하게)
         version_idx = dog.id % 3
         versions = ['A', 'B', 'C']
         selected_version = versions[version_idx]
 
-        archetype = ArchetypeSaju.objects.filter(primary_element=primary, strongest_element=strongest, version=selected_version).first()
+        archetype = ArchetypeSaju.objects.filter(
+            primary_element=primary,
+            relationship_type=relationship_type,
+            version=selected_version
+        ).first()
         if not archetype:
-            archetype = ArchetypeSaju.objects.filter(primary_element=primary, strongest_element=strongest).first()
-        
+            archetype = ArchetypeSaju.objects.filter(
+                primary_element=primary,
+                relationship_type=relationship_type
+            ).first()
+
         if not archetype:
             return Response({"error": "사전 생성된 사주 프로필을 찾을 수 없습니다. (pregenerate_saju 명령어 실행 필요)"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -125,6 +131,12 @@ class AIInterpretationView(APIView):
         if isinstance(archetype.personality_keywords, list):
             keywords = [replace_name(k) for k in archetype.personality_keywords]
 
+        # 2위 오행 보조 텍스트(수식 기반, AI 호출 없음)
+        secondary_text = get_secondary_influence_text(primary, secondary_element)
+        care_tips_with_secondary = replace_name(archetype.care_tips)
+        if secondary_text:
+            care_tips_with_secondary += f"\n\n\U0001f4a1 [추가 사주 분석] {secondary_text}"
+
         try:
             interpretation = AIInterpretation.objects.create(
                 dog=dog,
@@ -133,7 +145,7 @@ class AIInterpretationView(APIView):
                 vitality_analysis=replace_name(archetype.vitality_analysis),
                 social_analysis=replace_name(archetype.social_analysis),
                 treat_luck=replace_name(archetype.treat_luck),
-                care_tips=replace_name(archetype.care_tips)
+                care_tips=care_tips_with_secondary  # 2위 오행 보조 내용 포함
             )
         except Exception as e:
             return Response({"error": f"DB 저장 중 오류 발생: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -194,3 +206,125 @@ class DailyWalkingLuckView(APIView):
 
         serializer = DailyWalkingLuckSerializer(luck)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class CompatibilityView(APIView):
+    """
+    댓궁합 API - 근석에 따라외 CompatibilityArchetype에서 결과를 즉시 반환
+    POST /api/saju/dogs/<dog_id>/compatibility/
+    """
+    authentication_classes = []
+
+    def post(self, request, dog_id):
+        dog = get_object_or_404(Dog, id=dog_id)
+        owner_birth_date_str = request.data.get('owner_birth_date')
+        owner_birth_time_str = request.data.get('owner_birth_time')
+        owner_name = request.data.get('owner_name', '보호자님')
+
+        if not owner_birth_date_str:
+            return Response({"error": "보호자 생년월일을 입력해주세요."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1. 캐시 확인: 이미 저장된 결과가 있다면 즉시 반환
+        cached = Compatibility.objects.filter(dog=dog, user=dog.user).first()
+        if cached:
+            return Response({
+                'dog_element': cached.description.split('|')[0] if '|' in cached.description else '',
+                'owner_element': cached.description.split('|')[1] if '|' in cached.description else '',
+                'relationship_type': cached.description.split('|')[2] if '|' in cached.description else '',
+                'score': cached.score,
+                'title': cached.title,
+                'description': cached.description.split('|', 3)[-1] if '|' in cached.description else cached.description,
+                'advice': cached.advice if hasattr(cached, 'advice') else '',
+            }, status=status.HTTP_200_OK)
+
+        # 2. 강아지 사주 확인 (없으면 자동 계산)
+        if not hasattr(dog, 'saju_basics'):
+            if not dog.birth_date:
+                return Response({"error": "강아지 생년월일 정보가 없어 사주를 계산할 수 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+            saju_data = get_saju_for_dog(dog.birth_date, dog.birth_time)
+            SajuBasics.objects.create(
+                dog=dog,
+                year_pillar=saju_data['year_pillar'], month_pillar=saju_data['month_pillar'],
+                day_pillar=saju_data['day_pillar'], hour_pillar=saju_data['hour_pillar'],
+                main_element=saju_data['main_element'], element_distribution=saju_data['element_distribution'],
+                relationship_type=saju_data.get('relationship_type', '비겁'),
+                secondary_element=saju_data.get('secondary_element', ''),
+            )
+            dog.refresh_from_db()
+
+        dog_element = dog.saju_basics.main_element
+
+        # 3. 보호자 사주 계산
+        from datetime import datetime
+        try:
+            owner_birth_date = datetime.strptime(owner_birth_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({"error": "날짜 형식이 잘못되었습니다. (YYYY-MM-DD)"}, status=status.HTTP_400_BAD_REQUEST)
+
+        owner_birth_time = None
+        if owner_birth_time_str:
+            try:
+                owner_birth_time = datetime.strptime(owner_birth_time_str, '%H:%M').time()
+            except ValueError:
+                pass
+
+        owner_saju = get_saju_for_dog(owner_birth_date, owner_birth_time)
+        owner_element = owner_saju['main_element']
+
+        # 4. 십성 관계 계산 (강아지 관점에서 보호자를 바라봄)
+        relationship_type = get_relationship_type(dog_element, owner_element)
+
+        # 5. 버전 결정
+        version = 'A' if dog.id % 2 == 0 else 'B'
+
+        # 6. CompatibilityArchetype 조회
+        archetype = CompatibilityArchetype.objects.filter(
+            dog_element=dog_element,
+            relationship_type=relationship_type,
+            version=version
+        ).first()
+        if not archetype:
+            archetype = CompatibilityArchetype.objects.filter(
+                dog_element=dog_element,
+                relationship_type=relationship_type
+            ).first()
+
+        if not archetype:
+            return Response(
+                {"error": "사전 생성된 궁합 프로필을 찾을 수 없습니다. (pregenerate_compatibility 명령어 실행 필요)"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # 7. 플레이스홀더 치환
+        def replace_ph(text):
+            if not text: return ""
+            return text.replace("[강아지이름]", dog.name).replace("[보호자이름]", owner_name)
+
+        result_title = replace_ph(archetype.title)
+        result_description = replace_ph(archetype.description)
+        result_advice = replace_ph(archetype.advice)
+
+        # 8. Compatibility 모델에 캐시 저장
+        # description에 메타데이터를 |로 구분하여 저장(커스텀 필드 확장 없이)
+        meta_prefix = f"{dog_element}|{owner_element}|{relationship_type}|"
+        try:
+            Compatibility.objects.update_or_create(
+                dog=dog, user=dog.user,
+                defaults={
+                    'score': archetype.score,
+                    'title': result_title,
+                    'description': meta_prefix + result_description,
+                }
+            )
+        except Exception as e:
+            print(f"Compatibility 캐시 저장 오류: {e}")
+
+        return Response({
+            'dog_element': dog_element,
+            'owner_element': owner_element,
+            'relationship_type': relationship_type,
+            'score': archetype.score,
+            'title': result_title,
+            'description': result_description,
+            'advice': result_advice,
+        }, status=status.HTTP_200_OK)

@@ -264,13 +264,17 @@
 
         <!-- Compatibility Card (Hidden by default) -->
         <div id="chemistry-result-section" class="card result-card chemistry-card" style="display: none; margin-top:20px;">
-          <h3 class="card-title text-center">💖 궁합 결과</h3>
+          <h3 class="card-title text-center">💖 <span id="res-chem-title">궁합 결과</span></h3>
           <div class="chemistry-match">
-            <div class="chem-profile">보호자<br><span>(수/水)</span></div>
-            <div class="chem-heart">✨ 상생 ✨</div>
-            <div class="chem-profile"><span class="dog-name-display">댕댕이</span><br><span>(목/木)</span></div>
+            <div class="chem-profile">보호자<br><span id="res-chem-owner-element">(-)</span></div>
+            <div class="chem-heart" id="res-chem-rel">✨ 궁합 분석 ✨</div>
+            <div class="chem-profile"><span class="dog-name-display">댕댕이</span><br><span id="res-chem-dog-element">(-)</span></div>
           </div>
-          <p class="chem-desc">"우리는 <strong>상생(相生)</strong> 관계! 보호자님의 차분함(수 기운)이 강아지의 넘치는 열정과 호기심(목 기운)에 든든한 물을 주어 더 큰 나무로 성장하게 합니다. 환상의 콤비네요!"</p>
+          <div style="text-align:center; margin-bottom: 12px; font-weight: 800; font-size: 20px; color: #3182F6;">
+            점수: <span id="res-chem-score">--</span>점
+          </div>
+          <p id="res-chem-desc" class="chem-desc" style="margin-bottom: 16px;">궁합 데이터를 불러오는 중입니다...</p>
+          <p id="res-chem-advice" style="font-size: 14px; color: #661; background: #fffde7; padding: 12px; border-radius: 8px; line-height: 1.6; display: none;"></p>
         </div>
 
         <div style="height: 100px;"></div>
@@ -282,6 +286,6 @@
     </section>
 
   </div>
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
