@@ -7,7 +7,7 @@
   --color-card: rgba(30, 41, 59, 0.6); /* Dark Glass */
   --color-text-title: #FFFFFF;
   --color-text-body: #FFFFFF;
-  --color-text-hint: #F1F5F9; /* Very light, almost white */
+  --color-text-hint: #F1F5F9;
   --color-border: rgba(255, 255, 255, 0.1);
   
   /* Modern Shadow (Layered Glows in dark mode) */
@@ -391,6 +391,7 @@ body {
   font-size: 20px;
   margin-bottom: 8px;
   font-weight: 800;
+  color: var(--color-text-title);
 }
 
 .menu-card p {
@@ -417,7 +418,7 @@ input[type="date"],
 input[type="time"] {
   width: 100%;
   padding: 16px;
-  font-size: 16px; /* 모바일 브라우저 자동 확대 방지 최소 사이즈 */
+  font-size: 16px; 
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--border-radius-sm);
   background-color: rgba(255, 255, 255, 0.05);
@@ -762,9 +763,9 @@ input[type="time"]:focus {
 .detail-content p {
   font-size: 15px;
   color: var(--color-text-body);
-  line-height: 1.8; /* Increased for better readability */
+  line-height: 1.8;
   word-break: keep-all;
-  white-space: pre-wrap; /* Preserve leading spaces/bullets if any */
+  white-space: pre-wrap;
 }
 
 /* Bullet Point Indentation for AI generated lists */
