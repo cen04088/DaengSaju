@@ -131,6 +131,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+import os
+os.makedirs(STATIC_ROOT, exist_ok=True)
 
 # WhiteNoise settings for static file compression and caching
 STORAGES = {
