@@ -4,3 +4,7 @@ djangorestframework
 django-apscheduler
 google-generativeai
 sajupy
+gunicorn
+whitenoise
+dj-database-url
+psycopg2-binary
