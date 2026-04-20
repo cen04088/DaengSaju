@@ -842,3 +842,141 @@ input[type="time"]:focus {
 
 /* Utils */
 .font-bold { font-weight: 700 !important; }
+
+/* =============================================
+   Ad Unlock (Locked Report) System
+   ============================================= */
+
+/* Outer container - provides the stacking context for blur + overlay */
+.locked-container {
+  position: relative;
+}
+
+/* When locked: blur the text content inside each card */
+.locked-container.is-locked .lockable-text {
+  filter: blur(6px);
+  user-select: none;
+  -webkit-user-select: none;
+  transition: filter 0.5s ease;
+  /* Fake placeholder text lines that look real when blurred */
+}
+
+/* Unlock overlay - sits on top of the blurred cards */
+.unlock-overlay {
+  display: none; /* hidden by default, shown via JS when .is-locked */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--border-radius-lg);
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(11, 17, 33, 0.5) 20%,
+    rgba(11, 17, 33, 0.92) 55%,
+    rgba(11, 17, 33, 0.98) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 0;
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.locked-container.is-locked .unlock-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.unlock-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  padding: 0 24px;
+}
+
+.unlock-lock-icon {
+  font-size: 36px;
+  margin-bottom: 4px;
+  animation: lockPulse 2s infinite ease-in-out;
+}
+
+@keyframes lockPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.unlock-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.3px;
+}
+
+.unlock-desc {
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.6;
+  margin-bottom: 4px;
+}
+
+/* The CTA button */
+.btn-unlock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 280px;
+  height: 52px;
+  background: linear-gradient(135deg, #F59E0B, #EF4444);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.35);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin-top: 8px;
+}
+
+.btn-unlock:active {
+  transform: scale(0.95);
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);
+}
+
+.btn-unlock-icon {
+  font-size: 18px;
+}
+
+/* Watching ad state */
+.btn-unlock.is-loading {
+  background: rgba(255,255,255,0.15);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Unlock reveal animation: fade in + slide up each card */
+.locked-container.is-unlocked .lockable-text {
+  filter: blur(0px);
+  transition: filter 0.5s ease;
+}
+
+@keyframes unlock-card-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -132,6 +132,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const tabLifetime = document.getElementById('tab-lifetime');
       const chemSection = document.getElementById('chemistry-result-section');
       
+      // Re-lock the report on every new result
+      lockReports();
+
       if (testType === 'chemistry') {
         // 댕궁합 단독 모드
         if (tabNav) tabNav.style.display = 'none';
@@ -412,13 +415,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       return { basicData, perData, luckData, chemData };
     })();
 
-    // 3단계: API 완료 시 즉시 DOM 선반영 + 2초 후 광고 트리거
-    //   → 광고 후에는 화면 전환만 하면 되므로 렉 없이 부드럽게 전환
-    let pendingResult = null;
-
+    // 3단계: API 완료 후 DOM 업데이트 → 바로 결과 화면으로 이동
+    // (전면광고는 이제 리포트 잠금 해제 버튼에서 호출됨)
     apiPromise
       .then(({ basicData, perData, luckData, chemData }) => {
-        // ── API 완료 즉시 DOM 사전 적용 (로딩 화면 중 → 사용자에게 보이지 않음) ──
+        // ── DOM 업데이트 ──
         const elementMap = { '목': 'wood', '화': 'fire', '토': 'earth', '금': 'metal', '수': 'water' };
         const elementColorMap = { '목': 'text-wood', '화': 'text-fire', '토': 'text-earth', '금': 'text-metal', '수': 'text-water' };
         const elementHanjaMap = { '목': '木', '화': '火', '토': '土', '금': '金', '수': '水' };
@@ -455,46 +456,68 @@ document.addEventListener('DOMContentLoaded', async () => {
           chemistryResultSection.style.display = 'block';
         }
 
-        pendingResult = basicData; // 차트 렌더링에 필요한 데이터 보관
+        // ── 결과 화면으로 바로 이동 (광고 없음) ──
+        navigateTo(resultScreen, true);
+        // 화면 전환 애니메이션 완료 후 Chart.js 렌더링
+        requestAnimationFrame(() => setTimeout(() => updateGraphs(basicData.element_distribution), 400));
       })
       .catch(err => {
-        pendingResult = null;
-        console.error('API 오류:', err);
+        console.error(err);
+        alert("운세를 분석하는 중 오류가 발생했습니다. 확인 후 다시 시도해주세요.");
+        navigateTo(inputScreen, false);
       });
-
-    // 4단계: 2초 후 광고 → 광고 닫힘 시 화면 전환만 (DOM은 이미 준비됨)
-    setTimeout(() => {
-      showInterstitialThenDo(() => {
-        if (pendingResult === null && !apiPromise._resolved) {
-          // API가 아직 안 끝난 경우 (매우 드뭄) → 기다렸다가 이동
-          apiPromise
-            .then(({ basicData }) => {
-              navigateTo(resultScreen, true);
-              // Chart.js 등 무거운 렌더링 스크립트는 화면 전환 애니메이션이 시작된 후로 지연시킴 (렌더링 끊김 방지)
-              requestAnimationFrame(() => {
-                setTimeout(() => {
-                  updateGraphs(basicData.element_distribution);
-                }, 100);
-              });
-            })
-            .catch(err => {
-              console.error(err);
-              alert("운세를 분석하는 중 오류가 발생했습니다. 확인 후 다시 시도해주세요.");
-              navigateTo(inputScreen, false);
-            });
-        } else if (pendingResult) {
-          // 일반 케이스: DOM 이미 준비됨 → 화면 전환만
-          const dist = pendingResult.element_distribution;
-          navigateTo(resultScreen, true);
-          // 화면 전환 애니메이션(300ms) 완료 후 Chart.js 렌더링
-          requestAnimationFrame(() => setTimeout(() => updateGraphs(dist), 400));
-        } else {
-          alert("운세를 분석하는 중 오류가 발생했습니다. 확인 후 다시 시도해주세요.");
-          navigateTo(inputScreen, false);
-        }
-      }); // showInterstitialThenDo end
-    }, 2000); // 로딩 화면 최소 2초 노출 후 광고
   }); // btnSubmit end
+
+  // ─── Locked Report: 잠금/해제 시스템 ────────────────────────────────────
+  function lockReports() {
+    const container = document.getElementById('locked-reports-container');
+    const overlay = document.getElementById('unlock-overlay');
+    if (!container) return;
+    container.classList.remove('is-unlocked');
+    container.classList.add('is-locked');
+    if (overlay) {
+      // 인라인 스타일 초기화 (unlockReports에서 설정한 값 제거)
+      overlay.style.opacity = '';
+      overlay.style.pointerEvents = '';
+      overlay.style.display = 'flex';
+    }
+  }
+
+  function unlockReports() {
+    const container = document.getElementById('locked-reports-container');
+    const overlay = document.getElementById('unlock-overlay');
+    if (!container) return;
+    container.classList.remove('is-locked');
+    container.classList.add('is-unlocked');
+    if (overlay) {
+      overlay.style.opacity = '0';
+      overlay.style.pointerEvents = 'none';
+      setTimeout(() => { overlay.style.display = 'none'; }, 400);
+    }
+    // Staggered card reveal after unlock
+    const cards = container.querySelectorAll('.detail-card');
+    cards.forEach((card, i) => {
+      card.style.animation = 'none';
+      setTimeout(() => {
+        card.style.animation = `unlock-card-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both`;
+      }, i * 120);
+    });
+  }
+
+  const btnUnlock = document.getElementById('btn-unlock-report');
+  if (btnUnlock) {
+    btnUnlock.addEventListener('click', () => {
+      if (btnUnlock.classList.contains('is-loading')) return;
+      btnUnlock.classList.add('is-loading');
+      btnUnlock.textContent = '⏳ 광고 준비 중...';
+
+      showInterstitialThenDo(() => {
+        btnUnlock.classList.remove('is-loading');
+        btnUnlock.innerHTML = '<span class="btn-unlock-icon">🎬</span> 광고 보고 전체 해석 보기';
+        unlockReports();
+      });
+    });
+  }
 
   btnShare.addEventListener('click', async () => {
     const originalText = btnShare.textContent;

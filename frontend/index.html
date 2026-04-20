@@ -121,7 +121,7 @@
             <div class="jumping-dog">🐕</div>
           </div>
           <h2 class="loading-text">우리아이의 운세를<br>계산하는 중이에요...</h2>
-          <p class="loading-subtext">명리학 빅데이터를 분석하고 있습니다<br>(2초 광고 시청 후 바로 확인 가능합니다.)</p>
+          <p class="loading-subtext">명리학 빅데이터를 분석하고 있습니다</p>
         </div>
       </section>
 
@@ -258,51 +258,66 @@
             <!-- Detailed Analysis Cards (Expanded) -->
             <h3 class="section-header">영역별 심층 분석 리포트</h3>
 
-            <div class="card detail-card card-food fade-in" style="flex-direction: column;">
-              <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
-                <div class="detail-icon" style="flex-shrink:0;">🍖</div>
-                <h4 style="font-size: 18px; margin:0;">평생 간식/식복 안내</h4>
-              </div>
-              <div class="detail-content" style="width: 100%;">
-                <p id="res-food" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">데이터를 불러오고
-                  있습니다...
-                </p>
-              </div>
-            </div>
+            <!-- Locked Reports Container -->
+            <div id="locked-reports-container" class="locked-container">
 
-            <div class="card detail-card card-energy fade-in" style="flex-direction: column;">
-              <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
-                <div class="detail-icon" style="flex-shrink:0;">⚡</div>
-                <h4 style="font-size: 18px; margin:0;">건강/에너지 사이클</h4>
-              </div>
-              <div class="detail-content" style="width: 100%;">
-                <p id="res-energy" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">데이터를 불러오고
-                  있습니다...</p>
-              </div>
-            </div>
+              <!-- 4 detail cards (blurred when locked) -->
+              <div id="locked-cards-content">
+                <div class="card detail-card card-food fade-in" style="flex-direction: column;">
+                  <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
+                    <div class="detail-icon" style="flex-shrink:0;">🍖</div>
+                    <h4 style="font-size: 18px; margin:0;">평생 간식/식복 안내</h4>
+                  </div>
+                  <div class="detail-content" style="width: 100%;">
+                    <p id="res-food" class="lockable-text" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">데이터를 불러오고 있습니다...</p>
+                  </div>
+                </div>
 
-            <div class="card detail-card card-love fade-in" style="flex-direction: column;">
-              <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
-                <div class="detail-icon" style="flex-shrink:0;">💖</div>
-                <h4 style="font-size: 18px; margin:0;">보호자와의 교감 팁</h4>
-              </div>
-              <div class="detail-content" style="width: 100%;">
-                <p id="res-love" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">데이터를 불러오고
-                  있습니다...
-                </p>
-              </div>
-            </div>
+                <div class="card detail-card card-energy fade-in" style="flex-direction: column;">
+                  <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
+                    <div class="detail-icon" style="flex-shrink:0;">⚡</div>
+                    <h4 style="font-size: 18px; margin:0;">건강/에너지 사이클</h4>
+                  </div>
+                  <div class="detail-content" style="width: 100%;">
+                    <p id="res-energy" class="lockable-text" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">데이터를 불러오고 있습니다...</p>
+                  </div>
+                </div>
 
-            <div class="card detail-card card-social fade-in" style="flex-direction: column;">
-              <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
-                <div class="detail-icon" style="flex-shrink:0;">🐾</div>
-                <h4 style="font-size: 18px; margin:0;">사회성과 무리 생활</h4>
+                <div class="card detail-card card-love fade-in" style="flex-direction: column;">
+                  <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
+                    <div class="detail-icon" style="flex-shrink:0;">💖</div>
+                    <h4 style="font-size: 18px; margin:0;">보호자와의 교감 팁</h4>
+                  </div>
+                  <div class="detail-content" style="width: 100%;">
+                    <p id="res-love" class="lockable-text" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">데이터를 불러오고 있습니다...</p>
+                  </div>
+                </div>
+
+                <div class="card detail-card card-social fade-in" style="flex-direction: column;">
+                  <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
+                    <div class="detail-icon" style="flex-shrink:0;">🐾</div>
+                    <h4 style="font-size: 18px; margin:0;">사회성과 무리 생활</h4>
+                  </div>
+                  <div class="detail-content" style="width: 100%;">
+                    <p id="res-social" class="lockable-text" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">데이터를 불러오고 있습니다...</p>
+                  </div>
+                </div>
               </div>
-              <div class="detail-content" style="width: 100%;">
-                <p id="res-social" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">데이터를 불러오고
-                  있습니다...</p>
+
+              <!-- Unlock Overlay (visible while locked) -->
+              <div id="unlock-overlay" class="unlock-overlay">
+                <div class="unlock-overlay-content">
+                  <div class="unlock-lock-icon">🔒</div>
+                  <p class="unlock-title">심층 분석 리포트</p>
+                  <p class="unlock-desc">짧은 광고를 보고<br>4가지 심층 해석을 확인하세요</p>
+                  <button id="btn-unlock-report" class="btn-unlock">
+                    <span class="btn-unlock-icon">🎬</span>
+                    광고 보고 전체 해석 보기
+                  </button>
+                </div>
               </div>
-            </div>
+
+            </div><!-- end locked-reports-container -->
 
           </div> <!-- End of Tab 2 -->
 
