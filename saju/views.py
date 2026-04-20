@@ -3,16 +3,15 @@ from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 
 from .models import User, Dog, SajuBasics, AIInterpretation, DailyWalkingLuck, ArchetypeSaju, DailyElementLuck, Compatibility, CompatibilityArchetype
 from .serializers import DogSerializer, SajuBasicsSerializer, AIInterpretationSerializer, DailyWalkingLuckSerializer
 from .services.manseryeok import get_saju_for_dog, get_secondary_influence_text, get_relationship_type, add_hanja_to_terms, smart_replace
 
 class DogRegisterView(APIView):
-    """
-    Toss 웹뷰에서 보호자와 강아지 정보를 최초 등록하는 API
-    """
     authentication_classes = []
+    permission_classes = [AllowAny]
 
     def post(self, request):
         social_id = request.data.get('social_id')
@@ -43,9 +42,9 @@ class DogRegisterView(APIView):
 
 class SajuBasicsView(APIView):
     """
-    강아지의 사주 원국 정보 조회.
-    데이터가 없으면 manseryeok 모듈을 이용해 사주를 계산하고 저장한 후 반환합니다.
-    """
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
     def get(self, request, dog_id):
         dog = get_object_or_404(Dog, id=dog_id)
         
@@ -79,9 +78,9 @@ class SajuBasicsView(APIView):
 
 class AIInterpretationView(APIView):
     """
-    강아지의 AI 성격 분석 정보 조회.
-    데이터가 없으면 Gemini API를 호출하여 분석 결과를 생성하고 저장 후 반환합니다.
-    """
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
     def get(self, request, dog_id):
         dog = get_object_or_404(Dog, id=dog_id)
 
@@ -155,9 +154,9 @@ class AIInterpretationView(APIView):
 
 class DailyWalkingLuckView(APIView):
     """
-    강아지의 오늘 산책운 조회 (Lazy evaluation).
-    오늘 날짜 기준 데이터가 없으면 DailyLuckArchetype에서 버전을 선택하여 생성합니다.
-    """
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
     def get(self, request, dog_id):
         dog = get_object_or_404(Dog, id=dog_id)
         today = date.today()
@@ -265,6 +264,7 @@ class CompatibilityView(APIView):
     POST /api/saju/dogs/<dog_id>/compatibility/
     """
     authentication_classes = []
+    permission_classes = [AllowAny]
 
     def post(self, request, dog_id):
         dog = get_object_or_404(Dog, id=dog_id)

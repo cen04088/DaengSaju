@@ -35,7 +35,28 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
 # CSRF Trusted Origins for Railway
 CSRF_TRUSTED_ORIGINS = [
-    'https://*.up.railway.app'
+    'https://*.up.railway.app',
+    'https://daengsaju.apps.tossmini.com',
+    'https://daengsaju.private-apps.tossmini.com',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    'https://daengsaju.apps.tossmini.com',
+    'https://daengsaju.private-apps.tossmini.com',
+]
+CORS_ALLOW_ALL_ORIGINS = True  # Added for debugging and robust connection
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-toss-user-key',
 ]
 
 
@@ -50,11 +71,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'django_apscheduler',
+    'corsheaders',
     'saju',
-]
+],
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Added for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
