@@ -109,16 +109,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     
     screenElement.style.display = 'flex';
-    // Small delay to allow display flex to apply before opacity ramps up
-    setTimeout(() => {
-      screenElement.classList.add('active');
-      // 메인화면일 때만 배너 마운트 (active 추가 직후 실행 보장)
-      if (screenElement.id === 'main-screen') {
-        if (typeof mountTossBanner === 'function') mountTossBanner();
-      } else {
-        if (typeof unmountTossBanner === 'function') unmountTossBanner();
-      }
-    }, 10);
+    // requestAnimationFrame을 두 번 중첩하여 브라우저의 레이아웃 병목(렉)을 줄이고 부드럽게 페이드인
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        screenElement.classList.add('active');
+        // 메인화면일 때만 배너 마운트 (active 추가 직후 실행 보장)
+        if (screenElement.id === 'main-screen') {
+          if (typeof mountTossBanner === 'function') mountTossBanner();
+        } else {
+          if (typeof unmountTossBanner === 'function') unmountTossBanner();
+        }
+      });
+    });
     
     // reset scroll to top
     if(screenElement === resultScreen) {
@@ -212,17 +214,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ─── Interstitial (전면) 광고 관리 ───────────────────────────────────────
-  const INTERSTITIAL_AD_ID = 'ait.dev.43daa14da3ae487b';
+  const INTERSTITIAL_AD_ID = 'ait-ad-test-interstitial-id';
   let interstitialAdLoaded = false;
   let interstitialUnregister = null;
 
   function preloadInterstitialAd() {
-    const isSupported = typeof loadFullScreenAd === 'function'
-      ? (typeof loadFullScreenAd.isSupported === 'function' ? loadFullScreenAd.isSupported() : true)
-      : false;
-
-    console.log('[Interstitial] isSupported:', isSupported);
-    if (!isSupported) return;
+    // isSupported()는 Toss WebView 환경에서만 동작 - try-catch 필수
+    try {
+      if (typeof loadFullScreenAd.isSupported === 'function' && !loadFullScreenAd.isSupported()) {
+        console.warn('[Interstitial] loadFullScreenAd not supported');
+        return;
+      }
+    } catch (e) {
+      // WebView 외부(예: 일반 브라우저) 환경 - 지원 안 함
+      console.warn('[Interstitial] isSupported check failed:', e.message);
+      return;
+    }
 
     // 이전 콜백 등록 해제 (메모리 누수 방지)
     if (interstitialUnregister) {
@@ -231,15 +238,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     interstitialAdLoaded = false;
 
+    console.log('[Interstitial] loading ad...');
     interstitialUnregister = loadFullScreenAd({
       options: { adGroupId: INTERSTITIAL_AD_ID },
       onEvent: (event) => {
+        console.log('[Interstitial] load event:', event.type);
         if (event.type === 'loaded') {
           interstitialAdLoaded = true;
         }
       },
       onError: (err) => {
-        console.error('전면 광고 로드 실패:', err);
+        console.error('[Interstitial] load error:', err);
         interstitialAdLoaded = false;
       },
     });
@@ -253,11 +262,19 @@ document.addEventListener('DOMContentLoaded', async () => {
    * 광고 미지원이거나 아직 로드가 안 됐으면 callback을 바로 실행한다.
    */
   function showInterstitialThenDo(callback) {
-    const isSupported = typeof showFullScreenAd === 'function'
-      ? (typeof showFullScreenAd.isSupported === 'function' ? showFullScreenAd.isSupported() : true)
-      : false;
+    // isSupported()는 Toss WebView 환경에서만 동작 - try-catch 필수
+    let isSupported = false;
+    try {
+      isSupported = typeof showFullScreenAd.isSupported === 'function'
+        ? showFullScreenAd.isSupported()
+        : true;
+    } catch (e) {
+      console.warn('[Interstitial] showFullScreenAd.isSupported check failed:', e.message);
+      callback();
+      return;
+    }
 
-    console.log('[Interstitial] showSupported:', isSupported, 'adLoaded:', interstitialAdLoaded);
+    console.log('[Interstitial] show isSupported:', isSupported, 'adLoaded:', interstitialAdLoaded);
 
     if (!isSupported || !interstitialAdLoaded) {
       callback();
@@ -268,15 +285,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const unregisterShow = showFullScreenAd({
       options: { adGroupId: INTERSTITIAL_AD_ID },
       onEvent: (event) => {
+        console.log('[Interstitial] show event:', event.type);
         if (event.type === 'dismissed' || event.type === 'failedToShow') {
           if (typeof unregisterShow === 'function') unregisterShow();
-          // 다음 전면 광고 미리 로드 (load→show→load 순환)
-          preloadInterstitialAd();
+          preloadInterstitialAd(); // load→show→load 순환
           callback();
         }
       },
       onError: (err) => {
-        console.error('전면 광고 표시 실패:', err);
+        console.error('[Interstitial] show error:', err);
         if (typeof unregisterShow === 'function') unregisterShow();
         preloadInterstitialAd();
         callback();
@@ -297,25 +314,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Event Listeners
   btnGeneral.addEventListener('click', () => {
-    showInterstitialThenDo(() => {
-      testType = 'general';
-      inputTitle.innerHTML = '우리아이의 타고난<br>기질을 알아볼까요?';
-      ownerInputSection.classList.add('hidden');
-      navigateTo(inputScreen);
-    });
+    testType = 'general';
+    inputTitle.innerHTML = '우리아이의 타고난<br>기질을 알아볼까요?';
+    ownerInputSection.classList.add('hidden');
+    navigateTo(inputScreen);
   });
 
   btnChemistry.addEventListener('click', () => {
-    showInterstitialThenDo(() => {
-      testType = 'chemistry';
-      inputTitle.innerHTML = '보호자와 댕댕이의<br>상생 궁합은?';
-      ownerInputSection.classList.remove('hidden');
-      navigateTo(inputScreen);
-    });
+    testType = 'chemistry';
+    inputTitle.innerHTML = '보호자와 댕댕이의<br>상생 궁합은?';
+    ownerInputSection.classList.remove('hidden');
+    navigateTo(inputScreen);
   });
 
 
-  btnSubmit.addEventListener('click', async (e) => {
+  btnSubmit.addEventListener('click', (e) => {
     e.preventDefault();
     if(!dogNameInput.value || !dogDateInput.value) {
       alert("강아지 이름과 생년월일을 정확히 입력해주세요!");
@@ -331,27 +344,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       chemistryResultSection.style.display = 'none';
     }
 
+    // 1단계: 로딩 화면 먼저 표시
     navigateTo(loadingScreen, false);
 
-    // UX: Labor Illusion (신뢰감을 주기 위한 페이크 로딩 2초)
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // 2단계: API 호출을 백그라운드에서 즉시 시작 (광고와 병렬 실행)
+    const dogGender = document.querySelector('input[name="dog-gender"]:checked').value;
+    const postData = {
+      social_id: tossUserKey,
+      nickname: "Toss 사용자",
+      dog: {
+        name: dogName,
+        birth_date: dogDateInput.value,
+        birth_time: dogTimeInput.value || null,
+        is_lunar: dogLunarCheck.checked,
+        gender: dogGender === 'M' ? 'MALE' : 'FEMALE',
+        is_estimated_birth: false
+      }
+    };
 
-    try {
-      // 1. 등록 (POST /api/saju/dogs/)
-      const dogGender = document.querySelector('input[name="dog-gender"]:checked').value;
-      const postData = {
-        social_id: tossUserKey, 
-        nickname: "Toss 사용자",
-        dog: {
-          name: dogName,
-          birth_date: dogDateInput.value,
-          birth_time: dogTimeInput.value || null,
-          is_lunar: dogLunarCheck.checked,
-          gender: dogGender === 'M' ? 'MALE' : 'FEMALE',
-          is_estimated_birth: false
-        }
-      };
-
+    const apiPromise = (async () => {
       const regRes = await fetch(`${BASE_URL}/api/saju/dogs/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -359,90 +370,131 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       const regData = await regRes.json();
       if(!regRes.ok) throw new Error("등록 실패: " + JSON.stringify(regData));
-      
       const dogId = regData.dog_id;
 
-      // 2. 사주 기본정보 (GET /basics/)
+      // /basics/ 먼저 호출 (백엔드 사주 계산 트리거)
       const basicRes = await fetch(`${BASE_URL}/api/saju/dogs/${dogId}/basics/`);
       const basicData = await basicRes.json();
-      updateSajuTable(basicData);
-      
-      // 3. AI 성격 분석 (GET /personality/)
-      const perRes = await fetch(`${BASE_URL}/api/saju/dogs/${dogId}/personality/`);
+
+      // 결과 화면 진입 전 이미지 프리로딩을 통해 렌더링 렉 최소화
+      try {
+        const elementMap = { '목': 'wood', '화': 'fire', '토': 'earth', '금': 'metal', '수': 'water' };
+        const preloadImgName = elementMap[basicData.main_element] || 'fire';
+        const preloadImg = new Image();
+        preloadImg.src = `./assets/${preloadImgName}_dog.png`;
+      } catch (e) {
+        console.warn('Image preload failed', e);
+      }
+
+      // basics 완료 후 나머지 병렬 호출
+      const [perRes, luckRes] = await Promise.all([
+        fetch(`${BASE_URL}/api/saju/dogs/${dogId}/personality/`),
+        fetch(`${BASE_URL}/api/saju/dogs/${dogId}/daily-luck/`),
+      ]);
       const perData = await perRes.json();
-      
-      const elementMap = { '목': 'wood', '화': 'fire', '토': 'earth', '금': 'metal', '수': 'water' };
-      const elementColorMap = { '목': 'text-wood', '화': 'text-fire', '토': 'text-earth', '금': 'text-metal', '수': 'text-water' };
-      const elementHanjaMap = { '목': '木', '화': '火', '토': '土', '금': '金', '수': '水' };
-      
-      const imgName = elementMap[basicData.main_element] || 'fire';
-      const colorClass = elementColorMap[basicData.main_element] || 'text-fire';
-      const hanjaEl = elementHanjaMap[basicData.main_element] || '火';
-      
-      document.querySelector('.result-img').src = `./assets/${imgName}_dog.png`;
-      document.getElementById('res-summary').innerHTML = `${formatText(perData.personality_summary)}<br><span class="${colorClass}">${basicData.main_element}(${hanjaEl})</span>의 기운을 타고난 <span class="dog-name-display">${dogName}</span>!`;
-      document.getElementById('res-food').innerHTML = formatText(perData.treat_luck);
-      document.getElementById('res-energy').innerHTML = formatText(perData.vitality_analysis);
-      document.getElementById('res-love').innerHTML = formatText(perData.care_tips);
-      document.getElementById('res-social').innerHTML = formatText(perData.social_analysis);
-
-      // 4. 오늘의 산책운 (GET /daily-luck/)
-      const luckRes = await fetch(`${BASE_URL}/api/saju/dogs/${dogId}/daily-luck/`);
       const luckData = await luckRes.json();
-      
-      document.getElementById('res-luck-score').textContent = luckData.luck_score;
-      document.getElementById('res-luck-msg').innerHTML = formatText(luckData.message);
-      document.getElementById('res-luck-color').textContent = luckData.lucky_color;
-      document.getElementById('res-luck-dir').textContent = luckData.lucky_direction;
 
-      // 5. 댕궁합 분석 (testType이 chemistry일 때만 호출)
+      let chemData = null;
       if (testType === 'chemistry') {
         const ownerDate = document.getElementById('owner-date').value;
         const ownerTime = document.getElementById('owner-time').value;
-        
         try {
           const chemRes = await fetch(`${BASE_URL}/api/saju/dogs/${dogId}/compatibility/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              owner_birth_date: ownerDate,
-              owner_birth_time: ownerTime
-            })
+            body: JSON.stringify({ owner_birth_date: ownerDate, owner_birth_time: ownerTime })
           });
-          const chemData = await chemRes.json();
-          
-          if (chemRes.ok) {
-            document.getElementById('res-chem-score').textContent = chemData.score || '--';
-            document.getElementById('res-chem-title').textContent = chemData.title || '';
-            document.getElementById('res-chem-owner-element').textContent = `(${chemData.owner_element})`;
-            document.getElementById('res-chem-dog-element').textContent = `(${chemData.dog_element})`;
-            document.getElementById('res-chem-rel').textContent = `✨ ${chemData.relationship_type} 관계 ✨`;
-            document.getElementById('res-chem-desc').innerHTML = formatText(chemData.description || '');
-            
-            if (chemData.advice) {
-              document.getElementById('res-chem-advice').innerHTML = `<strong>💡 어드바이스:</strong><br>${formatText(chemData.advice)}`;
-              document.getElementById('res-chem-advice').style.display = 'block';
-            } else {
-              document.getElementById('res-chem-advice').style.display = 'none';
-            }
-            
-            chemistryResultSection.style.display = 'block';
-          }
+          if (chemRes.ok) chemData = await chemRes.json();
         } catch (err) {
           console.error("궁합 조회 실패:", err);
         }
       }
+      return { basicData, perData, luckData, chemData };
+    })();
 
-      navigateTo(resultScreen, true);
-      // 오행 바 그래프 업데이트 및 애니메이션
-      updateGraphs(basicData.element_distribution);
-      
-    } catch (error) {
-      console.error(error);
-      alert("운세를 분석하는 중 오류가 발생했습니다. 확인 후 다시 시도해주세요.");
-      navigateTo(inputScreen, false);
-    }
-  });
+    // 3단계: API 완료 시 즉시 DOM 선반영 + 2초 후 광고 트리거
+    //   → 광고 후에는 화면 전환만 하면 되므로 렉 없이 부드럽게 전환
+    let pendingResult = null;
+
+    apiPromise
+      .then(({ basicData, perData, luckData, chemData }) => {
+        // ── API 완료 즉시 DOM 사전 적용 (로딩 화면 중 → 사용자에게 보이지 않음) ──
+        const elementMap = { '목': 'wood', '화': 'fire', '토': 'earth', '금': 'metal', '수': 'water' };
+        const elementColorMap = { '목': 'text-wood', '화': 'text-fire', '토': 'text-earth', '금': 'text-metal', '수': 'text-water' };
+        const elementHanjaMap = { '목': '木', '화': '火', '토': '土', '금': '金', '수': '水' };
+
+        const imgName = elementMap[basicData.main_element] || 'fire';
+        const colorClass = elementColorMap[basicData.main_element] || 'text-fire';
+        const hanjaEl = elementHanjaMap[basicData.main_element] || '火';
+
+        updateSajuTable(basicData);
+        document.querySelector('.result-img').src = `./assets/${imgName}_dog.png`;
+        document.getElementById('res-summary').innerHTML = `${formatText(perData.personality_summary)}<br><span class="${colorClass}">${basicData.main_element}(${hanjaEl})</span>의 기운을 타고난 <span class="dog-name-display">${dogName}</span>!`;
+        document.getElementById('res-food').innerHTML = formatText(perData.treat_luck);
+        document.getElementById('res-energy').innerHTML = formatText(perData.vitality_analysis);
+        document.getElementById('res-love').innerHTML = formatText(perData.care_tips);
+        document.getElementById('res-social').innerHTML = formatText(perData.social_analysis);
+        document.getElementById('res-luck-score').textContent = luckData.luck_score;
+        document.getElementById('res-luck-msg').innerHTML = formatText(luckData.message);
+        document.getElementById('res-luck-color').textContent = luckData.lucky_color;
+        document.getElementById('res-luck-dir').textContent = luckData.lucky_direction;
+
+        if (chemData) {
+          document.getElementById('res-chem-score').textContent = chemData.score || '--';
+          document.getElementById('res-chem-title').textContent = chemData.title || '';
+          document.getElementById('res-chem-owner-element').textContent = `(${chemData.owner_element})`;
+          document.getElementById('res-chem-dog-element').textContent = `(${chemData.dog_element})`;
+          document.getElementById('res-chem-rel').textContent = `✨ ${chemData.relationship_type} 관계 ✨`;
+          document.getElementById('res-chem-desc').innerHTML = formatText(chemData.description || '');
+          if (chemData.advice) {
+            document.getElementById('res-chem-advice').innerHTML = `<strong>💡 어드바이스:</strong><br>${formatText(chemData.advice)}`;
+            document.getElementById('res-chem-advice').style.display = 'block';
+          } else {
+            document.getElementById('res-chem-advice').style.display = 'none';
+          }
+          chemistryResultSection.style.display = 'block';
+        }
+
+        pendingResult = basicData; // 차트 렌더링에 필요한 데이터 보관
+      })
+      .catch(err => {
+        pendingResult = null;
+        console.error('API 오류:', err);
+      });
+
+    // 4단계: 2초 후 광고 → 광고 닫힘 시 화면 전환만 (DOM은 이미 준비됨)
+    setTimeout(() => {
+      showInterstitialThenDo(() => {
+        if (pendingResult === null && !apiPromise._resolved) {
+          // API가 아직 안 끝난 경우 (매우 드뭄) → 기다렸다가 이동
+          apiPromise
+            .then(({ basicData }) => {
+              navigateTo(resultScreen, true);
+              // Chart.js 등 무거운 렌더링 스크립트는 화면 전환 애니메이션이 시작된 후로 지연시킴 (렌더링 끊김 방지)
+              requestAnimationFrame(() => {
+                setTimeout(() => {
+                  updateGraphs(basicData.element_distribution);
+                }, 100);
+              });
+            })
+            .catch(err => {
+              console.error(err);
+              alert("운세를 분석하는 중 오류가 발생했습니다. 확인 후 다시 시도해주세요.");
+              navigateTo(inputScreen, false);
+            });
+        } else if (pendingResult) {
+          // 일반 케이스: DOM 이미 준비됨 → 화면 전환만
+          const dist = pendingResult.element_distribution;
+          navigateTo(resultScreen, true);
+          // 화면 전환 애니메이션(300ms) 완료 후 Chart.js 렌더링
+          requestAnimationFrame(() => setTimeout(() => updateGraphs(dist), 400));
+        } else {
+          alert("운세를 분석하는 중 오류가 발생했습니다. 확인 후 다시 시도해주세요.");
+          navigateTo(inputScreen, false);
+        }
+      }); // showInterstitialThenDo end
+    }, 2000); // 로딩 화면 최소 2초 노출 후 광고
+  }); // btnSubmit end
 
   btnShare.addEventListener('click', async () => {
     const originalText = btnShare.textContent;
@@ -528,7 +580,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     radarChartInstance = new Chart(ctx, {
         type: 'radar',
         data: {
-          labels: ['목(木)', '화(火)', '토(土)', '금(金)', '수(수)'],
+          labels: ['목(木)', '화(火)', '토(土)', '금(金)', '수(水)'],
           datasets: [{
             label: '기질 밸런스',
             data: dataValues,
