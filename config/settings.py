@@ -73,7 +73,7 @@ INSTALLED_APPS = [
     'django_apscheduler',
     'corsheaders',
     'saju',
-],
+]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
