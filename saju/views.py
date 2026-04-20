@@ -42,6 +42,9 @@ class DogRegisterView(APIView):
 
 class SajuBasicsView(APIView):
     """
+    강아지의 사주 원국 정보 조회.
+    데이터가 없으면 manseryeok 모듈을 이용해 사주를 계산하고 저장한 후 반환합니다.
+    """
     authentication_classes = []
     permission_classes = [AllowAny]
 
@@ -77,6 +80,9 @@ class SajuBasicsView(APIView):
 
 
 class AIInterpretationView(APIView):
+    """
+    강아지의 AI 성격 분석 정보 조회.
+    데이터가 없으면 Gemini API를 호출하여 분석 결과를 생성하고 저장 후 반환합니다.
     """
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -153,6 +159,9 @@ class AIInterpretationView(APIView):
 
 
 class DailyWalkingLuckView(APIView):
+    """
+    강아지의 오늘 산책운 조회 (Lazy evaluation).
+    오늘 날짜 기준 데이터가 없으면 DailyLuckArchetype에서 버전을 선택하여 생성합니다.
     """
     authentication_classes = []
     permission_classes = [AllowAny]
