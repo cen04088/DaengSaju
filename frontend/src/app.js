@@ -1,4 +1,4 @@
-import { getAnonymousKey, share, getTossShareLink } from '@apps-in-toss/web-framework';
+import { getAnonymousKey, share, getTossShareLink, TossAds, loadFullScreenAd, showFullScreenAd } from '@apps-in-toss/web-framework';
 
 const BASE_URL = 'https://web-production-285b5.up.railway.app';
 
@@ -71,27 +71,54 @@ document.addEventListener('DOMContentLoaded', async () => {
   let radarChartInstance = null; // Store chart instance
 
   // Initialize History state
-  history.replaceState({ screenId: 'main-screen' }, '', '#main-screen');
+  // Don't inject #main-screen on the URL initially. Leave it empty so the native back stack
+  // knows this is the root of the app, and triggers the standard exit prompt when backed out.
 
-  window.addEventListener('popstate', (e) => {
-    if (e.state && e.state.screenId) {
-      const screen = document.getElementById(e.state.screenId);
-      if (screen) {
-        navigateTo(screen, false); 
-      }
+  window.addEventListener('popstate', () => {
+    // If the hash is empty, it means we are at the root (main screen)
+    const hash = location.hash.replace('#', '') || 'main-screen';
+    const screen = document.getElementById(hash);
+    if (screen) {
+      showScreen(screen);
     } else {
-      navigateTo(mainScreen, false);
+      showScreen(mainScreen);
     }
   });
 
   // Navigation logic
   function navigateTo(screenElement, pushHistory = true) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    screenElement.classList.add('active');
+    showScreen(screenElement);
     
     if (pushHistory) {
-      history.pushState({ screenId: screenElement.id }, '', `#${screenElement.id}`);
+      const targetHash = screenElement.id === 'main-screen' ? '' : `#${screenElement.id}`;
+      // Use pushState to avoid auto-scrolling to the anchor ID
+      if (location.hash !== targetHash && (location.hash || targetHash !== '')) {
+         history.pushState(null, '', targetHash || window.location.pathname);
+      }
     }
+  }
+
+  function showScreen(screenElement) {
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.remove('active');
+      setTimeout(() => {
+        if (!s.classList.contains('active')) {
+          s.style.display = 'none';
+        }
+      }, 350); // wait for fade out explicitly to release memory layout frame
+    });
+    
+    screenElement.style.display = 'flex';
+    // Small delay to allow display flex to apply before opacity ramps up
+    setTimeout(() => {
+      screenElement.classList.add('active');
+      // 메인화면일 때만 배너 마운트 (active 추가 직후 실행 보장)
+      if (screenElement.id === 'main-screen') {
+        if (typeof mountTossBanner === 'function') mountTossBanner();
+      } else {
+        if (typeof unmountTossBanner === 'function') unmountTossBanner();
+      }
+    }, 10);
     
     // reset scroll to top
     if(screenElement === resultScreen) {
@@ -112,6 +139,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else {
         // 일반 댕사주 모드: 탭 UI 복원
         if (tabNav) tabNav.style.display = 'flex';
+        if (tabToday) tabToday.style.display = '';
+        if (tabLifetime) tabLifetime.style.display = '';
         if (chemSection) chemSection.style.display = 'none';
         // Default to first tab
         if (tabBtns && tabBtns.length > 0) {
@@ -121,6 +150,138 @@ document.addEventListener('DOMContentLoaded', async () => {
         revealCards();
       }
     }
+  }
+
+  // Initial render
+  setTimeout(() => {
+    const initialHash = location.hash.replace('#', '') || 'main-screen';
+    const initialScreen = document.getElementById(initialHash);
+    if (initialScreen) {
+      showScreen(initialScreen);
+    }
+  }, 0);
+
+  // Initialize TossAds Banner
+  let isTossAdsReady = false;
+  let tossBannerInstance = null;
+
+  function mountTossBanner() {
+    if (!isTossAdsReady) return;
+    const adContainer = document.getElementById('toss-ad-container');
+    if (!adContainer) return;
+    
+    if (tossBannerInstance) {
+      tossBannerInstance.destroy();
+      tossBannerInstance = null;
+    }
+    tossBannerInstance = TossAds.attachBanner('ait-ad-test-banner-id', adContainer, { 
+      variant: 'expanded',
+      theme: 'dark',
+      callbacks: {
+        onAdFailedToRender: (p) => console.error('[Banner] failed', p),
+        onNoFill: (p) => console.warn('[Banner] no fill', p),
+      }
+    });
+  }
+
+  function unmountTossBanner() {
+    if (tossBannerInstance) {
+      tossBannerInstance.destroy();
+      tossBannerInstance = null;
+    }
+  }
+
+  const bannerSupported = TossAds && typeof TossAds.initialize === 'function'
+    ? (typeof TossAds.initialize.isSupported === 'function' ? TossAds.initialize.isSupported() : true)
+    : false;
+
+  console.log('[TossAds] banner supported:', bannerSupported);
+
+  if (bannerSupported) {
+    TossAds.initialize({
+      callbacks: {
+        onInitialized: () => {
+          console.log('[TossAds] initialized OK');
+          isTossAdsReady = true;
+          // 앱 시작 시 메인화면에 바로 배너 부착 (타이밍 문제 없이 항상 호출)
+          mountTossBanner();
+        },
+        onInitializationFailed: (err) => console.error('[TossAds] init failed', err)
+      }
+    });
+  }
+
+  // ─── Interstitial (전면) 광고 관리 ───────────────────────────────────────
+  const INTERSTITIAL_AD_ID = 'ait.dev.43daa14da3ae487b';
+  let interstitialAdLoaded = false;
+  let interstitialUnregister = null;
+
+  function preloadInterstitialAd() {
+    const isSupported = typeof loadFullScreenAd === 'function'
+      ? (typeof loadFullScreenAd.isSupported === 'function' ? loadFullScreenAd.isSupported() : true)
+      : false;
+
+    console.log('[Interstitial] isSupported:', isSupported);
+    if (!isSupported) return;
+
+    // 이전 콜백 등록 해제 (메모리 누수 방지)
+    if (interstitialUnregister) {
+      interstitialUnregister();
+      interstitialUnregister = null;
+    }
+    interstitialAdLoaded = false;
+
+    interstitialUnregister = loadFullScreenAd({
+      options: { adGroupId: INTERSTITIAL_AD_ID },
+      onEvent: (event) => {
+        if (event.type === 'loaded') {
+          interstitialAdLoaded = true;
+        }
+      },
+      onError: (err) => {
+        console.error('전면 광고 로드 실패:', err);
+        interstitialAdLoaded = false;
+      },
+    });
+  }
+
+  // 앱 시작 시 미리 광고를 로드 (버튼 누를 때 바로 보이도록)
+  preloadInterstitialAd();
+
+  /**
+   * 전면 광고를 보여준 뒤 callback을 실행한다.
+   * 광고 미지원이거나 아직 로드가 안 됐으면 callback을 바로 실행한다.
+   */
+  function showInterstitialThenDo(callback) {
+    const isSupported = typeof showFullScreenAd === 'function'
+      ? (typeof showFullScreenAd.isSupported === 'function' ? showFullScreenAd.isSupported() : true)
+      : false;
+
+    console.log('[Interstitial] showSupported:', isSupported, 'adLoaded:', interstitialAdLoaded);
+
+    if (!isSupported || !interstitialAdLoaded) {
+      callback();
+      return;
+    }
+
+    interstitialAdLoaded = false; // 중복 호출 방지
+    const unregisterShow = showFullScreenAd({
+      options: { adGroupId: INTERSTITIAL_AD_ID },
+      onEvent: (event) => {
+        if (event.type === 'dismissed' || event.type === 'failedToShow') {
+          if (typeof unregisterShow === 'function') unregisterShow();
+          // 다음 전면 광고 미리 로드 (load→show→load 순환)
+          preloadInterstitialAd();
+          callback();
+        }
+      },
+      onError: (err) => {
+        console.error('전면 광고 표시 실패:', err);
+        if (typeof unregisterShow === 'function') unregisterShow();
+        preloadInterstitialAd();
+        callback();
+      },
+    });
   }
 
   function revealCards() {
@@ -136,17 +297,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Event Listeners
   btnGeneral.addEventListener('click', () => {
-    testType = 'general';
-    inputTitle.innerHTML = '우리아이의 타고난<br>기질을 알아볼까요?';
-    ownerInputSection.classList.add('hidden');
-    navigateTo(inputScreen);
+    showInterstitialThenDo(() => {
+      testType = 'general';
+      inputTitle.innerHTML = '우리아이의 타고난<br>기질을 알아볼까요?';
+      ownerInputSection.classList.add('hidden');
+      navigateTo(inputScreen);
+    });
   });
 
   btnChemistry.addEventListener('click', () => {
-    testType = 'chemistry';
-    inputTitle.innerHTML = '보호자와 댕댕이의<br>상생 궁합은?';
-    ownerInputSection.classList.remove('hidden');
-    navigateTo(inputScreen);
+    showInterstitialThenDo(() => {
+      testType = 'chemistry';
+      inputTitle.innerHTML = '보호자와 댕댕이의<br>상생 궁합은?';
+      ownerInputSection.classList.remove('hidden');
+      navigateTo(inputScreen);
+    });
   });
 
 
@@ -292,7 +457,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const elementReverseMap = { 'wood': '목(木)', 'fire': '화(火)', 'earth': '토(土)', 'metal': '금(金)', 'water': '수(水)' };
       const dogElementText = elementReverseMap[imgName] || '화(火)';
       
-      const shareText = `${dogName}는 ${dogElementText} 기운을 타고 났어요! 보호자님도 우리아이 사주를 한 번 알아보세요🐾`;
+      const shareText = `${attachNameJosa(dogName, '는')} ${dogElementText} 기운을 타고 났어요! 보호자님도 우리아이 사주를 한 번 알아보세요🐾`;
       const shareImageUrl = `https://web-production-285b5.up.railway.app/assets/${imgName}_dog.png`;
 
       const tossLink = await getTossShareLink(
@@ -357,10 +522,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dataValues = [woods, fires, earths, metals, waters];
     
     if (radarChartInstance) {
-      radarChartInstance.data.datasets[0].data = dataValues;
-      radarChartInstance.update();
-    } else {
-      radarChartInstance = new Chart(ctx, {
+      radarChartInstance.destroy(); // Prevent canvas memory leak in WKWebView
+    }
+    
+    radarChartInstance = new Chart(ctx, {
         type: 'radar',
         data: {
           labels: ['목(木)', '화(火)', '토(土)', '금(金)', '수(수)'],
@@ -396,7 +561,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         }
       });
-    }
   }
 
   function animateBars() {
@@ -418,5 +582,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     return text
       .replace(/\*\*(.*?)\*\*/g, '<span class="highlight-text">$1</span>') 
       .replace(/\n/g, '<br>'); 
+  }
+
+  // Korean Josa Helper
+  function attachNameJosa(name, type) {
+    if (!name) return '';
+    const lastChar = name.charCodeAt(name.length - 1);
+    if (lastChar < 0xAC00 || lastChar > 0xD7A3) return name + type; // non-korean
+    
+    // Check if the name ends with a batchim (consonant)
+    const hasJongseong = (lastChar - 0xAC00) % 28 > 0;
+    if (type === '는' || type === '은') {
+      return name + (hasJongseong ? '이는' : '는');
+    }
+    return name + type;
   }
 });

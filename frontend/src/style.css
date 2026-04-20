@@ -208,18 +208,18 @@ body {
   background-color: var(--color-card);
   display: flex;
   flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
   opacity: 0;
   pointer-events: none;
   z-index: 1;
+  transition: opacity 0.3s ease-in-out;
+  visibility: hidden;
 }
 
 .screen.active {
-  transform: translateX(0);
   opacity: 1;
   pointer-events: auto;
   z-index: 10;
+  visibility: visible;
 }
 
 .bg-gray {
@@ -335,6 +335,7 @@ body {
   padding: 24px 24px;
   overflow-y: auto;
   padding-bottom: 100px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .pt-0 {
@@ -372,9 +373,7 @@ body {
 }
 
 .menu-card {
-  background: rgba(30, 41, 59, 0.6);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(30, 41, 59, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--border-radius-lg);
   padding: 32px 24px;
@@ -558,7 +557,8 @@ input[type="time"]:focus {
 .fade-in {
   opacity: 0;
   transform: translateY(30px);
-  transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
 }
 
 .fade-in.reveal {
@@ -571,9 +571,7 @@ input[type="time"]:focus {
 }
 
 .card {
-  background: rgba(30, 41, 59, 0.6);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  background: rgba(30, 41, 59, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--border-radius-lg);
   padding: 32px 24px;
@@ -789,7 +787,7 @@ input[type="time"]:focus {
 
 /* Chemistry Card */
 .chemistry-card {
-  background: linear-gradient(to bottom right, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6));
+  background: linear-gradient(to bottom right, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.92));
   border: 1px solid rgba(139, 92, 246, 0.2);
   box-shadow: 0 0 20px rgba(139, 92, 246, 0.1);
 }

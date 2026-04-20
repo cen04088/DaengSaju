@@ -5,7 +5,7 @@ export default defineConfig({
   brand: {
     displayName: "댕사주",
     primaryColor: "#8B5CF6",
-    icon: "./assets/logo.png",
+    icon: "https://web-production-285b5.up.railway.app/appsintoss-logo.png",
   },
   web: {
     host: "localhost",
