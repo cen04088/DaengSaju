@@ -852,6 +852,11 @@ input[type="time"]:focus {
   position: relative;
 }
 
+/* Chemistry locked container needs a min-height so the overlay button shows */
+#locked-chem-container {
+  min-height: 200px;
+}
+
 /* When locked: blur the text content inside each card */
 .locked-container.is-locked .lockable-text {
   filter: blur(6px);

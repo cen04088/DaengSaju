@@ -339,10 +339,31 @@
               style="text-align:center; margin-bottom: 12px; font-weight: 800; font-size: 20px; color: var(--color-primary);">
               점수: <span id="res-chem-score">--</span>점
             </div>
-            <p id="res-chem-desc" class="chem-desc" style="margin-bottom: 16px;">궁합 데이터를 불러오는 중입니다...</p>
-            <p id="res-chem-advice"
-              style="font-size: 15px; color: var(--color-text-body); background: rgba(255, 255, 255, 0.05); padding: 16px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); line-height: 1.6; display: none;">
-            </p>
+
+            <!-- Locked Chemistry Reports Container -->
+            <div id="locked-chem-container" class="locked-container">
+              <!-- Blurred content -->
+              <div id="locked-chem-content">
+                <p id="res-chem-desc" class="chem-desc lockable-text" style="margin-bottom: 16px;">궁합 데이터를 불러오는 중입니다...</p>
+                <p id="res-chem-advice" class="lockable-text"
+                  style="font-size: 15px; color: var(--color-text-body); background: rgba(255, 255, 255, 0.05); padding: 16px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); line-height: 1.6; display: none;">
+                </p>
+              </div>
+
+              <!-- Unlock Overlay -->
+              <div id="unlock-chem-overlay" class="unlock-overlay">
+                <div class="unlock-overlay-content">
+                  <div class="unlock-lock-icon">🔒</div>
+                  <p class="unlock-title">상세 궁합 해석</p>
+                  <p class="unlock-desc">짧은 광고를 보고<br>자세한 궁합 풀이를 확인하세요</p>
+                  <button id="btn-unlock-chem" class="btn-unlock">
+                    <span class="btn-unlock-icon">🎬</span>
+                    전체 해석 보기
+                  </button>
+                </div>
+              </div>
+            </div><!-- end locked-chem-container -->
+
           </div>
 
           <div style="height: 100px;"></div>

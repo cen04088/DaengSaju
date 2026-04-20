@@ -134,6 +134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // Re-lock the report on every new result
       lockReports();
+      lockChemReport();
 
       if (testType === 'chemistry') {
         // 댕궁합 단독 모드
@@ -483,6 +484,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  function lockChemReport() {
+    const container = document.getElementById('locked-chem-container');
+    const overlay = document.getElementById('unlock-chem-overlay');
+    if (!container) return;
+    container.classList.remove('is-unlocked');
+    container.classList.add('is-locked');
+    if (overlay) {
+      overlay.style.opacity = '';
+      overlay.style.pointerEvents = '';
+      overlay.style.display = 'flex';
+    }
+  }
+
   function unlockReports() {
     const container = document.getElementById('locked-reports-container');
     const overlay = document.getElementById('unlock-overlay');
@@ -504,6 +518,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  function unlockChemReport() {
+    const container = document.getElementById('locked-chem-container');
+    const overlay = document.getElementById('unlock-chem-overlay');
+    if (!container) return;
+    container.classList.remove('is-locked');
+    container.classList.add('is-unlocked');
+    if (overlay) {
+      overlay.style.opacity = '0';
+      overlay.style.pointerEvents = 'none';
+      setTimeout(() => { overlay.style.display = 'none'; }, 400);
+    }
+  }
+
   const btnUnlock = document.getElementById('btn-unlock-report');
   if (btnUnlock) {
     btnUnlock.addEventListener('click', () => {
@@ -515,6 +542,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnUnlock.classList.remove('is-loading');
         btnUnlock.innerHTML = '<span class="btn-unlock-icon">🎬</span> 광고 보고 전체 해석 보기';
         unlockReports();
+      });
+    });
+  }
+
+  const btnUnlockChem = document.getElementById('btn-unlock-chem');
+  if (btnUnlockChem) {
+    btnUnlockChem.addEventListener('click', () => {
+      if (btnUnlockChem.classList.contains('is-loading')) return;
+      btnUnlockChem.classList.add('is-loading');
+      btnUnlockChem.textContent = '⏳ 광고 준비 중...';
+
+      showInterstitialThenDo(() => {
+        btnUnlockChem.classList.remove('is-loading');
+        btnUnlockChem.innerHTML = '<span class="btn-unlock-icon">🎬</span> 전체 해석 보기';
+        unlockChemReport();
       });
     });
   }
