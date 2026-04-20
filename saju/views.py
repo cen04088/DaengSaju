@@ -156,58 +156,107 @@ class AIInterpretationView(APIView):
 class DailyWalkingLuckView(APIView):
     """
     강아지의 오늘 산책운 조회 (Lazy evaluation).
-    오늘 날짜 기준 데이터가 없으면 Gemini API를 호출하여 즉석에서 생성합니다.
+    오늘 날짜 기준 데이터가 없으면 DailyLuckArchetype에서 버전을 선택하여 생성합니다.
     """
     def get(self, request, dog_id):
         dog = get_object_or_404(Dog, id=dog_id)
         today = date.today()
 
-        # 1. 오늘 날짜의 산책운이 있는지 확인
+        # 1. 오늘 날짜의 산책운이 이미 캐시돼 있으면 반환
         luck = DailyWalkingLuck.objects.filter(dog=dog, date=today).first()
         if luck:
             serializer = DailyWalkingLuckSerializer(luck)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        
-        # 2. 사주 정보 확인 (본질 오행 등 필요)
+            data = serializer.data
+            data['message'] = add_hanja_to_terms(data['message'])
+            return Response(data, status=status.HTTP_200_OK)
+
+        # 2. 강아지 사주 정보 확인
         main_element = "알수없음"
+        relationship_type = "비겁"
         if hasattr(dog, 'saju_basics'):
             main_element = dog.saju_basics.main_element
-        
-        today_str = today.strftime("%Y년 %m월 %d일")
+            relationship_type = dog.saju_basics.relationship_type or '비겁'
 
-        # 3. 오늘의 사전 생성된 오행별 운세 조회
-        daily_luck_record = DailyElementLuck.objects.filter(date=today, element=main_element).first()
-        
-        if not daily_luck_record:
-            # 크론 스케줄러 누락 등의 fallback
+        # 3. 강아지 id 기반으로 버전 결정 (A/B/C 분산)
+        #    → 같은 오행이라도 강아지마다 다른 버전의 메시지를 받음
+        versions = ['A', 'B', 'C']
+        dog_version = versions[dog.id % 3]
+
+        # 4. DailyLuckArchetype에서 해당 강아지의 오행+관계+버전 조회
+        from .models import DailyLuckArchetype
+        archetype = DailyLuckArchetype.objects.filter(
+            dog_element=main_element,
+            relationship_type=relationship_type,
+            version=dog_version
+        ).first()
+        # 버전 fallback
+        if not archetype:
+            archetype = DailyLuckArchetype.objects.filter(
+                dog_element=main_element,
+                relationship_type=relationship_type
+            ).first()
+
+        if not archetype:
+            # 아예 오행이 일치하는 아무 archetype이나 시도
+            archetype = DailyLuckArchetype.objects.filter(
+                dog_element=main_element
+            ).first()
+
+        if archetype:
+            # 5. 점수는 관계 기반 랜덤 (매일 새로운 느낌)
+            import random
+            score_range = {
+                '인성': (88, 98),
+                '비겁': (82, 95),
+                '식상': (78, 92),
+                '재성': (72, 88),
+                '관성': (60, 78)
+            }.get(relationship_type, (70, 90))
+            luck_score = random.randint(*score_range)
+
             luck_data = {
-                'luck_score': 80,
-                'message': f"오늘은 {dog.name}이와 동네 한 바퀴 도는 것만으로도 행복해지는 날이에요!",
-                'lucky_color': "보라색",
-                'lucky_direction': "어디든"
+                'luck_score': luck_score,
+                'message': smart_replace(archetype.message, dog.name),
+                'lucky_color': archetype.lucky_color,
+                'lucky_direction': archetype.lucky_direction,
             }
         else:
-            luck_data = {
-                'luck_score': daily_luck_record.luck_score,
-                'message': smart_replace(daily_luck_record.message, dog.name),
-                'lucky_color': daily_luck_record.lucky_color,
-                'lucky_direction': daily_luck_record.lucky_direction
-            }
+            # 최종 fallback: DailyElementLuck 기반 (cron 데이터 존재 시)
+            daily_luck_record = DailyElementLuck.objects.filter(
+                date=today, element=main_element
+            ).first()
+            if daily_luck_record:
+                luck_data = {
+                    'luck_score': daily_luck_record.luck_score,
+                    'message': smart_replace(daily_luck_record.message, dog.name),
+                    'lucky_color': daily_luck_record.lucky_color,
+                    'lucky_direction': daily_luck_record.lucky_direction,
+                }
+            else:
+                luck_data = {
+                    'luck_score': 80,
+                    'message': smart_replace(
+                        f"오늘은 [강아지이름]이와 동네 한 바퀴 도는 것만으로도 행복해지는 날이에요!",
+                        dog.name
+                    ),
+                    'lucky_color': "보라색",
+                    'lucky_direction': "어디든",
+                }
 
         luck = DailyWalkingLuck.objects.create(
             dog=dog,
             date=today,
-            luck_score=luck_data.get('luck_score'),
-            message=luck_data.get('message'),
-            lucky_color=luck_data.get('lucky_color'),
-            lucky_direction=luck_data.get('lucky_direction')
+            luck_score=luck_data['luck_score'],
+            message=luck_data['message'],
+            lucky_color=luck_data['lucky_color'],
+            lucky_direction=luck_data['lucky_direction'],
         )
 
-        # 기존 캐시 조회 시에도 필터 적용하여 반환
         serializer = DailyWalkingLuckSerializer(luck)
         data = serializer.data
         data['message'] = add_hanja_to_terms(data['message'])
         return Response(data, status=status.HTTP_201_CREATED)
+
 
 
 class CompatibilityView(APIView):
