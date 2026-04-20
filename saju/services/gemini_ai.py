@@ -10,18 +10,16 @@ def _get_model():
     model = genai.GenerativeModel('gemini-2.5-flash')
     return model
     
+from .manseryeok import has_batchim
+
 def _get_josa_name(name):
     """
     이름의 마지막 글자에 받침이 있으면 '이'를 붙여 반환합니다. (예: 바둑 -> 바둑이, 단비 -> 단비)
     """
-    if not name:
-        return name
-    last_char = name[-1]
-    # 한글 범위인지 확인
-    if '가' <= last_char <= '힣':
-        if (ord(last_char) - 0xAC00) % 28 > 0:
-            return name + '이'
+    if has_batchim(name):
+        return name + '이'
     return name
+
 
 def generate_personality(dog_name, main_element, element_dist, saju_text="알 수 없음"):
     """

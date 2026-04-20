@@ -6,7 +6,7 @@ from rest_framework import status
 
 from .models import User, Dog, SajuBasics, AIInterpretation, DailyWalkingLuck, ArchetypeSaju, DailyElementLuck, Compatibility, CompatibilityArchetype
 from .serializers import DogSerializer, SajuBasicsSerializer, AIInterpretationSerializer, DailyWalkingLuckSerializer
-from .services.manseryeok import get_saju_for_dog, get_secondary_influence_text, get_relationship_type, add_hanja_to_terms
+from .services.manseryeok import get_saju_for_dog, get_secondary_influence_text, get_relationship_type, add_hanja_to_terms, smart_replace
 
 class DogRegisterView(APIView):
     """
@@ -124,8 +124,7 @@ class AIInterpretationView(APIView):
             return Response({"error": "사전 생성된 사주 프로필을 찾을 수 없습니다. (pregenerate_saju 명령어 실행 필요)"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         def replace_name(text):
-            if not text: return ""
-            return text.replace("[강아지이름]", dog.name)
+            return smart_replace(text, dog.name)
 
         keywords = []
         if isinstance(archetype.personality_keywords, list):
@@ -190,7 +189,7 @@ class DailyWalkingLuckView(APIView):
         else:
             luck_data = {
                 'luck_score': daily_luck_record.luck_score,
-                'message': daily_luck_record.message.replace("[강아지이름]", dog.name),
+                'message': smart_replace(daily_luck_record.message, dog.name),
                 'lucky_color': daily_luck_record.lucky_color,
                 'lucky_direction': daily_luck_record.lucky_direction
             }
@@ -300,8 +299,7 @@ class CompatibilityView(APIView):
 
         # 7. 플레이스홀더 치환
         def replace_ph(text):
-            if not text: return ""
-            return text.replace("[강아지이름]", dog.name).replace("[보호자이름]", owner_name)
+            return smart_replace(text, dog.name, owner_name)
 
         result_title = replace_ph(archetype.title)
         result_description = replace_ph(archetype.description)

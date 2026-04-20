@@ -1,4 +1,5 @@
 import sajupy
+import re
 
 # 오행 맵핑
 ELEMENT_MAP = {
@@ -22,7 +23,7 @@ ELEMENT_MAP = {
 # 3단계: 십성(十星) 시스템 - 상생/상극 관계 테이블
 # =========================================================
 
-# 상생(相生): 木생火, 火생土, 土생金, 金생水, 水생木
+# 상생(相生): 木생火, 火생土, 土생金, 金생수, 수생木
 SHENG_MAP = {
     '목': '화',  # 목이 화를 생함
     '화': '토',
@@ -43,13 +44,6 @@ KE_MAP = {
 def get_relationship_type(primary: str, other: str) -> str:
     """
     본질 오행(primary)과 비교 대상 오행(other)의 관계를 십성 유형으로 반환합니다.
-
-    반환값:
-    - 비겁(比劫): 같은 오행 (나 = 주변)
-    - 인성(印星): other가 primary를 생해줌 (나를 도와주는 존재)
-    - 식상(食傷): primary가 other를 생해줌 (내가 도와주는 존재)
-    - 재성(財星): primary가 other를 극함 (내가 지배하는 존재)
-    - 관성(官星): other가 primary를 극함 (나를 지배하는 존재)
     """
     if primary == other:
         return '비겁'
@@ -66,7 +60,6 @@ def get_relationship_type(primary: str, other: str) -> str:
 def get_secondary_element(distribution: dict, primary: str) -> str:
     """
     오행 분포에서 1위(주된 오행)를 제외한 2위 오행을 반환합니다.
-    1위가 primary와 다르면 1위를 건너뛰고 2등을 찾습니다.
     """
     if not distribution:
         return primary
@@ -84,12 +77,10 @@ def get_secondary_element(distribution: dict, primary: str) -> str:
     return primary  # fallback
 
 # =========================================================
-# 2위 오행이 미치는 보조 영향 텍스트 (규칙 기반, AI 호출 없음)
-# {secondary}가 {primary}에게 미치는 영향에 대한 25가지 고정 문자열
+# 2위 오행이 미치는 보조 영향 텍스트
 # =========================================================
 
 SECONDARY_INFLUENCE_TEXT = {
-    # primary: secondary → 텍스트
     ('목', '화'): "특히 화(火) 기운의 영향으로 감정 표현이 풍부하고 열정이 넘쳐요. 보호자님과의 교감에서 더욱 활발한 반응을 보일 거예요! 🔥",
     ('목', '토'): "토(土) 기운이 더해져 다소 고집스럽고 자기 페이스를 중시하는 면도 있어요. 무리하게 빠른 산책보다 느긋한 탐색 산책을 선호해요! 🌿",
     ('목', '금'): "금(金) 기운이 함께 작용해 날카로운 관찰력과 집중력이 특징이에요. 훈련 습득 속도가 빠르고 한 번 각인된 규칙을 잘 지킨답니다! ✨",
@@ -112,7 +103,7 @@ SECONDARY_INFLUENCE_TEXT = {
     ('금', '화'): "화(火) 기운과 맞부딪쳐 열정과 신중함이 공존해요. 행동하기 전에 잠깐 생각하지만, 한 번 결정하면 전력을 다하는 스타일이에요! 🔥",
     ('금', '토'): "토(土) 기운이 금의 예리함을 떠받쳐 더욱 단단한 성격을 만들어요. 보호자님에게 한번 복종하면 매우 일관성 있고 믿음직스럽답니다! 🗿",
     ('금', '수'): "수(水) 기운이 금에 힘을 불어넣어 지적 호기심이 특히 뛰어나요. 냄새 탐정처럼 세심한 탐색과 관찰을 즐기는 영리한 아이예요! 🌊",
-    ('금', '금'): "금(金) 기운이 두 겹으로 겹쳐 자기주장이 강하고 개성이 뚜렷해요. 보호자님과  독립적인 관계를 선호하는 자존심 강한 아이예요! 💫",
+    ('금', '금'): "금(金) 기운이 두 겹으로 겹쳐 자기주장이 강하고 개성이 뚜렷해요. 보호자님과 독립적인 관계를 선호하는 자존심 강한 아이예요! 💫",
     
     ('수', '목'): "목(木) 기운이 수에 힘을 받아 자유롭고 창의적인 면을 끌어내요. 자연 속 탐험과 새로운 냄새 맡기를 진정으로 즐기는 탐험가예요! 🌱",
     ('수', '화'): "화(火) 기운과의 긴장감이 직관력과 결단력을 동시에 키워줘요. 상황을 빠르게 파악하고 대담하게 행동하는 순간이 종종 있답니다! ⚡",
@@ -125,16 +116,12 @@ def get_secondary_influence_text(primary: str, secondary: str) -> str:
     """2위 오행이 미치는 보조 영향 텍스트를 반환합니다."""
     return SECONDARY_INFLUENCE_TEXT.get((primary, secondary), "")
 
-
 def analyze_elements(pillars: dict):
-    """
-    사주 팔자(4주 8자)의 오행 비중을 계산합니다.
-    """
+    """사주 팔자의 오행 비중을 계산합니다."""
     elements = {'목': 0, '화': 0, '토': 0, '금': 0, '수': 0}
     total = 0
     chars = []
 
-    # 년, 월, 일, (시)의 천간, 지지 수집
     for key in ['year', 'month', 'day', 'hour']:
         if f'{key}_stem' in pillars and pillars[f'{key}_stem']:
             chars.append(pillars[f'{key}_stem'])
@@ -147,7 +134,6 @@ def analyze_elements(pillars: dict):
             elements[element] += 1
             total += 1
 
-    # 퍼센트 계산
     if total > 0:
         for k in elements:
             elements[k] = round((elements[k] / total) * 100, 1)
@@ -155,16 +141,11 @@ def analyze_elements(pillars: dict):
     return elements
 
 def get_saju_for_dog(birth_date, birth_time=None):
-    """
-    강아지의 생년월일시를 기반으로 사주 정보를 반환합니다.
-    birth_date: datetime.date
-    birth_time: datetime.time or None
-    """
+    """강아지의 생년월일시를 기반으로 사주 정보를 반환합니다."""
     year = birth_date.year
     month = birth_date.month
     day = birth_date.day
     
-    # 시주를 모를 때는 일단 12시로 계산하되 나중에 반환값에서 시주를 뺍니다.
     hour = birth_time.hour if birth_time else 12
     minute = birth_time.minute if birth_time else 0
 
@@ -183,11 +164,9 @@ def get_saju_for_dog(birth_date, birth_time=None):
     day_pillar = result.get('day_pillar', '')
     hour_pillar = result.get('hour_pillar', '') if birth_time else None
 
-    # 일간 오행 (주인공의 타고난 기질)
     day_stem = result.get('day_stem', '')
     main_element = ELEMENT_MAP.get(day_stem, '알수없음')
 
-    # 성분 계산을 위해 dict를 보냅니다.
     pillars_for_elements = result.copy()
     if not birth_time:
         pillars_for_elements.pop('hour_stem', None)
@@ -195,7 +174,6 @@ def get_saju_for_dog(birth_date, birth_time=None):
 
     distribution = analyze_elements(pillars_for_elements)
 
-    # 3단계: 1위 오행과의 십성 관계 + 2위 오행 계산
     if distribution and main_element != '알수없음':
         sorted_elements = sorted(distribution.items(), key=lambda x: x[1], reverse=True)
         dominant_element = sorted_elements[0][0] if sorted_elements else main_element
@@ -215,17 +193,12 @@ def get_saju_for_dog(birth_date, birth_time=None):
         'relationship_type': relationship_type,
         'secondary_element': secondary_element,
     }
-import re
 
 def add_hanja_to_terms(text: str) -> str:
-    """
-    텍스트 내의 주요 명리 용어(십성)에 한자를 병기합니다.
-    사용자의 오해(예: 비겁하다)를 방지하기 위함입니다.
-    """
+    """텍스트 내의 주요 명리 용어(십성)에 한자를 병기합니다."""
     if not text:
         return text
     
-    # 치환 맵
     replacements = {
         '비겁': '비겁(比劫)',
         '인성': '인성(印星)',
@@ -234,12 +207,109 @@ def add_hanja_to_terms(text: str) -> str:
         '관성': '관성(官星)'
     }
     
-    # 이미 한자가 병기된 경우(예: 비겁(比劫))는 중복 치환하지 않도록 정규표현식 사용
-    # 단어 뒤에 바로 ( 가 오는지 확인
     for term, hanja_term in replacements.items():
-        # term 뒤에 '('가 오지 않는 경우만 치환
-        #(?!\() 는 뒤에 ( 가 오지 않아야 함을 의미
         pattern = re.compile(f"{term}(?!\\()", re.U)
         text = pattern.sub(hanja_term, text)
         
     return text
+
+def has_batchim(text: str) -> bool:
+    """한글 문자의 마지막 글자에 받침이 있는지 확인합니다."""
+    if not text:
+        return False
+    last_char = text[-1]
+    if not ('\uac00' <= last_char <= '\ud7a3'):
+        return False
+    return (ord(last_char) - 0xac00) % 28 > 0
+
+def get_josa(name: str, josa_type: str) -> str:
+    """이름에 맞는 조사를 반환합니다."""
+    has_b = has_batchim(name)
+    
+    if josa_type in ['은', '는', '은/는', '은는']:
+        return '은' if has_b else '는'
+    if josa_type in ['이', '가', '이가', '이/가']:
+        return '이' if has_b else '가'
+    if josa_type in ['을', '를', '을/를', '을를']:
+        return '을' if has_b else '를'
+    if josa_type in ['와', '과', '와/과', '와과']:
+        return '과' if has_b else '와'
+    if josa_type in ['으로', '로', '으로/로', '으로로']:
+        if has_b:
+            last_char = name[-1]
+            if (ord(last_char) - 0xac00) % 28 == 8: # 종성이 'ㄹ'인 경우
+                return name + '로'
+            return name + '으로'
+        return name + '로'
+    
+    return josa_type
+
+def smart_replace(text: str, dog_name: str, owner_name: str = None) -> str:
+    """텍스트 내 플레이스홀더와 조사를 스마트하게 치환합니다."""
+    if not text:
+        return ""
+    
+    def get_replacement(name, josa_category):
+        if not name:
+            return ""
+        has_b = has_batchim(name)
+        
+        if josa_category == '이/가':
+            return (name + '이') if has_b else (name + '가')
+        if josa_category == '이가':
+            return (name + '이가') if has_b else (name + '가')
+        if josa_category == '은/는':
+            return (name + '은') if has_b else (name + '는')
+        if josa_category == '을/를':
+            return (name + '을') if has_b else (name + '를')
+        if josa_category == '와/과':
+            return (name + '과') if has_b else (name + '와')
+        if josa_category == '으로/로':
+            if has_b:
+                last_char = name[-1]
+                if (ord(last_char) - 0xac00) % 28 == 8: # 종성이 'ㄹ'인 경우
+                    return name + '로'
+                return name + '으로'
+            return name + '로'
+        return name + josa_category
+
+    replacements = [
+        ("[강아지이름]이가", "이가", dog_name),
+        ("[강아지이름]은", "은/는", dog_name),
+        ("[강아지이름]는", "은/는", dog_name),
+        ("[강아지이름]이", "이/가", dog_name),
+        ("[강아지이름]가", "이/가", dog_name),
+        ("[강아지이름]을", "을/를", dog_name),
+        ("[강아지이름]를", "을/를", dog_name),
+        ("[강아지이름]과", "와/과", dog_name),
+        ("[강아지이름]와", "와/과", dog_name),
+        ("[강아지이름]으로", "으로/로", dog_name),
+        ("[강아지이름]로", "으로/로", dog_name),
+    ]
+    
+    if owner_name:
+        replacements += [
+            ("[보호자이름]이가", "이가", owner_name),
+            ("[보호자이름]은", "은/는", owner_name),
+            ("[보호자이름]는", "은/는", owner_name),
+            ("[보호자이름]이", "이/가", owner_name),
+            ("[보호자이름]가", "이/가", owner_name),
+            ("[보호자이름]을", "을/를", owner_name),
+            ("[보호자이름]를", "을/를", owner_name),
+            ("[보호자이름]과", "와/과", owner_name),
+            ("[보호자이름]와", "와/과", owner_name),
+            ("[보호자이름]으로", "으로/로", owner_name),
+            ("[보호자이름]로", "으로/로", owner_name),
+        ]
+    
+    result = text
+    for placeholder, category, name in replacements:
+        if placeholder in result:
+            replacement_text = get_replacement(name, category)
+            result = result.replace(placeholder, replacement_text)
+        
+    result = result.replace("[강아지이름]", dog_name)
+    if owner_name:
+        result = result.replace("[보호자이름]", owner_name)
+        
+    return result
