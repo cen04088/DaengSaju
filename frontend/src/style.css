@@ -873,13 +873,15 @@ input[type="time"]:focus {
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    rgba(11, 17, 33, 0.5) 20%,
-    rgba(11, 17, 33, 0.92) 55%,
+    rgba(11, 17, 33, 0.0) 10%,
+    rgba(11, 17, 33, 0.75) 25%,
+    rgba(11, 17, 33, 0.95) 40%,
     rgba(11, 17, 33, 0.98) 100%
   );
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 88px;
   padding-bottom: 0;
   z-index: 10;
   opacity: 0;
