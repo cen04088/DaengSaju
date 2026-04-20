@@ -1,4 +1,4 @@
-import { getAnonymousKey } from '@apps-in-toss/web-framework';
+import { getAnonymousKey, share, getTossShareLink } from '@apps-in-toss/web-framework';
 
 const BASE_URL = 'https://web-production-285b5.up.railway.app';
 
@@ -25,8 +25,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnChemistry = document.getElementById('btn-chemistry');
   const btnSubmit = document.getElementById('btn-submit');
   const btnShare = document.getElementById('btn-share');
-  const backFromInput = document.getElementById('back-from-input');
-  const backFromResult = document.getElementById('back-from-result');
 
   // Tab Logic
   const tabBtns = document.querySelectorAll('.tab-btn');
@@ -72,10 +70,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   let testType = 'general'; // 'general' or 'chemistry'
   let radarChartInstance = null; // Store chart instance
 
+  // Initialize History state
+  history.replaceState({ screenId: 'main-screen' }, '', '#main-screen');
+
+  window.addEventListener('popstate', (e) => {
+    if (e.state && e.state.screenId) {
+      const screen = document.getElementById(e.state.screenId);
+      if (screen) {
+        navigateTo(screen, false); 
+      }
+    } else {
+      navigateTo(mainScreen, false);
+    }
+  });
+
   // Navigation logic
-  function navigateTo(screenElement) {
+  function navigateTo(screenElement, pushHistory = true) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     screenElement.classList.add('active');
+    
+    if (pushHistory) {
+      history.pushState({ screenId: screenElement.id }, '', `#${screenElement.id}`);
+    }
     
     // reset scroll to top
     if(screenElement === resultScreen) {
@@ -133,14 +149,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     navigateTo(inputScreen);
   });
 
-  backFromInput.addEventListener('click', () => {
-    navigateTo(mainScreen);
-  });
-
-  backFromResult.addEventListener('click', () => {
-    document.getElementById('saju-form').reset();
-    navigateTo(mainScreen);
-  });
 
   btnSubmit.addEventListener('click', async (e) => {
     e.preventDefault();
@@ -158,7 +166,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       chemistryResultSection.style.display = 'none';
     }
 
-    navigateTo(loadingScreen);
+    navigateTo(loadingScreen, false);
 
     // UX: Labor Illusion (신뢰감을 주기 위한 페이크 로딩 2초)
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -206,7 +214,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const colorClass = elementColorMap[basicData.main_element] || 'text-fire';
       const hanjaEl = elementHanjaMap[basicData.main_element] || '火';
       
-      document.querySelector('.result-img').src = `/assets/${imgName}_dog.png`;
+      document.querySelector('.result-img').src = `./assets/${imgName}_dog.png`;
       document.getElementById('res-summary').innerHTML = `${formatText(perData.personality_summary)}<br><span class="${colorClass}">${basicData.main_element}(${hanjaEl})</span>의 기운을 타고난 <span class="dog-name-display">${dogName}</span>!`;
       document.getElementById('res-food').innerHTML = formatText(perData.treat_luck);
       document.getElementById('res-energy').innerHTML = formatText(perData.vitality_analysis);
@@ -260,45 +268,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
 
-      navigateTo(resultScreen);
+      navigateTo(resultScreen, true);
       // 오행 바 그래프 업데이트 및 애니메이션
       updateGraphs(basicData.element_distribution);
       
     } catch (error) {
       console.error(error);
       alert("운세를 분석하는 중 오류가 발생했습니다. 확인 후 다시 시도해주세요.");
-      navigateTo(inputScreen);
+      navigateTo(inputScreen, false);
     }
   });
 
   btnShare.addEventListener('click', async () => {
     const originalText = btnShare.textContent;
-    btnShare.textContent = "이미지 저장 중... 🐾";
+    btnShare.textContent = "공유 링크 생성 중... 🐾";
     btnShare.disabled = true;
 
     try {
-      const captureArea = document.querySelector('.result-scroll');
-      const canvas = await html2canvas(captureArea, {
-        scale: 2, 
-        backgroundColor: '#0B1121',
-        useCORS: true,
-        windowWidth: captureArea.scrollWidth,
-        windowHeight: captureArea.scrollHeight
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const blob = await (await fetch(imgData)).blob();
-      const file = new File([blob], `daengsaju_${Date.now()}.png`, { type: 'image/png' });
+      const dogName = document.querySelector('.dog-name-display').textContent || '댕댕이';
+      const imgSrc = document.querySelector('.result-img').src;
+      const imgName = imgSrc.split('/').pop().split('_')[0] || 'fire';
       
-      // Toss Bridge Share/Save integration could be added here
-      // For now, standard download as fallback
-      const link = document.createElement('a');
-      link.download = `댕사주_운세결과_${Date.now()}.png`;
-      link.href = imgData;
-      link.click();
+      const elementReverseMap = { 'wood': '목(木)', 'fire': '화(火)', 'earth': '토(土)', 'metal': '금(金)', 'water': '수(水)' };
+      const dogElementText = elementReverseMap[imgName] || '화(火)';
+      
+      const shareText = `${dogName}는 ${dogElementText} 기운을 타고 났어요! 보호자님도 우리아이 사주를 한 번 알아보세요🐾`;
+      const shareImageUrl = `https://web-production-285b5.up.railway.app/assets/${imgName}_dog.png`;
+
+      const tossLink = await getTossShareLink(
+        'intoss://daengsaju',
+        shareImageUrl
+      );
+      await share({ message: `${shareText}\n\n${tossLink}` });
     } catch (e) {
       console.error(e);
-      alert('이미지 저장 중 오류가 발생했습니다.');
+      alert('공유 중 오류가 발생했습니다.');
     } finally {
       btnShare.textContent = originalText;
       btnShare.disabled = false;

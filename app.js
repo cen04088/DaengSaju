@@ -10,8 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnChemistry = document.getElementById('btn-chemistry');
   const btnSubmit = document.getElementById('btn-submit');
   const btnShare = document.getElementById('btn-share');
-  const backFromInput = document.getElementById('back-from-input');
-  const backFromResult = document.getElementById('back-from-result');
 
   // Tab Logic
   const tabBtns = document.querySelectorAll('.tab-btn');
@@ -57,10 +55,28 @@ document.addEventListener('DOMContentLoaded', () => {
   let testType = 'general'; // 'general' or 'chemistry'
   let radarChartInstance = null; // Store chart instance
 
+  // Initialize History state
+  history.replaceState({ screenId: 'main-screen' }, '', '#main-screen');
+
+  window.addEventListener('popstate', (e) => {
+    if (e.state && e.state.screenId) {
+      const screen = document.getElementById(e.state.screenId);
+      if (screen) {
+        navigateTo(screen, false); 
+      }
+    } else {
+      navigateTo(mainScreen, false);
+    }
+  });
+
   // Navigation logic
-  function navigateTo(screenElement) {
+  function navigateTo(screenElement, pushHistory = true) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     screenElement.classList.add('active');
+    
+    if (pushHistory) {
+      history.pushState({ screenId: screenElement.id }, '', `#${screenElement.id}`);
+    }
     
     // reset scroll to top
     if(screenElement === resultScreen) {
@@ -117,14 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
     navigateTo(inputScreen);
   });
 
-  backFromInput.addEventListener('click', () => {
-    navigateTo(mainScreen);
-  });
-
-  backFromResult.addEventListener('click', () => {
-    document.getElementById('saju-form').reset();
-    navigateTo(mainScreen);
-  });
 
   btnSubmit.addEventListener('click', async (e) => {
     e.preventDefault();
@@ -142,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
       chemistryResultSection.style.display = 'none';
     }
 
-    navigateTo(loadingScreen);
+    navigateTo(loadingScreen, false);
 
     // UX: Labor Illusion (신뢰감을 주기 위한 페이크 로딩 2초)
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -244,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      navigateTo(resultScreen);
+      navigateTo(resultScreen, true);
       // 오행 바 그래프 업데이트 및 애니메이션
       updateGraphs(basicData.element_distribution);
       
@@ -254,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.error(error);
       alert("운세를 분석하는 중 오류가 발생했습니다. 확인 후 다시 시도해주세요.");
-      navigateTo(inputScreen);
+      navigateTo(inputScreen, false);
     }
   });
 
@@ -275,10 +283,24 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       const imgData = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = `댕사주_운세결과_${Date.now()}.png`;
-      link.href = imgData;
-      link.click();
+      
+      const modal = document.getElementById('image-modal');
+      const genImage = document.getElementById('generated-image');
+      const closeBtn = document.getElementById('close-modal');
+      
+      if (modal && genImage) {
+        genImage.src = imgData;
+        modal.style.display = 'flex';
+        
+        closeBtn.onclick = () => {
+          modal.style.display = 'none';
+        };
+      } else {
+        const link = document.createElement('a');
+        link.download = `댕사주_운세결과_${Date.now()}.png`;
+        link.href = imgData;
+        link.click();
+      }
     } catch (e) {
       console.error(e);
       alert('이미지 저장 중 오류가 발생했습니다.');

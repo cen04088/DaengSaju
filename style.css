@@ -286,7 +286,8 @@ body {
 }
 .sticky-tab {
   position: sticky;
-  top: calc(64px + env(safe-area-inset-top));
+  top: 0;
+  padding-top: calc(8px + env(safe-area-inset-top));
 }
 .tab-btn {
   flex: 1;
@@ -337,7 +338,7 @@ body {
 }
 
 .pt-0 {
-  padding-top: 16px;
+  padding-top: 0px !important;
 }
 
 .body-content.flex-center {
@@ -492,8 +493,8 @@ input[type="time"]:focus {
   bottom: 0;
   left: 0;
   width: 100%;
-  padding: 16px 20px calc(24px + env(safe-area-inset-bottom));
-  background: linear-gradient(to top, var(--color-bg) 60%, transparent);
+  padding: 0 20px calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--color-bg) 30%, transparent);
   z-index: 100;
 }
 
@@ -566,7 +567,7 @@ input[type="time"]:focus {
 }
 
 .result-scroll {
-  padding: 24px 20px 140px;
+  padding: 8px 20px 140px;
 }
 
 .card {
