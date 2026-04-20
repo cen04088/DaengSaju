@@ -237,7 +237,7 @@ def get_josa(name: str, josa_type: str) -> str:
     if josa_type in ['으로', '로', '으로/로', '으로로']:
         if has_b:
             last_char = name[-1]
-            if (ord(last_char) - 0xac00) % 28 == 8: # 종성이 'ㄹ'인 경우
+            if (ord(last_char) - 0xac00) % 28 == 8:  # 종성이 'ㄹ'인 경우
                 return name + '로'
             return name + '으로'
         return name + '로'
@@ -245,19 +245,45 @@ def get_josa(name: str, josa_type: str) -> str:
     return josa_type
 
 def smart_replace(text: str, dog_name: str, owner_name: str = None) -> str:
-    """텍스트 내 플레이스홀더와 조사를 스마트하게 치환합니다."""
+    """텍스트 내 플레이스홀더와 조사를 스마트하게 치환합니다.
+
+    AI가 사전 생성 시 '[강아지이름]이는'처럼 '이'를 포함한 형태로 저장한 경우도
+    올바르게 처리합니다:
+        - 받침X(단비): 단비이는 → 단비는
+        - 받침O(은빛): 은빛이는 → 은빛이는 (유지)
+    조사 없이 이름만 쓰인 경우:
+        - 받침X(단비): 단비
+        - 받침O(은빛): 은빛이
+    """
     if not text:
         return ""
-    
+
     def get_replacement(name, josa_category):
+        """이름과 조사 카테고리에 따라 자연스러운 결합형 반환."""
         if not name:
             return ""
         has_b = has_batchim(name)
-        
-        if josa_category == '이/가':
-            return (name + '이') if has_b else (name + '가')
+
+        # ── '이+조사' 복합 패턴 ───────────────────────────────
+        # AI가 '이'를 미리 포함해 저장한 경우 (예: [강아지이름]이는)
+        # 받침O → '이' 유지,  받침X → '이' 제거
         if josa_category == '이가':
             return (name + '이가') if has_b else (name + '가')
+        if josa_category == '이는':
+            return (name + '이는') if has_b else (name + '는')
+        if josa_category == '이를':
+            return (name + '이를') if has_b else (name + '를')
+        if josa_category == '이와':
+            return (name + '이와') if has_b else (name + '와')
+        if josa_category == '이과':
+            return (name + '이과') if has_b else (name + '과')
+        if josa_category == '이로':
+            return (name + '이로') if has_b else (name + '로')
+
+        # ── 단순 조사 패턴 ────────────────────────────────────
+        if josa_category == '이/가':
+            # [강아지이름]이 또는 [강아지이름]가 → 받침O: 이름+이, 받침X: 이름+가
+            return (name + '이') if has_b else (name + '가')
         if josa_category == '은/는':
             return (name + '은') if has_b else (name + '는')
         if josa_category == '을/를':
@@ -267,49 +293,52 @@ def smart_replace(text: str, dog_name: str, owner_name: str = None) -> str:
         if josa_category == '으로/로':
             if has_b:
                 last_char = name[-1]
-                if (ord(last_char) - 0xac00) % 28 == 8: # 종성이 'ㄹ'인 경우
+                if (ord(last_char) - 0xac00) % 28 == 8:  # 종성이 'ㄹ'
                     return name + '로'
                 return name + '으로'
             return name + '로'
+
         return name + josa_category
 
-    replacements = [
-        ("[강아지이름]이가", "이가", dog_name),
-        ("[강아지이름]은", "은/는", dog_name),
-        ("[강아지이름]는", "은/는", dog_name),
-        ("[강아지이름]이", "이/가", dog_name),
-        ("[강아지이름]가", "이/가", dog_name),
-        ("[강아지이름]을", "을/를", dog_name),
-        ("[강아지이름]를", "을/를", dog_name),
-        ("[강아지이름]과", "와/과", dog_name),
-        ("[강아지이름]와", "와/과", dog_name),
-        ("[강아지이름]으로", "으로/로", dog_name),
-        ("[강아지이름]로", "으로/로", dog_name),
-    ]
-    
-    if owner_name:
-        replacements += [
-            ("[보호자이름]이가", "이가", owner_name),
-            ("[보호자이름]은", "은/는", owner_name),
-            ("[보호자이름]는", "은/는", owner_name),
-            ("[보호자이름]이", "이/가", owner_name),
-            ("[보호자이름]가", "이/가", owner_name),
-            ("[보호자이름]을", "을/를", owner_name),
-            ("[보호자이름]를", "을/를", owner_name),
-            ("[보호자이름]과", "와/과", owner_name),
-            ("[보호자이름]와", "와/과", owner_name),
-            ("[보호자이름]으로", "으로/로", owner_name),
-            ("[보호자이름]로", "으로/로", owner_name),
+    def build_patterns(target_name, prefix):
+        """플레이스홀더 prefix로 시작하는 패턴 목록을 생성합니다.
+        반드시 긴 패턴(이가, 이는 등)이 짧은 패턴(이, 는 등)보다 먼저 오도록 정렬."""
+        return [
+            # '이+조사' 복합 패턴 (우선 처리 — 반드시 단순 조사보다 앞에 있어야 함)
+            (f"{prefix}이가", "이가", target_name),
+            (f"{prefix}이는", "이는", target_name),
+            (f"{prefix}이를", "이를", target_name),
+            (f"{prefix}이와", "이와", target_name),
+            (f"{prefix}이과", "이과", target_name),
+            (f"{prefix}이로", "이로", target_name),
+            # 단순 조사 패턴
+            (f"{prefix}은", "은/는", target_name),
+            (f"{prefix}는", "은/는", target_name),
+            (f"{prefix}이", "이/가", target_name),
+            (f"{prefix}가", "이/가", target_name),
+            (f"{prefix}을", "을/를", target_name),
+            (f"{prefix}를", "을/를", target_name),
+            (f"{prefix}과", "와/과", target_name),
+            (f"{prefix}와", "와/과", target_name),
+            (f"{prefix}으로", "으로/로", target_name),
+            (f"{prefix}로", "으로/로", target_name),
         ]
-    
+
+    replacements = build_patterns(dog_name, "[강아지이름]")
+    if owner_name:
+        replacements += build_patterns(owner_name, "[보호자이름]")
+
     result = text
     for placeholder, category, name in replacements:
         if placeholder in result:
-            replacement_text = get_replacement(name, category)
-            result = result.replace(placeholder, replacement_text)
-        
-    result = result.replace("[강아지이름]", dog_name)
-    if owner_name:
-        result = result.replace("[보호자이름]", owner_name)
-        
+            result = result.replace(placeholder, get_replacement(name, category))
+
+    # 조사 없이 이름만 남은 경우: 받침 있는 이름은 '이'를 붙임 (예: 은빛 → 은빛이)
+    if "[강아지이름]" in result:
+        suffix = '이' if has_batchim(dog_name) else ''
+        result = result.replace("[강아지이름]", dog_name + suffix)
+    if owner_name and "[보호자이름]" in result:
+        suffix = '이' if has_batchim(owner_name) else ''
+        result = result.replace("[보호자이름]", owner_name + suffix)
+
     return result
