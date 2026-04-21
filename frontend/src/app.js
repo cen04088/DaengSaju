@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Remove active class from all tabs
       tabBtns.forEach(b => b.classList.remove('active'));
       tabContents.forEach(c => c.classList.remove('active'));
-      
+
       // Add active to clicked tab
       btn.classList.add('active');
       const targetTab = document.getElementById(btn.dataset.tab);
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       revealCards();
 
       // Update Chart visually if changed to lifetime tab
-      if(btn.dataset.tab === 'tab-lifetime') {
+      if (btn.dataset.tab === 'tab-lifetime') {
         animateBars();
       }
     });
@@ -88,12 +88,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Navigation logic
   function navigateTo(screenElement, pushHistory = true) {
     showScreen(screenElement);
-    
+
     if (pushHistory) {
       const targetHash = screenElement.id === 'main-screen' ? '' : `#${screenElement.id}`;
       // Use pushState to avoid auto-scrolling to the anchor ID
       if (location.hash !== targetHash && (location.hash || targetHash !== '')) {
-         history.pushState(null, '', targetHash || window.location.pathname);
+        history.pushState(null, '', targetHash || window.location.pathname);
       }
     }
   }
@@ -107,13 +107,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }, 350); // wait for fade out explicitly to release memory layout frame
     });
-    
+
     screenElement.style.display = 'flex';
     // requestAnimationFrame을 두 번 중첩하여 브라우저의 레이아웃 병목(렉)을 줄이고 부드럽게 페이드인
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         screenElement.classList.add('active');
-        
+
         // 메모리/렌더링 최적화: 결과 화면은 배경 불투명(bg-gray)이므로 무거운 배경 애니메이션 전체 숨김처리
         const bgBlobs = document.querySelector('.bg-blobs');
         if (bgBlobs) {
@@ -132,17 +132,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
     });
-    
+
     // reset scroll to top
-    if(screenElement === resultScreen) {
+    if (screenElement === resultScreen) {
       const scrollContainer = document.querySelector('.result-scroll');
       if (scrollContainer) scrollContainer.scrollTop = 0;
-      
+
       const tabNav = document.querySelector('.tab-nav');
       const tabToday = document.getElementById('tab-today');
       const tabLifetime = document.getElementById('tab-lifetime');
       const chemSection = document.getElementById('chemistry-result-section');
-      
+
       // Re-lock the report on every new result
       lockReports();
       lockChemReport();
@@ -186,12 +186,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!isTossAdsReady) return;
     const adContainer = document.getElementById('toss-ad-container');
     if (!adContainer) return;
-    
+
     if (tossBannerInstance) {
       tossBannerInstance.destroy();
       tossBannerInstance = null;
     }
-    tossBannerInstance = TossAds.attachBanner('ait-ad-test-banner-id', adContainer, { 
+    tossBannerInstance = TossAds.attachBanner('ait-ad-test-banner-id', adContainer, {
       variant: 'expanded',
       theme: 'dark',
       callbacks: {
@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function revealCards() {
     const cards = document.querySelectorAll('.tab-content.active .fade-in, #chemistry-result-section.fade-in');
     cards.forEach(c => c.classList.remove('reveal'));
-    
+
     cards.forEach((card, index) => {
       setTimeout(() => {
         card.classList.add('reveal');
@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   btnSubmit.addEventListener('click', (e) => {
     e.preventDefault();
-    if(!dogNameInput.value || !dogDateInput.value) {
+    if (!dogNameInput.value || !dogDateInput.value) {
       alert("강아지 이름과 생년월일을 정확히 입력해주세요!");
       return;
     }
@@ -353,7 +353,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dogName = dogNameInput.value.trim();
     document.querySelectorAll('.dog-name-display').forEach(el => el.textContent = dogName);
 
-    if(testType === 'chemistry') {
+    if (testType === 'chemistry') {
       chemistryResultSection.style.display = 'block';
     } else {
       chemistryResultSection.style.display = 'none';
@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         body: JSON.stringify(postData)
       });
       const regData = await regRes.json();
-      if(!regRes.ok) throw new Error("등록 실패: " + JSON.stringify(regData));
+      if (!regRes.ok) throw new Error("등록 실패: " + JSON.stringify(regData));
       const dogId = regData.dog_id;
 
       // /basics/ 먼저 호출 (백엔드 사주 계산 트리거)
@@ -493,7 +493,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!container) return;
     container.classList.remove('is-unlocked');
     container.classList.add('is-locked');
-    
+
     // 이전에 unlock 하면서 부여된 인라인 필터 스타일을 제거하여 CSS의 blur 효과가 다시 먹히도록 함
     const texts = container.querySelectorAll('.lockable-text');
     texts.forEach(t => t.style.filter = '');
@@ -533,8 +533,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (overlay) {
       overlay.style.opacity = '0';
       overlay.style.pointerEvents = 'none';
-      setTimeout(() => { 
-        overlay.style.display = 'none'; 
+      setTimeout(() => {
+        overlay.style.display = 'none';
         // 500ms 트랜지션 완료 후 인라인 스타일로 필터 완전 제거 (GPU 메모리 절약)
         const texts = container.querySelectorAll('.lockable-text');
         texts.forEach(t => t.style.filter = 'none');
@@ -559,8 +559,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (overlay) {
       overlay.style.opacity = '0';
       overlay.style.pointerEvents = 'none';
-      setTimeout(() => { 
-        overlay.style.display = 'none'; 
+      setTimeout(() => {
+        overlay.style.display = 'none';
         // 트랜지션 완료 후 인라인 스타일로 필터 완전 제거 (GPU 메모리 절약)
         const texts = container.querySelectorAll('.lockable-text');
         texts.forEach(t => t.style.filter = 'none');
@@ -607,10 +607,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const dogName = document.querySelector('.dog-name-display').textContent || '댕댕이';
       const imgSrc = document.querySelector('.result-img').src;
       const imgName = imgSrc.split('/').pop().split('_')[0] || 'fire';
-      
+
       const elementReverseMap = { 'wood': '목(木)', 'fire': '화(火)', 'earth': '토(土)', 'metal': '금(金)', 'water': '수(水)' };
       const dogElementText = elementReverseMap[imgName] || '화(火)';
-      
+
       const shareText = `${attachNameJosa(dogName, '는')} ${dogElementText} 기운을 타고 났어요! 보호자님도 우리아이 사주를 한 번 알아보세요🐾`;
       const shareImageUrl = `https://web-production-285b5.up.railway.app/assets/${imgName}_dog.png`;
 
@@ -631,7 +631,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 사주 표 파싱 함수
   function updateSajuTable(data) {
     const splitChar = (str) => {
-      if(!str || str === '알수없음') return ['-', '-'];
+      if (!str || str === '알수없음') return ['-', '-'];
       return [str.charAt(0) || '-', str.charAt(1) || '-'];
     };
 
@@ -674,53 +674,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Chart.js Radar
     const ctx = document.getElementById('radarChart').getContext('2d');
     const dataValues = [woods, fires, earths, metals, waters];
-    
+
     if (radarChartInstance) {
       radarChartInstance.destroy(); // Prevent canvas memory leak in WKWebView
     }
-    
+
     radarChartInstance = new Chart(ctx, {
-        type: 'radar',
-        data: {
-          labels: ['목(木)', '화(火)', '토(土)', '금(金)', '수(水)'],
-          datasets: [{
-            label: '기질 밸런스',
-            data: dataValues,
-            backgroundColor: 'rgba(139, 92, 246, 0.15)',
-            borderColor: 'rgba(139, 92, 246, 0.8)',
-            pointBackgroundColor: '#fff',
-            pointBorderColor: 'rgba(139, 92, 246, 1)',
-            pointHoverBackgroundColor: 'rgba(139, 92, 246, 1)',
-            borderWidth: 3,
-            pointRadius: 5,
-            pointHoverRadius: 7
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            r: {
-              angleLines: { color: 'rgba(148, 163, 184, 0.1)' },
-              grid: { color: 'rgba(148, 163, 184, 0.1)' },
-              pointLabels: {
-                font: { family: 'Pretendard', size: 13, weight: '700' },
-                color: '#94A3B8'
-              },
-              ticks: { display: false, min: 0 }
-            }
-          },
-          plugins: {
-            legend: { display: false }
+      type: 'radar',
+      data: {
+        labels: ['목(木)', '화(火)', '토(土)', '금(金)', '수(水)'],
+        datasets: [{
+          label: '기질 밸런스',
+          data: dataValues,
+          backgroundColor: 'rgba(139, 92, 246, 0.15)',
+          borderColor: 'rgba(139, 92, 246, 0.8)',
+          pointBackgroundColor: '#fff',
+          pointBorderColor: 'rgba(139, 92, 246, 1)',
+          pointHoverBackgroundColor: 'rgba(139, 92, 246, 1)',
+          borderWidth: 3,
+          pointRadius: 5,
+          pointHoverRadius: 7
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            angleLines: { color: 'rgba(148, 163, 184, 0.1)' },
+            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+            pointLabels: {
+              font: { family: 'Pretendard', size: 13, weight: '700' },
+              color: '#94A3B8'
+            },
+            ticks: { display: false, min: 0 }
           }
+        },
+        plugins: {
+          legend: { display: false }
         }
-      });
+      }
+    });
   }
 
   function animateBars() {
     const bars = document.querySelectorAll('.bar-fill');
     bars.forEach(bar => {
-      bar.style.transition = 'none'; 
+      bar.style.transition = 'none';
       bar.style.width = '0%';
     });
     setTimeout(() => {
@@ -734,8 +734,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   function formatText(text) {
     if (!text) return '';
     return text
-      .replace(/\*\*(.*?)\*\*/g, '<span class="highlight-text">$1</span>') 
-      .replace(/\n/g, '<br>'); 
+      .replace(/\*\*(.*?)\*\*/g, '<span class="highlight-text">$1</span>')
+      .replace(/\n/g, '<br>');
   }
 
   // Korean Josa Helper
@@ -743,7 +743,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!name) return '';
     const lastChar = name.charCodeAt(name.length - 1);
     if (lastChar < 0xAC00 || lastChar > 0xD7A3) return name + type; // non-korean
-    
+
     // Check if the name ends with a batchim (consonant)
     const hasJongseong = (lastChar - 0xAC00) % 28 > 0;
     if (type === '는' || type === '은') {
@@ -763,12 +763,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ─── Attendance & Streak Logic ───────────────────────────────────────────
   const TALISMAN_REWARDS = {
     3: { name: '초심자의 뼈다귀 부적', desc: '3일 연속 출석! 멍멍이의 에너지가 솟아납니다.' },
-    7: { name: '행운의 비글 부적', desc: '럭키 7일! 이번 주 내내 기분 좋은 일이 가득할 거예요.' },
-    10: { name: '재물운 닥스훈트 부적', desc: '10일 달성! 생각지도 못한 간식이나 행운이 찾아옵니다.' },
-    15: { name: '사랑둥이 리트리버 부적', desc: '15일 달성! 주변 사람들에게 많은 사랑을 받는 시기예요.' },
-    30: { name: '전설의 황금 시바 부적', desc: '한 달 완주! 당신은 진정한 댕사주 마스터!' },
+    7: { name: '행운의 댕댕 부적', desc: '럭키 7일! 이번 주 내내 기분 좋은 일이 가득할 거예요.' },
+    10: { name: '재물운 명탐정 부적', desc: '10일 달성! 생각지도 못한 간식이나 행운이 찾아옵니다.' },
+    15: { name: '대박 황금 부적', desc: '15일 달성! 주변에서 많은 복이 찾아오는 시기예요.' },
+    20: { name: '전설의 댕댕 부적', desc: '당신은 진정한 댕사주 마스터!' },
   };
-  const MILESTONES = [3, 7, 10, 15, 30];
+  const MILESTONES = [3, 7, 10, 15, 20];
 
   const btnOpenAttendance = document.getElementById('btn-open-attendance');
   const attendanceModal = document.getElementById('attendance-modal');
@@ -826,29 +826,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('calendar-progress-text').textContent = `다음 스페셜 부적까지 단 ${daysLeft}일 남았어요!`;
     document.getElementById('calendar-progress-fill').style.width = progressPercent + '%';
 
-    for(let day = 1; day <= currentDaysInMonth; day++) {
+    for (let day = 1; day <= currentDaysInMonth; day++) {
       const isStamped = attendanceRecord.includes(day);
       const isToday = day === todayDate;
 
       const cell = document.createElement('div');
       cell.className = 'calendar-cell';
-      if(isStamped) cell.classList.add('stamped');
-      if(isToday && !isStamped) cell.classList.add('today-pending');
+      if (isStamped) cell.classList.add('stamped');
+      if (isToday && !isStamped) cell.classList.add('today-pending');
       // streak-connected 제거 - 누적 방식
-      
+
       const span = document.createElement('span');
       span.className = 'day-number';
       span.textContent = day;
       cell.appendChild(span);
-      
-      if(isStamped) {
+
+      if (isStamped) {
         const stamp = document.createElement('div');
         stamp.className = 'paw-stamp';
         stamp.textContent = '🐾';
         cell.appendChild(stamp);
       }
-      
-      if(isToday) {
+
+      if (isToday) {
         cell.addEventListener('click', handleStamp);
       }
       grid.appendChild(cell);
@@ -886,27 +886,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       renderCalendar();
 
-      if(typeof confetti === 'function') {
+      if (typeof confetti === 'function') {
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
       }
 
       // 신규 마일스톤 달성 시 부적 모달 표시
-      if(data.new_milestone) {
+      if (data.new_milestone) {
         setTimeout(() => { showTalisman(data.new_milestone); }, 1000);
       }
-    } catch(e) {
+    } catch (e) {
       console.warn('[Attendance] POST 실패, LocalStorage 폴백:', e);
       // 폴백 처리: 누적 카운트
-      attendanceRecord = [...new Set([...attendanceRecord, todayDate])].sort((a,b)=>a-b);
+      attendanceRecord = [...new Set([...attendanceRecord, todayDate])].sort((a, b) => a - b);
       currentStreak = attendanceRecord.length; // 누적 일수
       localStorage.setItem('daengsaju_attendance', JSON.stringify({
         month: currentMonth, record: attendanceRecord, streakCount: currentStreak
       }));
       renderCalendar();
-      if(typeof confetti === 'function') {
+      if (typeof confetti === 'function') {
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
       }
-      if(TALISMAN_REWARDS[currentStreak]) { setTimeout(() => { showTalisman(currentStreak); }, 1000); }
+      if (TALISMAN_REWARDS[currentStreak]) { setTimeout(() => { showTalisman(currentStreak); }, 1000); }
     }
   }
 
@@ -919,11 +919,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     imgEl.src = `/assets/talisman_${streak}.png`;
     imgEl.onerror = () => { imgEl.style.display = 'none'; };
     imgEl.style.display = 'block';
-    
+
     talismanModal.classList.remove('hidden');
   }
 
-  if(btnOpenAttendance) {
+  if (btnOpenAttendance) {
     btnOpenAttendance.addEventListener('click', async () => {
       await loadAttendance();
       renderCalendar();
@@ -931,19 +931,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  if(btnCloseAttendance) {
+  if (btnCloseAttendance) {
     btnCloseAttendance.addEventListener('click', () => {
       attendanceModal.classList.add('hidden');
     });
   }
 
-  if(btnCloseTalisman) {
+  if (btnCloseTalisman) {
     btnCloseTalisman.addEventListener('click', () => {
       talismanModal.classList.add('hidden');
     });
   }
 
-  if(btnDownloadTalisman) {
+  if (btnDownloadTalisman) {
     btnDownloadTalisman.addEventListener('click', async () => {
       const origText = btnDownloadTalisman.innerHTML;
       btnDownloadTalisman.innerHTML = "저장 중... ⏳";
@@ -955,7 +955,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         a.href = dataUrl;
         a.download = `daengsaju_talisman_${currentStreak}.png`;
         a.click();
-      } catch(e) {
+      } catch (e) {
         console.error(e);
         alert('이미지 저장에 실패했습니다.');
       }
@@ -963,9 +963,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  if(btnShareTalisman) {
+  if (btnShareTalisman) {
     btnShareTalisman.addEventListener('click', async () => {
-      if(navigator.share) {
+      if (navigator.share) {
         try {
           const reward = TALISMAN_REWARDS[currentTalismanDay];
           await navigator.share({
@@ -973,7 +973,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             text: `댕사주에서 ${currentStreak}일 연속 출석하고 '${reward.name}'을 획득했어요! 🐾`,
             url: window.location.href,
           });
-        } catch(e) {
+        } catch (e) {
           console.log('Share canceled or failed', e);
         }
       } else {

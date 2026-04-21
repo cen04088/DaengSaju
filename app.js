@@ -36,12 +36,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const TALISMAN_REWARDS = {
     3: { name: '초심자의 뼈다귀 부적', desc: '3일 연속 출석! 멍멍이의 에너지가 솟아납니다.' },
-    7: { name: '행운의 비글 부적', desc: '럭키 7일! 이번 주 내내 기분 좋은 일이 가득할 거예요.' },
-    10: { name: '재물운 닥스훈트 부적', desc: '10일 달성! 생각지도 못한 간식이나 행운이 찾아옵니다.' },
-    15: { name: '사랑둥이 리트리버 부적', desc: '15일 달성! 주변 사람들에게 많은 사랑을 받는 시기예요.' },
-    30: { name: '전설의 황금 시바 부적', desc: '한 달 완주! 당신은 진정한 댕사주 마스터!' },
+    7: { name: '행운의 댕댕 부적', desc: '럭키 7일! 이번 주 내내 기분 좋은 일이 가득할 거예요.' },
+    10: { name: '재물운 명탐정 부적', desc: '10일 달성! 생각지도 못한 간식이나 행운이 찾아옵니다.' },
+    15: { name: '대박 황금 부적', desc: '15일 달성! 주변에서 많은 복이 찾아오는 시기예요.' },
+    20: { name: '전설의 댕댕 부적', desc: '당신은 진정한 댕사주 마스터!' },
   };
-  const MILESTONES = [3, 7, 10, 15, 30];
+  const MILESTONES = [3, 7, 10, 15, 20];
 
   const todayDateObj = new Date();
   const currentMonth = todayDateObj.getMonth() + 1;
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Remove active class from all tabs
       tabBtns.forEach(b => b.classList.remove('active'));
       tabContents.forEach(c => c.classList.remove('active'));
-      
+
       // Add active to clicked tab
       btn.classList.add('active');
       const targetTab = document.getElementById(btn.dataset.tab);
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
       revealCards();
 
       // Update Chart visually if changed to lifetime tab
-      if(btn.dataset.tab === 'tab-lifetime') {
+      if (btn.dataset.tab === 'tab-lifetime') {
         animateBars();
       }
     });
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.state && e.state.screenId) {
       const screen = document.getElementById(e.state.screenId);
       if (screen) {
-        navigateTo(screen, false); 
+        navigateTo(screen, false);
       }
     } else {
       navigateTo(mainScreen, false);
@@ -110,20 +110,20 @@ document.addEventListener('DOMContentLoaded', () => {
   function navigateTo(screenElement, pushHistory = true) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     screenElement.classList.add('active');
-    
+
     if (pushHistory) {
       history.pushState({ screenId: screenElement.id }, '', `#${screenElement.id}`);
     }
-    
+
     // reset scroll to top
-    if(screenElement === resultScreen) {
+    if (screenElement === resultScreen) {
       document.querySelector('.result-scroll').scrollTop = 0;
-      
+
       const tabNav = document.querySelector('.tab-nav');
       const tabToday = document.getElementById('tab-today');
       const tabLifetime = document.getElementById('tab-lifetime');
       const chemSection = document.getElementById('chemistry-result-section');
-      
+
       if (testType === 'chemistry') {
         // 댕궁합 단독 모드
         if (tabNav) tabNav.style.display = 'none';
@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function revealCards() {
     const cards = document.querySelectorAll('.tab-content.active .fade-in, #chemistry-result-section.fade-in');
     cards.forEach(c => c.classList.remove('reveal'));
-    
+
     cards.forEach((card, index) => {
       setTimeout(() => {
         card.classList.add('reveal');
@@ -163,514 +163,514 @@ document.addEventListener('DOMContentLoaded', () => {
     navigateTo(inputScreen);
   });
 
-  btnChemistry.addEventListener('click', () => {
-    testType = 'chemistry';
-    inputTitle.innerHTML = '보호자와 댕댕이의<br>상생 궁합은?';
-    ownerInputSection.classList.remove('hidden');
-    navigateTo(inputScreen);
-  });
+btnChemistry.addEventListener('click', () => {
+  testType = 'chemistry';
+  inputTitle.innerHTML = '보호자와 댕댕이의<br>상생 궁합은?';
+  ownerInputSection.classList.remove('hidden');
+  navigateTo(inputScreen);
+});
 
 
-  btnSubmit.addEventListener('click', async (e) => {
-    e.preventDefault();
-    if(!dogNameInput.value || !dogDateInput.value) {
-      alert("강아지 이름과 생년월일을 정확히 입력해주세요!");
-      return;
-    }
-
-    const dogName = dogNameInput.value.trim();
-    document.querySelectorAll('.dog-name-display').forEach(el => el.textContent = dogName);
-
-    if(testType === 'chemistry') {
-      chemistryResultSection.style.display = 'block';
-    } else {
-      chemistryResultSection.style.display = 'none';
-    }
-
-    navigateTo(loadingScreen, false);
-
-    // UX: Labor Illusion (신뢰감을 주기 위한 페이크 로딩 2초)
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    try {
-      // 1. 등록 (POST /api/saju/dogs/)
-      const dogGender = document.querySelector('input[name="dog-gender"]:checked').value;
-      const postData = {
-        social_id: tossUserKey, 
-        nickname: "데모유저",
-        dog: {
-          name: dogName,
-          birth_date: dogDateInput.value,
-          birth_time: dogTimeInput.value || null,
-          is_lunar: dogLunarCheck.checked,
-          gender: dogGender === 'M' ? 'MALE' : 'FEMALE',
-          is_estimated_birth: false
-        }
-      };
-
-      const regRes = await fetch('/api/saju/dogs/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(postData)
-      });
-      const regData = await regRes.json();
-      if(!regRes.ok) {
-        console.error("등록 서버 에러:", regData);
-        throw new Error("등록 실패: " + (regData.error || JSON.stringify(regData)));
-      }
-      
-      const dogId = regData.dog_id;
-      console.log("[Analysis] 등록 성공, ID:", dogId);
-
-      // 2. 사주 기본정보 (GET /basics/)
-      const basicRes = await fetch(`/api/saju/dogs/${dogId}/basics/`);
-      if(!basicRes.ok) throw new Error("기본정보 로드 실패");
-      const basicData = await basicRes.json();
-      updateSajuTable(basicData);
-      
-      // 3. AI 성격 분석 (GET /personality/)
-      const perRes = await fetch(`/api/saju/dogs/${dogId}/personality/`);
-      const perData = await perRes.json();
-      
-      const elementMap = { '목': 'wood', '화': 'fire', '토': 'earth', '금': 'metal', '수': 'water' };
-      const elementColorMap = { '목': 'text-wood', '화': 'text-fire', '토': 'text-earth', '금': 'text-metal', '수': 'text-water' };
-      const elementHanjaMap = { '목': '木', '화': '火', '토': '土', '금': '金', '수': '水' };
-      
-      const imgName = elementMap[basicData.main_element] || 'fire';
-      const colorClass = elementColorMap[basicData.main_element] || 'text-fire';
-      const hanjaEl = elementHanjaMap[basicData.main_element] || '火';
-      
-      document.querySelector('.result-img').src = `./assets/${imgName}_dog.png`;
-      document.getElementById('res-summary').innerHTML = `${formatText(perData.personality_summary)}<br><span class="${colorClass}">${basicData.main_element}(${hanjaEl})</span>의 기운을 타고난 <span class="dog-name-display">${dogName}</span>!`;
-      document.getElementById('res-food').innerHTML = formatText(perData.treat_luck);
-      document.getElementById('res-energy').innerHTML = formatText(perData.vitality_analysis);
-      document.getElementById('res-love').innerHTML = formatText(perData.care_tips);
-      document.getElementById('res-social').innerHTML = formatText(perData.social_analysis);
-
-      // 4. 오늘의 산책운 (GET /daily-luck/)
-      const luckRes = await fetch(`/api/saju/dogs/${dogId}/daily-luck/`);
-      const luckData = await luckRes.json();
-      
-      document.getElementById('res-luck-score').textContent = luckData.luck_score;
-      document.getElementById('res-luck-msg').innerHTML = formatText(luckData.message);
-      document.getElementById('res-luck-color').textContent = luckData.lucky_color;
-      document.getElementById('res-luck-dir').textContent = luckData.lucky_direction;
-
-      // 5. 댕궁합 분석 (testType이 chemistry일 때만 호출)
-      if (testType === 'chemistry') {
-        const ownerDate = document.getElementById('owner-date').value;
-        const ownerTime = document.getElementById('owner-time').value;
-        
-        try {
-          const chemRes = await fetch(`/api/saju/dogs/${dogId}/compatibility/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              owner_birth_date: ownerDate,
-              owner_birth_time: ownerTime
-            })
-          });
-          const chemData = await chemRes.json();
-          
-          if (chemRes.ok) {
-            document.getElementById('res-chem-score').textContent = chemData.score || '--';
-            document.getElementById('res-chem-title').textContent = chemData.title || '';
-            document.getElementById('res-chem-owner-element').textContent = `(${chemData.owner_element})`;
-            document.getElementById('res-chem-dog-element').textContent = `(${chemData.dog_element})`;
-            document.getElementById('res-chem-rel').textContent = `✨ ${chemData.relationship_type} 관계 ✨`;
-            document.getElementById('res-chem-desc').innerHTML = formatText(chemData.description || '');
-            
-            if (chemData.advice) {
-              document.getElementById('res-chem-advice').innerHTML = `<strong>💡 어드바이스:</strong><br>${formatText(chemData.advice)}`;
-              document.getElementById('res-chem-advice').style.display = 'block';
-            } else {
-              document.getElementById('res-chem-advice').style.display = 'none';
-            }
-            
-            chemistryResultSection.style.display = 'block';
-          }
-        } catch (err) {
-          console.error("궁합 조회 실패:", err);
-        }
-      }
-
-      navigateTo(resultScreen, true);
-      // 오행 바 그래프 업데이트 및 애니메이션
-      updateGraphs(basicData.element_distribution);
-      
-      // Tab 1 is default, animation happens on tab click, but we can call it once just in case
-      // animateBars();
-
-    } catch (error) {
-      console.error(error);
-      alert("운세를 분석하는 중 오류가 발생했습니다. 확인 후 다시 시도해주세요.");
-      navigateTo(inputScreen, false);
-    }
-  });
-
-  btnShare.addEventListener('click', async () => {
-    const originalText = btnShare.textContent;
-    btnShare.textContent = "이미지 굽는 중... 🐾";
-    btnShare.disabled = true;
-
-    try {
-      // 캡쳐할 영역 지정 (결과 컨텐츠 전체 영역)
-      const captureArea = document.querySelector('.result-scroll');
-      const canvas = await html2canvas(captureArea, {
-        scale: 2, 
-        backgroundColor: '#F9FAFB',
-        useCORS: true,
-        windowWidth: captureArea.scrollWidth,
-        windowHeight: captureArea.scrollHeight
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      
-      const modal = document.getElementById('image-modal');
-      const genImage = document.getElementById('generated-image');
-      const closeBtn = document.getElementById('close-modal');
-      
-      if (modal && genImage) {
-        genImage.src = imgData;
-        modal.style.display = 'flex';
-        
-        closeBtn.onclick = () => {
-          modal.style.display = 'none';
-        };
-      } else {
-        const link = document.createElement('a');
-        link.download = `댕사주_운세결과_${Date.now()}.png`;
-        link.href = imgData;
-        link.click();
-      }
-    } catch (e) {
-      console.error(e);
-      alert('이미지 저장 중 오류가 발생했습니다.');
-    } finally {
-      btnShare.textContent = originalText;
-      btnShare.disabled = false;
-    }
-  });
-
-  // 사주 표 파싱 함수
-  function updateSajuTable(data) {
-    const splitChar = (str) => {
-      if(!str || str === '알수없음') return ['-', '-'];
-      return [str.charAt(0) || '-', str.charAt(1) || '-'];
-    };
-
-    const y = splitChar(data.year_pillar);
-    const m = splitChar(data.month_pillar);
-    const d = splitChar(data.day_pillar);
-    const h = splitChar(data.hour_pillar || '--');
-
-    document.getElementById('stem-year').innerHTML = `<span class="hanja">年</span><br>${y[0]}`;
-    document.getElementById('stem-month').innerHTML = `<span class="hanja">月</span><br>${m[0]}`;
-    document.getElementById('stem-day').innerHTML = `<span class="hanja">日</span><br>${d[0]}`;
-    document.getElementById('stem-hour').innerHTML = `<span class="hanja">時</span><br>${h[0]}`;
-
-    document.getElementById('branch-year').innerHTML = `<span class="hanja">年</span><br>${y[1]}`;
-    document.getElementById('branch-month').innerHTML = `<span class="hanja">月</span><br>${m[1]}`;
-    document.getElementById('branch-day').innerHTML = `<span class="hanja">日</span><br>${d[1]}`;
-    document.getElementById('branch-hour').innerHTML = `<span class="hanja">時</span><br>${h[1]}`;
+btnSubmit.addEventListener('click', async (e) => {
+  e.preventDefault();
+  if (!dogNameInput.value || !dogDateInput.value) {
+    alert("강아지 이름과 생년월일을 정확히 입력해주세요!");
+    return;
   }
 
-  // Draw or Update Chart.js Radar and set bar variables
-  function updateGraphs(dist) {
-    const woods = dist['목'] || 0;
-    const fires = dist['화'] || 0;
-    const earths = dist['토'] || 0;
-    const metals = dist['금'] || 0;
-    const waters = dist['수'] || 0;
+  const dogName = dogNameInput.value.trim();
+  document.querySelectorAll('.dog-name-display').forEach(el => el.textContent = dogName);
 
-    document.getElementById('val-wood').textContent = woods + '%';
-    document.getElementById('val-fire').textContent = fires + '%';
-    document.getElementById('val-earth').textContent = earths + '%';
-    document.getElementById('val-metal').textContent = metals + '%';
-    document.getElementById('val-water').textContent = waters + '%';
+  if (testType === 'chemistry') {
+    chemistryResultSection.style.display = 'block';
+  } else {
+    chemistryResultSection.style.display = 'none';
+  }
 
-    document.getElementById('bar-wood').dataset.targetWidth = woods + '%';
-    document.getElementById('bar-fire').dataset.targetWidth = fires + '%';
-    document.getElementById('bar-earth').dataset.targetWidth = earths + '%';
-    document.getElementById('bar-metal').dataset.targetWidth = metals + '%';
-    document.getElementById('bar-water').dataset.targetWidth = waters + '%';
+  navigateTo(loadingScreen, false);
 
-    // Chart.js Radar
-    const ctx = document.getElementById('radarChart').getContext('2d');
-    
-    const dataValues = [woods, fires, earths, metals, waters];
-    
-    if (radarChartInstance) {
-      radarChartInstance.data.datasets[0].data = dataValues;
-      radarChartInstance.update();
+  // UX: Labor Illusion (신뢰감을 주기 위한 페이크 로딩 2초)
+  await new Promise(resolve => setTimeout(resolve, 2000));
+
+  try {
+    // 1. 등록 (POST /api/saju/dogs/)
+    const dogGender = document.querySelector('input[name="dog-gender"]:checked').value;
+    const postData = {
+      social_id: tossUserKey,
+      nickname: "데모유저",
+      dog: {
+        name: dogName,
+        birth_date: dogDateInput.value,
+        birth_time: dogTimeInput.value || null,
+        is_lunar: dogLunarCheck.checked,
+        gender: dogGender === 'M' ? 'MALE' : 'FEMALE',
+        is_estimated_birth: false
+      }
+    };
+
+    const regRes = await fetch('/api/saju/dogs/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(postData)
+    });
+    const regData = await regRes.json();
+    if (!regRes.ok) {
+      console.error("등록 서버 에러:", regData);
+      throw new Error("등록 실패: " + (regData.error || JSON.stringify(regData)));
+    }
+
+    const dogId = regData.dog_id;
+    console.log("[Analysis] 등록 성공, ID:", dogId);
+
+    // 2. 사주 기본정보 (GET /basics/)
+    const basicRes = await fetch(`/api/saju/dogs/${dogId}/basics/`);
+    if (!basicRes.ok) throw new Error("기본정보 로드 실패");
+    const basicData = await basicRes.json();
+    updateSajuTable(basicData);
+
+    // 3. AI 성격 분석 (GET /personality/)
+    const perRes = await fetch(`/api/saju/dogs/${dogId}/personality/`);
+    const perData = await perRes.json();
+
+    const elementMap = { '목': 'wood', '화': 'fire', '토': 'earth', '금': 'metal', '수': 'water' };
+    const elementColorMap = { '목': 'text-wood', '화': 'text-fire', '토': 'text-earth', '금': 'text-metal', '수': 'text-water' };
+    const elementHanjaMap = { '목': '木', '화': '火', '토': '土', '금': '金', '수': '水' };
+
+    const imgName = elementMap[basicData.main_element] || 'fire';
+    const colorClass = elementColorMap[basicData.main_element] || 'text-fire';
+    const hanjaEl = elementHanjaMap[basicData.main_element] || '火';
+
+    document.querySelector('.result-img').src = `./assets/${imgName}_dog.png`;
+    document.getElementById('res-summary').innerHTML = `${formatText(perData.personality_summary)}<br><span class="${colorClass}">${basicData.main_element}(${hanjaEl})</span>의 기운을 타고난 <span class="dog-name-display">${dogName}</span>!`;
+    document.getElementById('res-food').innerHTML = formatText(perData.treat_luck);
+    document.getElementById('res-energy').innerHTML = formatText(perData.vitality_analysis);
+    document.getElementById('res-love').innerHTML = formatText(perData.care_tips);
+    document.getElementById('res-social').innerHTML = formatText(perData.social_analysis);
+
+    // 4. 오늘의 산책운 (GET /daily-luck/)
+    const luckRes = await fetch(`/api/saju/dogs/${dogId}/daily-luck/`);
+    const luckData = await luckRes.json();
+
+    document.getElementById('res-luck-score').textContent = luckData.luck_score;
+    document.getElementById('res-luck-msg').innerHTML = formatText(luckData.message);
+    document.getElementById('res-luck-color').textContent = luckData.lucky_color;
+    document.getElementById('res-luck-dir').textContent = luckData.lucky_direction;
+
+    // 5. 댕궁합 분석 (testType이 chemistry일 때만 호출)
+    if (testType === 'chemistry') {
+      const ownerDate = document.getElementById('owner-date').value;
+      const ownerTime = document.getElementById('owner-time').value;
+
+      try {
+        const chemRes = await fetch(`/api/saju/dogs/${dogId}/compatibility/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            owner_birth_date: ownerDate,
+            owner_birth_time: ownerTime
+          })
+        });
+        const chemData = await chemRes.json();
+
+        if (chemRes.ok) {
+          document.getElementById('res-chem-score').textContent = chemData.score || '--';
+          document.getElementById('res-chem-title').textContent = chemData.title || '';
+          document.getElementById('res-chem-owner-element').textContent = `(${chemData.owner_element})`;
+          document.getElementById('res-chem-dog-element').textContent = `(${chemData.dog_element})`;
+          document.getElementById('res-chem-rel').textContent = `✨ ${chemData.relationship_type} 관계 ✨`;
+          document.getElementById('res-chem-desc').innerHTML = formatText(chemData.description || '');
+
+          if (chemData.advice) {
+            document.getElementById('res-chem-advice').innerHTML = `<strong>💡 어드바이스:</strong><br>${formatText(chemData.advice)}`;
+            document.getElementById('res-chem-advice').style.display = 'block';
+          } else {
+            document.getElementById('res-chem-advice').style.display = 'none';
+          }
+
+          chemistryResultSection.style.display = 'block';
+        }
+      } catch (err) {
+        console.error("궁합 조회 실패:", err);
+      }
+    }
+
+    navigateTo(resultScreen, true);
+    // 오행 바 그래프 업데이트 및 애니메이션
+    updateGraphs(basicData.element_distribution);
+
+    // Tab 1 is default, animation happens on tab click, but we can call it once just in case
+    // animateBars();
+
+  } catch (error) {
+    console.error(error);
+    alert("운세를 분석하는 중 오류가 발생했습니다. 확인 후 다시 시도해주세요.");
+    navigateTo(inputScreen, false);
+  }
+});
+
+btnShare.addEventListener('click', async () => {
+  const originalText = btnShare.textContent;
+  btnShare.textContent = "이미지 굽는 중... 🐾";
+  btnShare.disabled = true;
+
+  try {
+    // 캡쳐할 영역 지정 (결과 컨텐츠 전체 영역)
+    const captureArea = document.querySelector('.result-scroll');
+    const canvas = await html2canvas(captureArea, {
+      scale: 2,
+      backgroundColor: '#F9FAFB',
+      useCORS: true,
+      windowWidth: captureArea.scrollWidth,
+      windowHeight: captureArea.scrollHeight
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+
+    const modal = document.getElementById('image-modal');
+    const genImage = document.getElementById('generated-image');
+    const closeBtn = document.getElementById('close-modal');
+
+    if (modal && genImage) {
+      genImage.src = imgData;
+      modal.style.display = 'flex';
+
+      closeBtn.onclick = () => {
+        modal.style.display = 'none';
+      };
     } else {
-      radarChartInstance = new Chart(ctx, {
-        type: 'radar',
-        data: {
-          labels: ['목(木)', '화(火)', '토(土)', '금(金)', '수(水)'],
-          datasets: [{
-            label: '기질 밸런스',
-            data: dataValues,
-            backgroundColor: 'rgba(49, 130, 246, 0.15)',
-            borderColor: 'rgba(49, 130, 246, 0.8)',
-            pointBackgroundColor: '#fff',
-            pointBorderColor: 'rgba(49, 130, 246, 1)',
-            pointHoverBackgroundColor: 'rgba(49, 130, 246, 1)',
-            borderWidth: 3,
-            pointRadius: 5,
-            pointHoverRadius: 7
-          }]
+      const link = document.createElement('a');
+      link.download = `댕사주_운세결과_${Date.now()}.png`;
+      link.href = imgData;
+      link.click();
+    }
+  } catch (e) {
+    console.error(e);
+    alert('이미지 저장 중 오류가 발생했습니다.');
+  } finally {
+    btnShare.textContent = originalText;
+    btnShare.disabled = false;
+  }
+});
+
+// 사주 표 파싱 함수
+function updateSajuTable(data) {
+  const splitChar = (str) => {
+    if (!str || str === '알수없음') return ['-', '-'];
+    return [str.charAt(0) || '-', str.charAt(1) || '-'];
+  };
+
+  const y = splitChar(data.year_pillar);
+  const m = splitChar(data.month_pillar);
+  const d = splitChar(data.day_pillar);
+  const h = splitChar(data.hour_pillar || '--');
+
+  document.getElementById('stem-year').innerHTML = `<span class="hanja">年</span><br>${y[0]}`;
+  document.getElementById('stem-month').innerHTML = `<span class="hanja">月</span><br>${m[0]}`;
+  document.getElementById('stem-day').innerHTML = `<span class="hanja">日</span><br>${d[0]}`;
+  document.getElementById('stem-hour').innerHTML = `<span class="hanja">時</span><br>${h[0]}`;
+
+  document.getElementById('branch-year').innerHTML = `<span class="hanja">年</span><br>${y[1]}`;
+  document.getElementById('branch-month').innerHTML = `<span class="hanja">月</span><br>${m[1]}`;
+  document.getElementById('branch-day').innerHTML = `<span class="hanja">日</span><br>${d[1]}`;
+  document.getElementById('branch-hour').innerHTML = `<span class="hanja">時</span><br>${h[1]}`;
+}
+
+// Draw or Update Chart.js Radar and set bar variables
+function updateGraphs(dist) {
+  const woods = dist['목'] || 0;
+  const fires = dist['화'] || 0;
+  const earths = dist['토'] || 0;
+  const metals = dist['금'] || 0;
+  const waters = dist['수'] || 0;
+
+  document.getElementById('val-wood').textContent = woods + '%';
+  document.getElementById('val-fire').textContent = fires + '%';
+  document.getElementById('val-earth').textContent = earths + '%';
+  document.getElementById('val-metal').textContent = metals + '%';
+  document.getElementById('val-water').textContent = waters + '%';
+
+  document.getElementById('bar-wood').dataset.targetWidth = woods + '%';
+  document.getElementById('bar-fire').dataset.targetWidth = fires + '%';
+  document.getElementById('bar-earth').dataset.targetWidth = earths + '%';
+  document.getElementById('bar-metal').dataset.targetWidth = metals + '%';
+  document.getElementById('bar-water').dataset.targetWidth = waters + '%';
+
+  // Chart.js Radar
+  const ctx = document.getElementById('radarChart').getContext('2d');
+
+  const dataValues = [woods, fires, earths, metals, waters];
+
+  if (radarChartInstance) {
+    radarChartInstance.data.datasets[0].data = dataValues;
+    radarChartInstance.update();
+  } else {
+    radarChartInstance = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['목(木)', '화(火)', '토(土)', '금(金)', '수(水)'],
+        datasets: [{
+          label: '기질 밸런스',
+          data: dataValues,
+          backgroundColor: 'rgba(49, 130, 246, 0.15)',
+          borderColor: 'rgba(49, 130, 246, 0.8)',
+          pointBackgroundColor: '#fff',
+          pointBorderColor: 'rgba(49, 130, 246, 1)',
+          pointHoverBackgroundColor: 'rgba(49, 130, 246, 1)',
+          borderWidth: 3,
+          pointRadius: 5,
+          pointHoverRadius: 7
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            pointLabels: {
+              font: { family: 'Pretendard', size: 13, weight: '700' },
+              color: '#FFFFFF'
+            },
+            ticks: { display: false, min: 0 }
+          }
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            r: {
-              angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
-              grid: { color: 'rgba(255, 255, 255, 0.05)' },
-              pointLabels: {
-                font: { family: 'Pretendard', size: 13, weight: '700' },
-                color: '#FFFFFF'
-              },
-              ticks: { display: false, min: 0 }
-            }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  return context.raw + '%';
-                }
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                return context.raw + '%';
               }
             }
           }
         }
-      });
-    }
+      }
+    });
   }
+}
 
-  function animateBars() {
-    const bars = document.querySelectorAll('.bar-fill');
+function animateBars() {
+  const bars = document.querySelectorAll('.bar-fill');
+  bars.forEach(bar => {
+    bar.style.transition = 'none'; // reset transition
+    bar.style.width = '0%';
+  });
+  // Add small delay to let DOM repaint
+  setTimeout(() => {
     bars.forEach(bar => {
-      bar.style.transition = 'none'; // reset transition
-      bar.style.width = '0%';
+      bar.style.transition = 'width 1.2s cubic-bezier(0.25, 1, 0.5, 1)';
+      bar.style.width = bar.dataset.targetWidth || '0%';
     });
-    // Add small delay to let DOM repaint
-    setTimeout(() => {
-      bars.forEach(bar => {
-        bar.style.transition = 'width 1.2s cubic-bezier(0.25, 1, 0.5, 1)';
-        bar.style.width = bar.dataset.targetWidth || '0%';
-      });
-    }, 50);
-  }
+  }, 50);
+}
 
-  // 텍스트 포맷팅 함수 (개행 처리 및 **강조** 지원)
-  function formatText(text) {
-    if (!text) return '';
-    return text
-      .replace(/\*\*(.*?)\*\*/g, '<span class="highlight-text">$1</span>') // **강조** 처리
-      .replace(/\n/g, '<br>'); // 개행 처리
-  }
+// 텍스트 포맷팅 함수 (개행 처리 및 **강조** 지원)
+function formatText(text) {
+  if (!text) return '';
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<span class="highlight-text">$1</span>') // **강조** 처리
+    .replace(/\n/g, '<br>'); // 개행 처리
+}
 
-  // ─── Attendance Logic ───────────────────────────────────────────
-  async function loadAttendance() {
+// ─── Attendance Logic ───────────────────────────────────────────
+async function loadAttendance() {
+  try {
+    const res = await fetch(`${BASE_URL}/api/saju/attendance/?social_id=${encodeURIComponent(tossUserKey)}`);
+    if (!res.ok) throw new Error('출석 조회 실패');
+    const data = await res.json();
+    attendanceRecord = data.attended_days || [];
+    currentStreak = data.streak_count || 0;
+    return data;
+  } catch (e) {
+    console.warn('[Attendance] API 실패, LocalStorage 폴백:', e);
+    const stored = localStorage.getItem('daengsaju_attendance');
+    if (stored) {
+      const d = JSON.parse(stored);
+      if (d.month === currentMonth) {
+        attendanceRecord = d.record || [];
+        currentStreak = d.streakCount || 0;
+      }
+    }
+    return { attended_days: attendanceRecord, streak_count: currentStreak, claimed_milestones: [] };
+  }
+}
+
+function renderCalendar() {
+  const grid = document.getElementById('calendar-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const totalAttended = attendanceRecord.length;
+  document.getElementById('calendar-streak').textContent = totalAttended + '일';
+
+  const nextRewardDay = MILESTONES.find(m => m > totalAttended) || 20;
+  const daysLeft = Math.max(0, nextRewardDay - totalAttended);
+  const progressPercent = Math.min((totalAttended / nextRewardDay) * 100, 100);
+
+  document.getElementById('calendar-progress-text').textContent = `다음 스페셜 부적까지 단 ${daysLeft}일 남았어요!`;
+  document.getElementById('calendar-progress-fill').style.width = progressPercent + '%';
+
+  for (let day = 1; day <= currentDaysInMonth; day++) {
+    const isStamped = attendanceRecord.includes(day);
+    const isToday = day === todayDate;
+
+    const cell = document.createElement('div');
+    cell.className = 'calendar-cell';
+    if (isStamped) cell.classList.add('stamped');
+    if (isToday && !isStamped) cell.classList.add('today-pending');
+
+    const span = document.createElement('span');
+    span.className = 'day-number';
+    span.textContent = day;
+    cell.appendChild(span);
+
+    if (isStamped) {
+      const stamp = document.createElement('div');
+      stamp.className = 'paw-stamp';
+      stamp.textContent = '🐾';
+      cell.appendChild(stamp);
+    }
+
+    if (isToday) {
+      cell.addEventListener('click', handleStamp);
+    }
+    grid.appendChild(cell);
+  }
+}
+
+async function handleStamp() {
+  // ⚠️ [TEST MODE] - 테스트 완료 후 아래 주석 해제
+  // if(attendanceRecord.includes(todayDate)) return;
+
+  try {
+    const res = await fetch(`${BASE_URL}/api/saju/attendance/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ social_id: tossUserKey })
+    });
+    if (!res.ok) throw new Error('출석 저장 실패');
+    const data = await res.json();
+
+    if (!data.stamped) {
+      attendanceRecord = data.attended_days || attendanceRecord;
+      currentStreak = data.streak_count || currentStreak;
+      renderCalendar();
+      return;
+    }
+
+    attendanceRecord = data.attended_days || [];
+    currentStreak = data.streak_count || 0;
+
+    localStorage.setItem('daengsaju_attendance', JSON.stringify({
+      month: currentMonth, record: attendanceRecord, streakCount: currentStreak
+    }));
+
+    renderCalendar();
+
+    if (typeof confetti === 'function') {
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
+    }
+
+    if (data.new_milestone) {
+      setTimeout(() => { showTalisman(data.new_milestone); }, 1000);
+    }
+  } catch (e) {
+    console.warn('[Attendance] POST 실패, LocalStorage 폴백:', e);
+    // ⚠️ [TEST MODE] 폴백 시에도 숫자가 늘어나도록 수정
+    let dayToAdd = todayDate;
+    if (attendanceRecord.includes(dayToAdd)) {
+      for (let d = 1; d <= 31; d++) {
+        if (!attendanceRecord.includes(d)) {
+          dayToAdd = d;
+          break;
+        }
+      }
+    }
+    attendanceRecord = [...new Set([...attendanceRecord, dayToAdd])].sort((a, b) => a - b);
+    currentStreak = attendanceRecord.length;
+    localStorage.setItem('daengsaju_attendance', JSON.stringify({
+      month: currentMonth, record: attendanceRecord, streakCount: currentStreak
+    }));
+    renderCalendar();
+    if (typeof confetti === 'function') {
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
+    }
+    if (TALISMAN_REWARDS[currentStreak]) { setTimeout(() => { showTalisman(currentStreak); }, 1000); }
+  }
+}
+
+function showTalisman(streak) {
+  currentTalismanDay = streak;
+  const reward = TALISMAN_REWARDS[streak];
+  document.getElementById('talisman-name').textContent = reward.name;
+  document.getElementById('talisman-desc').textContent = reward.desc;
+  const imgEl = document.getElementById('talisman-img');
+  imgEl.src = `./assets/talisman_${streak}.png`;
+  imgEl.onerror = () => { imgEl.style.display = 'none'; };
+  imgEl.style.display = 'block';
+
+  talismanModal.classList.remove('hidden');
+}
+
+if (btnOpenAttendance) {
+  btnOpenAttendance.addEventListener('click', async () => {
+    console.log('[Attendance] 출석 버튼 클릭됨. 로딩 시작...');
+    // 1. 먼저 출석 데이터 로드
+    await loadAttendance();
+    // 2. 즉시 오늘 날짜 도장 찍기 시도
+    console.log('[Attendance] 즉시 도장 찍기(handleStamp) 호출');
+    await handleStamp();
+    // 3. 달력 렌더링 및 모달 열기
+    renderCalendar();
+    attendanceModal.classList.remove('hidden');
+  });
+}
+if (btnCloseAttendance) {
+  btnCloseAttendance.addEventListener('click', () => {
+    attendanceModal.classList.add('hidden');
+  });
+}
+if (btnCloseTalisman) {
+  btnCloseTalisman.addEventListener('click', () => {
+    talismanModal.classList.add('hidden');
+  });
+}
+if (btnDownloadTalisman) {
+  btnDownloadTalisman.addEventListener('click', async () => {
+    const origText = btnDownloadTalisman.innerHTML;
+    btnDownloadTalisman.innerHTML = "저장 중... ⏳";
     try {
-      const res = await fetch(`${BASE_URL}/api/saju/attendance/?social_id=${encodeURIComponent(tossUserKey)}`);
-      if (!res.ok) throw new Error('출석 조회 실패');
-      const data = await res.json();
-      attendanceRecord = data.attended_days || [];
-      currentStreak = data.streak_count || 0;
-      return data;
+      const wrapper = document.getElementById('talisman-content-wrapper');
+      const canvas = await html2canvas(wrapper, { backgroundColor: '#1E1E2A', useCORS: true });
+      const dataUrl = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `daengsaju_talisman_${currentStreak}.png`;
+      a.click();
     } catch (e) {
-      console.warn('[Attendance] API 실패, LocalStorage 폴백:', e);
-      const stored = localStorage.getItem('daengsaju_attendance');
-      if (stored) {
-        const d = JSON.parse(stored);
-        if (d.month === currentMonth) {
-          attendanceRecord = d.record || [];
-          currentStreak = d.streakCount || 0;
-        }
-      }
-      return { attended_days: attendanceRecord, streak_count: currentStreak, claimed_milestones: [] };
+      console.error(e);
+      alert('이미지 저장에 실패했습니다.');
     }
-  }
-
-  function renderCalendar() {
-    const grid = document.getElementById('calendar-grid');
-    if(!grid) return;
-    grid.innerHTML = '';
-
-    const totalAttended = attendanceRecord.length;
-    document.getElementById('calendar-streak').textContent = totalAttended + '일';
-
-    const nextRewardDay = MILESTONES.find(m => m > totalAttended) || 30;
-    const daysLeft = Math.max(0, nextRewardDay - totalAttended);
-    const progressPercent = Math.min((totalAttended / nextRewardDay) * 100, 100);
-
-    document.getElementById('calendar-progress-text').textContent = `다음 스페셜 부적까지 단 ${daysLeft}일 남았어요!`;
-    document.getElementById('calendar-progress-fill').style.width = progressPercent + '%';
-
-    for(let day = 1; day <= currentDaysInMonth; day++) {
-      const isStamped = attendanceRecord.includes(day);
-      const isToday = day === todayDate;
-
-      const cell = document.createElement('div');
-      cell.className = 'calendar-cell';
-      if(isStamped) cell.classList.add('stamped');
-      if(isToday && !isStamped) cell.classList.add('today-pending');
-      
-      const span = document.createElement('span');
-      span.className = 'day-number';
-      span.textContent = day;
-      cell.appendChild(span);
-      
-      if(isStamped) {
-        const stamp = document.createElement('div');
-        stamp.className = 'paw-stamp';
-        stamp.textContent = '🐾';
-        cell.appendChild(stamp);
-      }
-      
-      if(isToday) {
-        cell.addEventListener('click', handleStamp);
-      }
-      grid.appendChild(cell);
-    }
-  }
-
-  async function handleStamp() {
-    // ⚠️ [TEST MODE] - 테스트 완료 후 아래 주석 해제
-    // if(attendanceRecord.includes(todayDate)) return;
-
-    try {
-      const res = await fetch(`${BASE_URL}/api/saju/attendance/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ social_id: tossUserKey })
-      });
-      if (!res.ok) throw new Error('출석 저장 실패');
-      const data = await res.json();
-
-      if (!data.stamped) {
-        attendanceRecord = data.attended_days || attendanceRecord;
-        currentStreak = data.streak_count || currentStreak;
-        renderCalendar();
-        return;
-      }
-
-      attendanceRecord = data.attended_days || [];
-      currentStreak = data.streak_count || 0;
-
-      localStorage.setItem('daengsaju_attendance', JSON.stringify({
-        month: currentMonth, record: attendanceRecord, streakCount: currentStreak
-      }));
-
-      renderCalendar();
-
-      if(typeof confetti === 'function') {
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
-      }
-
-      if(data.new_milestone) {
-        setTimeout(() => { showTalisman(data.new_milestone); }, 1000);
-      }
-    } catch(e) {
-      console.warn('[Attendance] POST 실패, LocalStorage 폴백:', e);
-      // ⚠️ [TEST MODE] 폴백 시에도 숫자가 늘어나도록 수정
-      let dayToAdd = todayDate;
-      if (attendanceRecord.includes(dayToAdd)) {
-        for (let d = 1; d <= 31; d++) {
-          if (!attendanceRecord.includes(d)) {
-            dayToAdd = d;
-            break;
-          }
-        }
-      }
-      attendanceRecord = [...new Set([...attendanceRecord, dayToAdd])].sort((a,b)=>a-b);
-      currentStreak = attendanceRecord.length;
-      localStorage.setItem('daengsaju_attendance', JSON.stringify({
-        month: currentMonth, record: attendanceRecord, streakCount: currentStreak
-      }));
-      renderCalendar();
-      if(typeof confetti === 'function') {
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
-      }
-      if(TALISMAN_REWARDS[currentStreak]) { setTimeout(() => { showTalisman(currentStreak); }, 1000); }
-    }
-  }
-
-  function showTalisman(streak) {
-    currentTalismanDay = streak;
-    const reward = TALISMAN_REWARDS[streak];
-    document.getElementById('talisman-name').textContent = reward.name;
-    document.getElementById('talisman-desc').textContent = reward.desc;
-    const imgEl = document.getElementById('talisman-img');
-    imgEl.src = `./assets/talisman_${streak}.png`;
-    imgEl.onerror = () => { imgEl.style.display = 'none'; };
-    imgEl.style.display = 'block';
-    
-    talismanModal.classList.remove('hidden');
-  }
-
-  if(btnOpenAttendance) {
-    btnOpenAttendance.addEventListener('click', async () => {
-      console.log('[Attendance] 출석 버튼 클릭됨. 로딩 시작...');
-      // 1. 먼저 출석 데이터 로드
-      await loadAttendance();
-      // 2. 즉시 오늘 날짜 도장 찍기 시도
-      console.log('[Attendance] 즉시 도장 찍기(handleStamp) 호출');
-      await handleStamp(); 
-      // 3. 달력 렌더링 및 모달 열기
-      renderCalendar();
-      attendanceModal.classList.remove('hidden');
-    });
-  }
-  if(btnCloseAttendance) {
-    btnCloseAttendance.addEventListener('click', () => {
-      attendanceModal.classList.add('hidden');
-    });
-  }
-  if(btnCloseTalisman) {
-    btnCloseTalisman.addEventListener('click', () => {
-      talismanModal.classList.add('hidden');
-    });
-  }
-  if(btnDownloadTalisman) {
-    btnDownloadTalisman.addEventListener('click', async () => {
-      const origText = btnDownloadTalisman.innerHTML;
-      btnDownloadTalisman.innerHTML = "저장 중... ⏳";
+    btnDownloadTalisman.innerHTML = origText;
+  });
+}
+if (btnShareTalisman) {
+  btnShareTalisman.addEventListener('click', async () => {
+    if (navigator.share) {
       try {
-        const wrapper = document.getElementById('talisman-content-wrapper');
-        const canvas = await html2canvas(wrapper, { backgroundColor: '#1E1E2A', useCORS: true });
-        const dataUrl = canvas.toDataURL('image/png');
-        const a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = `daengsaju_talisman_${currentStreak}.png`;
-        a.click();
-      } catch(e) {
-        console.error(e);
-        alert('이미지 저장에 실패했습니다.');
+        const reward = TALISMAN_REWARDS[currentTalismanDay];
+        await navigator.share({
+          title: '댕사주 스페셜 부적',
+          text: `댕사주에서 ${currentStreak}일 출석하고 '${reward.name}'을 획득했어요! 🐾`,
+          url: window.location.href,
+        });
+      } catch (e) {
+        console.log('Share canceled or failed', e);
       }
-      btnDownloadTalisman.innerHTML = origText;
-    });
-  }
-  if(btnShareTalisman) {
-    btnShareTalisman.addEventListener('click', async () => {
-      if(navigator.share) {
-        try {
-          const reward = TALISMAN_REWARDS[currentTalismanDay];
-          await navigator.share({
-            title: '댕사주 스페셜 부적',
-            text: `댕사주에서 ${currentStreak}일 출석하고 '${reward.name}'을 획득했어요! 🐾`,
-            url: window.location.href,
-          });
-        } catch(e) {
-          console.log('Share canceled or failed', e);
-        }
-      } else {
-        alert('지원하지 않는 브라우저입니다.');
-      }
-    });
-  }
+    } else {
+      alert('지원하지 않는 브라우저입니다.');
+    }
+  });
+}
 });
