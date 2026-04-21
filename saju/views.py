@@ -389,6 +389,100 @@ class CompatibilityView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+class CompatibilityResultView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request, dog_id):
+        from datetime import datetime
+
+        dog = get_object_or_404(Dog, id=dog_id)
+        owner_birth_date_str = request.data.get('owner_birth_date')
+        owner_birth_time_str = request.data.get('owner_birth_time')
+        owner_name = request.data.get('owner_name', '蹂댄샇?먮떂')
+
+        if not owner_birth_date_str:
+            return Response({"error": "蹂댄샇???앸뀈?붿씪???낅젰?댁＜?몄슂."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not hasattr(dog, 'saju_basics'):
+            if not dog.birth_date:
+                return Response({"error": "媛뺤븘吏 ?앸뀈?붿씪 ?뺣낫媛 ?놁뼱 ?ъ＜瑜?怨꾩궛?????놁뒿?덈떎."}, status=status.HTTP_400_BAD_REQUEST)
+            saju_data = get_saju_for_dog(dog.birth_date, dog.birth_time)
+            SajuBasics.objects.create(
+                dog=dog,
+                year_pillar=saju_data['year_pillar'],
+                month_pillar=saju_data['month_pillar'],
+                day_pillar=saju_data['day_pillar'],
+                hour_pillar=saju_data['hour_pillar'],
+                main_element=saju_data['main_element'],
+                element_distribution=saju_data['element_distribution'],
+                relationship_type=saju_data.get('relationship_type', '鍮꾧쾪'),
+                secondary_element=saju_data.get('secondary_element', ''),
+            )
+            dog.refresh_from_db()
+
+        dog_element = dog.saju_basics.main_element
+
+        try:
+            owner_birth_date = datetime.strptime(owner_birth_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({"error": "?좎쭨 ?뺤떇???섎せ?섏뿀?듬땲?? (YYYY-MM-DD)"}, status=status.HTTP_400_BAD_REQUEST)
+
+        owner_birth_time = None
+        if owner_birth_time_str:
+            try:
+                owner_birth_time = datetime.strptime(owner_birth_time_str, '%H:%M').time()
+            except ValueError:
+                owner_birth_time = None
+
+        owner_saju = get_saju_for_dog(owner_birth_date, owner_birth_time)
+        owner_element = owner_saju['main_element']
+        relationship_type = get_relationship_type(dog_element, owner_element)
+
+        version = 'A' if dog.id % 2 == 0 else 'B'
+        archetype = CompatibilityArchetype.objects.filter(
+            dog_element=dog_element,
+            relationship_type=relationship_type,
+            version=version
+        ).first()
+        if not archetype:
+            archetype = CompatibilityArchetype.objects.filter(
+                dog_element=dog_element,
+                relationship_type=relationship_type
+            ).first()
+
+        if not archetype:
+            return Response(
+                {"error": "?ъ쟾 ?앹꽦??沅곹빀 ?꾨줈?꾩쓣 李얠쓣 ???놁뒿?덈떎. (pregenerate_compatibility 紐낅졊???ㅽ뻾 ?꾩슂)"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        result_title = smart_replace(archetype.title, dog.name, owner_name)
+        result_description = smart_replace(archetype.description, dog.name, owner_name)
+        result_advice = smart_replace(archetype.advice, dog.name, owner_name)
+
+        meta_prefix = f"{dog_element}|{owner_element}|{relationship_type}|"
+        Compatibility.objects.update_or_create(
+            dog=dog,
+            user=dog.user,
+            defaults={
+                'score': archetype.score,
+                'title': result_title,
+                'description': meta_prefix + result_description,
+            }
+        )
+
+        return Response({
+            'dog_element': dog_element,
+            'owner_element': owner_element,
+            'relationship_type': add_hanja_to_terms(relationship_type),
+            'score': archetype.score,
+            'title': add_hanja_to_terms(result_title),
+            'description': add_hanja_to_terms(result_description),
+            'advice': add_hanja_to_terms(result_advice),
+        }, status=status.HTTP_200_OK)
+
+
 class AttendanceView(APIView):
     """
     월간 출석 스탬프 API (사용자별 DB 저장)

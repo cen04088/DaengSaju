@@ -19,9 +19,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCloseTalisman = document.getElementById('btn-close-talisman');
   const btnDownloadTalisman = document.getElementById('btn-download-talisman');
   const btnShareTalisman = document.getElementById('btn-share-talisman');
+  const resultImage = document.getElementById('result-img');
 
   // Config
   const BASE_URL = ''; // Same origin
+  const MIN_LOADING_MS = 250;
   // 고유 사용자 키 생성 (로컬스토리지에 저장하여 세션 유지)
   let tossUserKey = localStorage.getItem('daengsaju_user_key');
   if (!tossUserKey) {
@@ -91,6 +93,51 @@ document.addEventListener('DOMContentLoaded', () => {
   // State
   let testType = 'general'; // 'general' or 'chemistry'
   let radarChartInstance = null; // Store chart instance
+  const externalScriptPromises = new Map();
+
+  function loadExternalScript(src) {
+    if (externalScriptPromises.has(src)) {
+      return externalScriptPromises.get(src);
+    }
+
+    const promise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+      document.head.appendChild(script);
+    });
+
+    externalScriptPromises.set(src, promise);
+    return promise;
+  }
+
+  async function ensureChartJs() {
+    if (window.Chart) return;
+    await loadExternalScript('https://cdn.jsdelivr.net/npm/chart.js');
+  }
+
+  async function ensureHtml2Canvas() {
+    if (window.html2canvas) return;
+    await loadExternalScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
+  }
+
+  async function ensureConfetti() {
+    if (typeof window.confetti === 'function') return;
+    await loadExternalScript('https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js');
+  }
+
+  function resetChemistryResult() {
+    document.getElementById('res-chem-score').textContent = '--';
+    document.getElementById('res-chem-title').textContent = '';
+    document.getElementById('res-chem-owner-element').textContent = '(-)';
+    document.getElementById('res-chem-dog-element').textContent = '(-)';
+    document.getElementById('res-chem-rel').textContent = '';
+    document.getElementById('res-chem-desc').innerHTML = '';
+    document.getElementById('res-chem-advice').innerHTML = '';
+    document.getElementById('res-chem-advice').style.display = 'none';
+  }
 
   // Initialize History state
   history.replaceState({ screenId: 'main-screen' }, '', '#main-screen');
@@ -171,10 +218,17 @@ btnChemistry.addEventListener('click', () => {
 });
 
 
+btnChemistry.addEventListener('click', resetChemistryResult);
+
 btnSubmit.addEventListener('click', async (e) => {
   e.preventDefault();
   if (!dogNameInput.value || !dogDateInput.value) {
     alert("강아지 이름과 생년월일을 정확히 입력해주세요!");
+    return;
+  }
+
+  if (testType === 'chemistry' && !document.getElementById('owner-date').value) {
+    alert("蹂댄샇???앸뀈?붿씪???낅젰?댁＜?몄슂!");
     return;
   }
 
@@ -190,7 +244,7 @@ btnSubmit.addEventListener('click', async (e) => {
   navigateTo(loadingScreen, false);
 
   // UX: Labor Illusion (신뢰감을 주기 위한 페이크 로딩 2초)
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await new Promise(resolve => setTimeout(resolve, MIN_LOADING_MS));
 
   try {
     // 1. 등록 (POST /api/saju/dogs/)
@@ -240,7 +294,11 @@ btnSubmit.addEventListener('click', async (e) => {
     const colorClass = elementColorMap[basicData.main_element] || 'text-fire';
     const hanjaEl = elementHanjaMap[basicData.main_element] || '火';
 
-    document.querySelector('.result-img').src = `./assets/${imgName}_dog.png`;
+    if (resultImage) {
+      resultImage.src = `./assets/${imgName}_dog.png`;
+    } else {
+      document.querySelector('.result-img').src = `./assets/${imgName}_dog.png`;
+    }
     document.getElementById('res-summary').innerHTML = `${formatText(perData.personality_summary)}<br><span class="${colorClass}">${basicData.main_element}(${hanjaEl})</span>의 기운을 타고난 <span class="dog-name-display">${dogName}</span>!`;
     document.getElementById('res-food').innerHTML = formatText(perData.treat_luck);
     document.getElementById('res-energy').innerHTML = formatText(perData.vitality_analysis);
@@ -296,7 +354,7 @@ btnSubmit.addEventListener('click', async (e) => {
 
     navigateTo(resultScreen, true);
     // 오행 바 그래프 업데이트 및 애니메이션
-    updateGraphs(basicData.element_distribution);
+    await updateGraphs(basicData.element_distribution);
 
     // Tab 1 is default, animation happens on tab click, but we can call it once just in case
     // animateBars();
@@ -315,6 +373,7 @@ btnShare.addEventListener('click', async () => {
 
   try {
     // 캡쳐할 영역 지정 (결과 컨텐츠 전체 영역)
+    await ensureHtml2Canvas();
     const captureArea = document.querySelector('.result-scroll');
     const canvas = await html2canvas(captureArea, {
       scale: 2,
@@ -376,7 +435,8 @@ function updateSajuTable(data) {
 }
 
 // Draw or Update Chart.js Radar and set bar variables
-function updateGraphs(dist) {
+async function updateGraphs(dist) {
+  await ensureChartJs();
   const woods = dist['목'] || 0;
   const fires = dist['화'] || 0;
   const earths = dist['토'] || 0;
@@ -567,6 +627,7 @@ async function handleStamp() {
 
     renderCalendar();
 
+    await ensureConfetti();
     if (typeof confetti === 'function') {
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
     }
@@ -583,6 +644,7 @@ async function handleStamp() {
       month: currentMonth, record: attendanceRecord, streakCount: currentStreak
     }));
     renderCalendar();
+    await ensureConfetti();
     if (typeof confetti === 'function') {
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
     }
@@ -631,6 +693,7 @@ if (btnDownloadTalisman) {
     const origText = btnDownloadTalisman.innerHTML;
     btnDownloadTalisman.innerHTML = "저장 중...";
     try {
+      await ensureHtml2Canvas();
       const wrapper = document.getElementById('talisman-content-wrapper');
       const canvas = await html2canvas(wrapper, { backgroundColor: '#1E1E2A', useCORS: true });
       const dataUrl = canvas.toDataURL('image/png');
