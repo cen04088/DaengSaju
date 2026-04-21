@@ -15,15 +15,20 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.shortcuts import render
 from django.urls import path, include
-from django.views.generic import TemplateView
 import mimetypes
 
 # Windows 레지스트리 버그로 인해 JS 파일이 text/plain으로 서빙되는 문제 해결
 mimetypes.add_type('application/javascript', '.js')
 
+def home(request):
+    toss_user_key = request.headers.get('X-Toss-User-Key', '')
+    return render(request, 'index.html', {'toss_user_key': toss_user_key})
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/saju/', include('saju.urls')),
-    path('', TemplateView.as_view(template_name='index.html'), name='home'),
+    path('', home, name='home'),
 ]

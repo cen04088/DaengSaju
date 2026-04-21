@@ -33,12 +33,21 @@ from .services.manseryeok import (
 )
 
 
+def resolve_social_id(request):
+    return (
+        request.headers.get('X-Toss-User-Key')
+        or request.data.get('social_id')
+        or request.query_params.get('social_id')
+        or ''
+    )
+
+
 class DogRegisterView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
     def post(self, request):
-        social_id = request.data.get('social_id')
+        social_id = resolve_social_id(request)
         nickname = request.data.get('nickname')
         dog_data = request.data.get('dog')
 
@@ -359,7 +368,7 @@ class AttendanceView(APIView):
         return user
 
     def get(self, request):
-        social_id = request.query_params.get('social_id')
+        social_id = resolve_social_id(request)
         if not social_id:
             return Response({'error': 'social_id 파라미터가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -385,7 +394,7 @@ class AttendanceView(APIView):
         )
 
     def post(self, request):
-        social_id = request.data.get('social_id')
+        social_id = resolve_social_id(request)
         if not social_id:
             return Response({'error': 'social_id가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
 

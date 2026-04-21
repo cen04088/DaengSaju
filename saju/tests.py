@@ -4,7 +4,7 @@ from django.test import TestCase
 from rest_framework.test import APIRequestFactory
 
 from .models import Compatibility, CompatibilityArchetype, Dog, SajuBasics, User
-from .views import CompatibilityResultView, DogRegisterView
+from .views import AttendanceView, CompatibilityResultView, DogRegisterView
 
 
 class DogRegisterViewTests(TestCase):
@@ -33,6 +33,38 @@ class DogRegisterViewTests(TestCase):
         self.assertEqual(second.status_code, 200)
         self.assertEqual(first.data['dog_id'], second.data['dog_id'])
         self.assertEqual(Dog.objects.count(), 1)
+
+    def test_accepts_toss_user_key_header(self):
+        payload = {
+            'nickname': 'Owner',
+            'dog': {
+                'name': 'Mung',
+                'birth_date': '2020-01-01',
+                'birth_time': None,
+                'is_lunar': False,
+                'gender': 'MALE',
+                'is_estimated_birth': False,
+            },
+        }
+
+        request = self.factory.post('/api/saju/dogs/', payload, format='json', HTTP_X_TOSS_USER_KEY='header-key')
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(User.objects.get().social_id, 'header-key')
+
+
+class AttendanceViewTests(TestCase):
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = AttendanceView.as_view()
+
+    def test_reads_social_id_from_toss_header(self):
+        request = self.factory.get('/api/saju/attendance/', format='json', HTTP_X_TOSS_USER_KEY='header-key')
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(User.objects.get().social_id, 'header-key')
 
 
 class CompatibilityViewTests(TestCase):

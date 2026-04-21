@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+﻿document.addEventListener('DOMContentLoaded', () => {
   // Screens
   const mainScreen = document.getElementById('main-screen');
   const inputScreen = document.getElementById('input-screen');
@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnOpenAttendance = document.getElementById('btn-open-attendance');
   const attendanceModal = document.getElementById('attendance-modal');
   const btnCloseAttendance = document.getElementById('btn-close-attendance');
+  const btnAttendanceStamp = document.getElementById('btn-attendance-stamp');
   const talismanModal = document.getElementById('talisman-modal');
   const btnCloseTalisman = document.getElementById('btn-close-talisman');
   const btnDownloadTalisman = document.getElementById('btn-download-talisman');
@@ -24,11 +25,45 @@ document.addEventListener('DOMContentLoaded', () => {
   // Config
   const BASE_URL = ''; // Same origin
   const MIN_LOADING_MS = 250;
-  // 고유 사용자 키 생성 (로컬스토리지에 저장하여 세션 유지)
-  let tossUserKey = localStorage.getItem('daengsaju_user_key');
-  if (!tossUserKey) {
-    tossUserKey = 'web_user_' + Math.random().toString(36).substring(2, 11);
-    localStorage.setItem('daengsaju_user_key', tossUserKey);
+  const TOSS_USER_KEY_STORAGE = 'daengsaju_user_key';
+
+  function resolveTossUserKey() {
+    const params = new URLSearchParams(window.location.search);
+    const candidates = [
+      window.__TOSS_USER_KEY__,
+      window.Toss?.userKey,
+      window.Toss?.tossUserKey,
+      params.get('toss_user_key'),
+      params.get('tossUserKey'),
+      params.get('userKey'),
+      localStorage.getItem(TOSS_USER_KEY_STORAGE),
+    ];
+    const stableKey = candidates.find(value => typeof value === 'string' && value.trim());
+    if (stableKey) {
+      localStorage.setItem(TOSS_USER_KEY_STORAGE, stableKey);
+      return stableKey;
+    }
+    return '';
+  }
+
+  let tossUserKey = resolveTossUserKey();
+
+  function requireUserKey() {
+    tossUserKey = resolveTossUserKey();
+    if (tossUserKey) return true;
+    alert('토스 사용자 정보를 확인할 수 없어 다시 열어주세요.');
+    return false;
+  }
+
+  function buildHeaders(includeJson = false) {
+    const headers = {};
+    if (includeJson) {
+      headers['Content-Type'] = 'application/json';
+    }
+    if (tossUserKey) {
+      headers['X-Toss-User-Key'] = tossUserKey;
+    }
+    return headers;
   }
 
   // Attendance State
@@ -139,6 +174,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('res-chem-advice').style.display = 'none';
   }
 
+  function updateAttendanceStampButton() {
+    if (!btnAttendanceStamp) return;
+    const stampedToday = attendanceRecord.includes(todayDate);
+    btnAttendanceStamp.disabled = stampedToday;
+    btnAttendanceStamp.textContent = stampedToday ? '오늘 출석 완료' : '오늘 출석하기';
+    btnAttendanceStamp.style.opacity = stampedToday ? '0.6' : '1';
+  }
+
   // Initialize History state
   history.replaceState({ screenId: 'main-screen' }, '', '#main-screen');
 
@@ -222,6 +265,9 @@ btnChemistry.addEventListener('click', resetChemistryResult);
 
 btnSubmit.addEventListener('click', async (e) => {
   e.preventDefault();
+  if (!requireUserKey()) {
+    return;
+  }
   if (!dogNameInput.value || !dogDateInput.value) {
     alert("강아지 이름과 생년월일을 정확히 입력해주세요!");
     return;
@@ -264,7 +310,7 @@ btnSubmit.addEventListener('click', async (e) => {
 
     const regRes = await fetch('/api/saju/dogs/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: buildHeaders(true),
       body: JSON.stringify(postData)
     });
     const regData = await regRes.json();
@@ -277,13 +323,13 @@ btnSubmit.addEventListener('click', async (e) => {
     console.log("[Analysis] 등록 성공, ID:", dogId);
 
     // 2. 사주 기본정보 (GET /basics/)
-    const basicRes = await fetch(`/api/saju/dogs/${dogId}/basics/`);
+    const basicRes = await fetch(`/api/saju/dogs/${dogId}/basics/`, { headers: buildHeaders() });
     if (!basicRes.ok) throw new Error("기본정보 로드 실패");
     const basicData = await basicRes.json();
     updateSajuTable(basicData);
 
     // 3. AI 성격 분석 (GET /personality/)
-    const perRes = await fetch(`/api/saju/dogs/${dogId}/personality/`);
+    const perRes = await fetch(`/api/saju/dogs/${dogId}/personality/`, { headers: buildHeaders() });
     const perData = await perRes.json();
 
     const elementMap = { '목': 'wood', '화': 'fire', '토': 'earth', '금': 'metal', '수': 'water' };
@@ -306,7 +352,7 @@ btnSubmit.addEventListener('click', async (e) => {
     document.getElementById('res-social').innerHTML = formatText(perData.social_analysis);
 
     // 4. 오늘의 산책운 (GET /daily-luck/)
-    const luckRes = await fetch(`/api/saju/dogs/${dogId}/daily-luck/`);
+    const luckRes = await fetch(`/api/saju/dogs/${dogId}/daily-luck/`, { headers: buildHeaders() });
     const luckData = await luckRes.json();
 
     document.getElementById('res-luck-score').textContent = luckData.luck_score;
@@ -322,7 +368,7 @@ btnSubmit.addEventListener('click', async (e) => {
       try {
         const chemRes = await fetch(`/api/saju/dogs/${dogId}/compatibility/`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: buildHeaders(true),
           body: JSON.stringify({
             owner_birth_date: ownerDate,
             owner_birth_time: ownerTime
@@ -535,24 +581,22 @@ function formatText(text) {
 
 // ─── Attendance Logic ───────────────────────────────────────────
 async function loadAttendance() {
+  if (!requireUserKey()) {
+    throw new Error('Missing toss user key');
+  }
   try {
-    const res = await fetch(`${BASE_URL}/api/saju/attendance/?social_id=${encodeURIComponent(tossUserKey)}`);
+    const res = await fetch(`${BASE_URL}/api/saju/attendance/`, {
+      headers: buildHeaders()
+    });
     if (!res.ok) throw new Error('출석 조회 실패');
     const data = await res.json();
     attendanceRecord = data.attended_days || [];
     currentStreak = data.streak_count || 0;
+    updateAttendanceStampButton();
     return data;
   } catch (e) {
-    console.warn('[Attendance] API 실패, LocalStorage 폴백:', e);
-    const stored = localStorage.getItem('daengsaju_attendance');
-    if (stored) {
-      const d = JSON.parse(stored);
-      if (d.month === currentMonth) {
-        attendanceRecord = d.record || [];
-        currentStreak = d.streakCount || 0;
-      }
-    }
-    return { attended_days: attendanceRecord, streak_count: currentStreak, claimed_milestones: [] };
+    console.warn('[Attendance] API 실패:', e);
+    throw e;
   }
 }
 
@@ -592,20 +636,19 @@ function renderCalendar() {
       cell.appendChild(stamp);
     }
 
-    if (isToday) {
-      cell.addEventListener('click', handleStamp);
-    }
     grid.appendChild(cell);
   }
+  updateAttendanceStampButton();
 }
 
 async function handleStamp() {
+  if (!requireUserKey()) return;
   if (attendanceRecord.includes(todayDate)) return;
 
   try {
     const res = await fetch(`${BASE_URL}/api/saju/attendance/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: buildHeaders(true),
       body: JSON.stringify({ social_id: tossUserKey })
     });
     if (!res.ok) throw new Error('출석 저장 실패');
@@ -621,10 +664,6 @@ async function handleStamp() {
     attendanceRecord = data.attended_days || [];
     currentStreak = data.streak_count || 0;
 
-    localStorage.setItem('daengsaju_attendance', JSON.stringify({
-      month: currentMonth, record: attendanceRecord, streakCount: currentStreak
-    }));
-
     renderCalendar();
 
     await ensureConfetti();
@@ -636,19 +675,8 @@ async function handleStamp() {
       setTimeout(() => { showTalisman(data.new_milestone); }, 1000);
     }
   } catch (e) {
-    console.warn('[Attendance] POST 실패, LocalStorage 폴백:', e);
-    if (attendanceRecord.includes(todayDate)) return;
-    attendanceRecord = [...new Set([...attendanceRecord, todayDate])].sort((a, b) => a - b);
-    currentStreak = attendanceRecord.length;
-    localStorage.setItem('daengsaju_attendance', JSON.stringify({
-      month: currentMonth, record: attendanceRecord, streakCount: currentStreak
-    }));
-    renderCalendar();
-    await ensureConfetti();
-    if (typeof confetti === 'function') {
-      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
-    }
-    if (TALISMAN_REWARDS[currentStreak]) { setTimeout(() => { showTalisman(currentStreak); }, 1000); }
+    console.warn('[Attendance] POST 실패:', e);
+    alert('출석 처리 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.');
   }
 }
 
@@ -667,16 +695,17 @@ function showTalisman(streak) {
 
 if (btnOpenAttendance) {
   btnOpenAttendance.addEventListener('click', async () => {
-    console.log('[Attendance] 출석 버튼 클릭됨. 로딩 시작...');
-    // 1. 먼저 출석 데이터 로드
-    await loadAttendance();
-    // 2. 즉시 오늘 날짜 도장 찍기 시도
-    console.log('[Attendance] 즉시 도장 찍기(handleStamp) 호출');
-    await handleStamp();
-    // 3. 달력 렌더링 및 모달 열기
-    renderCalendar();
-    attendanceModal.classList.remove('hidden');
+    try {
+      await loadAttendance();
+      renderCalendar();
+      attendanceModal.classList.remove('hidden');
+    } catch (error) {
+      console.error(error);
+    }
   });
+}
+if (btnAttendanceStamp) {
+  btnAttendanceStamp.addEventListener('click', handleStamp);
 }
 if (btnCloseAttendance) {
   btnCloseAttendance.addEventListener('click', () => {
