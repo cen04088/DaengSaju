@@ -540,8 +540,7 @@ function renderCalendar() {
 }
 
 async function handleStamp() {
-  // ⚠️ [TEST MODE] - 테스트 완료 후 아래 주석 해제
-  // if(attendanceRecord.includes(todayDate)) return;
+  if (attendanceRecord.includes(todayDate)) return;
 
   try {
     const res = await fetch(`${BASE_URL}/api/saju/attendance/`, {
@@ -577,17 +576,8 @@ async function handleStamp() {
     }
   } catch (e) {
     console.warn('[Attendance] POST 실패, LocalStorage 폴백:', e);
-    // ⚠️ [TEST MODE] 폴백 시에도 숫자가 늘어나도록 수정
-    let dayToAdd = todayDate;
-    if (attendanceRecord.includes(dayToAdd)) {
-      for (let d = 1; d <= 31; d++) {
-        if (!attendanceRecord.includes(d)) {
-          dayToAdd = d;
-          break;
-        }
-      }
-    }
-    attendanceRecord = [...new Set([...attendanceRecord, dayToAdd])].sort((a, b) => a - b);
+    if (attendanceRecord.includes(todayDate)) return;
+    attendanceRecord = [...new Set([...attendanceRecord, todayDate])].sort((a, b) => a - b);
     currentStreak = attendanceRecord.length;
     localStorage.setItem('daengsaju_attendance', JSON.stringify({
       month: currentMonth, record: attendanceRecord, streakCount: currentStreak

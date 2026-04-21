@@ -442,17 +442,16 @@ class AttendanceView(APIView):
             defaults={'attended_days': [], 'streak_count': 0, 'claimed_milestones': []}
         )
 
-        # ⚠️ [TEST MODE] 클릭할 때마다 출석 일수가 늘어나도록 수정
-        day_to_add = today.day
-        if day_to_add in attendance.attended_days:
-            # 이미 오늘 출석했다면, 1~31일 중 비어있는 날짜를 하나씩 채워줌
-            for d in range(1, 32):
-                if d not in attendance.attended_days:
-                    day_to_add = d
-                    break
+        if today.day in attendance.attended_days:
+            return Response({
+                'stamped': False,
+                'message': '오늘 이미 출석하셨습니다.',
+                'attended_days': attendance.attended_days,
+                'streak_count': attendance.streak_count
+            }, status=status.HTTP_200_OK)
 
-        new_days = sorted(set(attendance.attended_days + [day_to_add]))
-        new_total = len(new_days)  # 이번 달 누적 출석일수
+        new_days = sorted(set(attendance.attended_days + [today.day]))
+        new_total = len(new_days)
 
         # 신규 달성 마일스톤 확인 (누적 일수 기준, 이미 수령하지 않은 것만)
         new_milestone = None
