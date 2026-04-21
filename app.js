@@ -605,7 +605,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if(btnOpenAttendance) {
     btnOpenAttendance.addEventListener('click', async () => {
+      console.log('[Attendance] 출석 버튼 클릭됨. 로딩 시작...');
+      // 1. 먼저 출석 데이터 로드
       await loadAttendance();
+      // 2. 즉시 오늘 날짜 도장 찍기 시도
+      console.log('[Attendance] 즉시 도장 찍기(handleStamp) 호출');
+      await handleStamp(); 
+      // 3. 달력 렌더링 및 모달 열기
       renderCalendar();
       attendanceModal.classList.remove('hidden');
     });
