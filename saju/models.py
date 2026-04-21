@@ -224,3 +224,27 @@ class DailyElementLuck(TimeStampedModel):
 
     def __str__(self):
         return f"{self.date} - {self.element} 기운의 산책운"
+
+
+class Attendance(TimeStampedModel):
+    """
+    월간 출석 스탬프 기록 (사용자별)
+    - tossUserKey(social_id)로 User를 특정하고 연월(year, month) 단위로 1개 레코드 유지
+    - attended_days: 출석한 일자(1~31) 배열 [1, 3, 4, ...]
+    - streak_count: 현재 연속 출석 일수
+    - claimed_milestones: 이미 수령한 부적 마일스톤(일수) 목록 [3, 7, ...]
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attendances', verbose_name="보호자")
+    year = models.IntegerField(verbose_name="연도")
+    month = models.IntegerField(verbose_name="월")
+    attended_days = models.JSONField(default=list, verbose_name="출석 일자 목록")
+    streak_count = models.IntegerField(default=0, verbose_name="연속 출석 일수")
+    claimed_milestones = models.JSONField(default=list, verbose_name="수령 완료된 마일스톤")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'year', 'month'], name='unique_user_monthly_attendance')
+        ]
+
+    def __str__(self):
+        return f"{self.user.nickname} - {self.year}년 {self.month}월 ({self.streak_count}일 연속)"

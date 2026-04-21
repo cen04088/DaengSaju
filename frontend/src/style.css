@@ -987,3 +987,131 @@ input[type="time"]:focus {
     transform: translateY(0);
   }
 }
+
+/* ========================================= */
+/* Monthly Attendance Calendar               */
+/* ========================================= */
+
+.calendar-modal {
+  background: rgba(30, 30, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  width: 90%;
+  max-width: 400px;
+  padding: 30px 20px;
+  position: relative;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-header {
+  text-align: center;
+  color: #fff;
+  margin-bottom: 25px;
+}
+.calendar-header h2 { font-size: 22px; margin: 0 0 10px 0; color: #f8c3d3; font-weight: 800; }
+.streak-status { font-size: 16px; margin: 0; color: #e2e8f0; }
+.streak-status strong { color: #ff69b4; font-size: 20px; text-shadow: 0 0 8px rgba(255,105,180,0.5); font-weight: 800; }
+
+.progress-container { margin-top: 15px; }
+.progress-text { font-size: 13px; color: #9da4b4; display: block; margin-bottom: 8px; font-weight: 600; }
+.progress-bar-bg { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, #ff69b4, #ffd700); border-radius: 10px; transition: width 0.5s ease; }
+
+.calendar-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+}
+
+.calendar-cell {
+  aspect-ratio: 1;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; transition: all 0.2s;
+}
+
+.calendar-cell.streak-connected {
+  border-left: 2px solid #ff69b4;
+}
+
+.day-number { color: #5c6374; font-weight: 600; z-index: 1; font-size: 14px; }
+
+.calendar-cell.today-pending {
+  border: 1px dashed #ff69b4;
+  cursor: pointer;
+  background: rgba(255,105,180,0.1);
+  animation: pulse-pink 1.5s infinite;
+}
+
+.calendar-cell.stamped {
+  background: rgba(255, 105, 180, 0.15);
+  border: 1px solid rgba(255, 105, 180, 0.3);
+  box-shadow: inset 0 0 10px rgba(255,105,180,0.1);
+}
+
+.calendar-cell.stamped .day-number { color: transparent; }
+
+.paw-stamp {
+  position: absolute;
+  font-size: 20px;
+  text-shadow: 0 0 8px #ff69b4, 0 0 15px #ffd700;
+  animation: stampDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Talisman Modal */
+.talisman-modal-overlay {
+  z-index: 2000;
+}
+.talisman-modal {
+  background: linear-gradient(135deg, #1e1e2a 0%, #292938 100%);
+  border: 2px solid #ffd700;
+  border-radius: 20px;
+  padding: 30px; width: 90%; max-width: 340px; text-align: center;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+  position: relative;
+}
+
+.talisman-content h2 { color: #ffd700; font-size: 20px; margin-bottom: 20px; font-weight: 800; }
+.talisman-image-placeholder {
+  width: 180px; height: 260px;
+  margin: 0 auto;
+  background: rgba(0,0,0,0.4); border: 2px dashed rgba(255,215,0,0.5);
+  border-radius: 15px; display: flex; align-items: center; justify-content: center;
+  font-size: 50px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+.talisman-name { color: #fff; font-size: 22px; margin-bottom: 8px; font-weight: 800; }
+.talisman-desc { color: #b1b5c4; font-size: 14px; line-height: 1.5; margin-bottom: 25px; }
+
+.talisman-actions { display: flex; flex-direction: column; gap: 10px; }
+.action-btn { padding: 14px; border-radius: 16px; border: none; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.2s;}
+.download-btn { background: #ffd700; color: #1e1e2a; }
+.share-btn { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+.close-talisman-btn { background: transparent; color: #7f8596; text-decoration: underline; margin-top: 5px; font-size: 14px; padding: 5px; }
+
+/* Modal overlay general */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(10, 10, 18, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes pulse-pink {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,105,180,0.4); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255,105,180,0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,105,180,0); }
+}
+
+@keyframes stampDown {
+  0% { transform: scale(5) rotate(-20deg); opacity: 0; }
+  50% { transform: scale(0.8) rotate(10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}

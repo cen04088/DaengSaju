@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 
-from .models import User, Dog, SajuBasics, AIInterpretation, DailyWalkingLuck, ArchetypeSaju, DailyElementLuck, Compatibility, CompatibilityArchetype
+from .models import User, Dog, SajuBasics, AIInterpretation, DailyWalkingLuck, ArchetypeSaju, DailyElementLuck, Compatibility, CompatibilityArchetype, Attendance
 from .serializers import DogSerializer, SajuBasicsSerializer, AIInterpretationSerializer, DailyWalkingLuckSerializer
 from .services.manseryeok import get_saju_for_dog, get_secondary_influence_text, get_relationship_type, add_hanja_to_terms, smart_replace
 
@@ -386,4 +386,100 @@ class CompatibilityView(APIView):
             'title': add_hanja_to_terms(result_title),
             'description': add_hanja_to_terms(result_description),
             'advice': add_hanja_to_terms(result_advice),
+        }, status=status.HTTP_200_OK)
+
+
+class AttendanceView(APIView):
+    """
+    월간 출석 스탬프 API (사용자별 DB 저장)
+    GET  /api/saju/attendance/?social_id=<toss_key>  - 이번 달 출석 현황 조회
+    POST /api/saju/attendance/                        - 오늘 출석 도장 찍기
+    """
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    MILESTONES = [3, 7, 10, 15, 30]
+
+    def _get_or_create_user(self, social_id):
+        user, _ = User.objects.get_or_create(
+            social_id=social_id,
+            defaults={'username': social_id, 'nickname': 'Toss 사용자'}
+        )
+        return user
+
+    def get(self, request):
+        social_id = request.query_params.get('social_id')
+        if not social_id:
+            return Response({'error': 'social_id 파라미터가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = self._get_or_create_user(social_id)
+        today = date.today()
+
+        attendance, _ = Attendance.objects.get_or_create(
+            user=user, year=today.year, month=today.month,
+            defaults={'attended_days': [], 'streak_count': 0, 'claimed_milestones': []}
+        )
+
+        return Response({
+            'year': attendance.year,
+            'month': attendance.month,
+            'attended_days': attendance.attended_days,
+            'streak_count': attendance.streak_count,
+            'claimed_milestones': attendance.claimed_milestones,
+            'already_stamped_today': today.day in attendance.attended_days,
+        }, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        social_id = request.data.get('social_id')
+        if not social_id:
+            return Response({'error': 'social_id가 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = self._get_or_create_user(social_id)
+        today = date.today()
+
+        attendance, created = Attendance.objects.get_or_create(
+            user=user, year=today.year, month=today.month,
+            defaults={'attended_days': [], 'streak_count': 0, 'claimed_milestones': []}
+        )
+
+        # 이미 오늘 출석한 경우
+        if today.day in attendance.attended_days:
+            return Response({
+                'stamped': False,
+                'message': '오늘은 이미 출석하셨습니다.',
+                'attended_days': attendance.attended_days,
+                'streak_count': attendance.streak_count,
+                'claimed_milestones': attendance.claimed_milestones,
+                'new_milestone': None,
+            }, status=status.HTTP_200_OK)
+
+        # 연속 출석 계산: 어제(today.day - 1)가 이미 출석 배열에 있는지 확인
+        yesterday = today.day - 1
+        is_consecutive = yesterday in attendance.attended_days
+        new_streak = attendance.streak_count + 1 if is_consecutive else 1
+
+        # 출석 일자 추가 및 정렬
+        new_days = sorted(set(attendance.attended_days + [today.day]))
+
+        # 신규 달성 마일스톤 확인 (이미 수령하지 않은 것만)
+        new_milestone = None
+        if new_streak in self.MILESTONES and new_streak not in attendance.claimed_milestones:
+            new_milestone = new_streak
+            new_claimed = sorted(set(attendance.claimed_milestones + [new_streak]))
+        else:
+            new_claimed = attendance.claimed_milestones
+
+        # DB 업데이트
+        attendance.attended_days = new_days
+        attendance.streak_count = new_streak
+        attendance.claimed_milestones = new_claimed
+        attendance.save()
+
+        return Response({
+            'stamped': True,
+            'message': '출석 완료!',
+            'attended_days': new_days,
+            'streak_count': new_streak,
+            'claimed_milestones': new_claimed,
+            'new_milestone': new_milestone,  # 부적 획득 시 일수 반환, 없으면 null
         }, status=status.HTTP_200_OK)

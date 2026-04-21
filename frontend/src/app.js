@@ -475,7 +475,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       })
       .catch(err => {
         console.error(err);
-        alert("운세를 분석하는 중 오류가 발생했습니다. 확인 후 다시 시도해주세요.");
+        // 에러 모달 표시
+        const errorModal = document.getElementById('error-modal');
+        if (errorModal) {
+          errorModal.style.display = 'flex';
+        } else {
+          alert("운세를 분석하는 중 오류가 발생했습니다. 확인 후 다시 시도해주세요.");
+        }
         navigateTo(inputScreen, false);
       });
   }); // btnSubmit end
@@ -745,4 +751,235 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     return name + type;
   }
+
+  // Error Modal Close Event
+  const btnCloseError = document.getElementById('btn-close-error');
+  if (btnCloseError) {
+    btnCloseError.addEventListener('click', () => {
+      document.getElementById('error-modal').style.display = 'none';
+    });
+  }
+
+  // ─── Attendance & Streak Logic ───────────────────────────────────────────
+  const TALISMAN_REWARDS = {
+    3: { name: '초심자의 뼈다귀 부적', desc: '3일 연속 출석! 멍멍이의 에너지가 솟아납니다.' },
+    7: { name: '행운의 비글 부적', desc: '럭키 7일! 이번 주 내내 기분 좋은 일이 가득할 거예요.' },
+    10: { name: '재물운 닥스훈트 부적', desc: '10일 달성! 생각지도 못한 간식이나 행운이 찾아옵니다.' },
+    15: { name: '사랑둥이 리트리버 부적', desc: '15일 달성! 주변 사람들에게 많은 사랑을 받는 시기예요.' },
+    30: { name: '전설의 황금 시바 부적', desc: '한 달 완주! 당신은 진정한 댕사주 마스터!' },
+  };
+  const MILESTONES = [3, 7, 10, 15, 30];
+
+  const btnOpenAttendance = document.getElementById('btn-open-attendance');
+  const attendanceModal = document.getElementById('attendance-modal');
+  const btnCloseAttendance = document.getElementById('btn-close-attendance');
+  const talismanModal = document.getElementById('talisman-modal');
+  const btnCloseTalisman = document.getElementById('btn-close-talisman');
+  const btnDownloadTalisman = document.getElementById('btn-download-talisman');
+  const btnShareTalisman = document.getElementById('btn-share-talisman');
+
+  let attendanceRecord = [];
+  let currentStreak = 0;
+  let currentTalismanDay = null;
+
+  const todayDateObj = new Date();
+  const currentMonth = todayDateObj.getMonth() + 1;
+  const currentDaysInMonth = new Date(todayDateObj.getFullYear(), todayDateObj.getMonth() + 1, 0).getDate();
+  const todayDate = todayDateObj.getDate();
+
+  // ─── API 기반 출석 로드 ───────────────────────────────────────────
+  async function loadAttendance() {
+    try {
+      const res = await fetch(`${BASE_URL}/api/saju/attendance/?social_id=${encodeURIComponent(tossUserKey)}`);
+      if (!res.ok) throw new Error('출석 조회 실패');
+      const data = await res.json();
+      attendanceRecord = data.attended_days || [];
+      currentStreak = data.streak_count || 0;
+      return data;
+    } catch (e) {
+      console.warn('[Attendance] API 실패, LocalStorage 폴백:', e);
+      // 폴백: localStorage
+      const stored = localStorage.getItem('daengsaju_attendance');
+      if (stored) {
+        const d = JSON.parse(stored);
+        if (d.month === currentMonth) {
+          attendanceRecord = d.record || [];
+          currentStreak = d.streakCount || 0;
+        }
+      }
+      return { attended_days: attendanceRecord, streak_count: currentStreak, claimed_milestones: [] };
+    }
+  }
+
+  function renderCalendar() {
+    const grid = document.getElementById('calendar-grid');
+    grid.innerHTML = '';
+    
+    document.getElementById('calendar-month').textContent = currentMonth;
+    document.getElementById('calendar-streak').textContent = currentStreak + '일';
+    
+    const nextRewardDay = MILESTONES.find(m => m > currentStreak) || 30;
+    const daysLeft = Math.max(0, nextRewardDay - currentStreak);
+    const progressPercent = Math.min((currentStreak / nextRewardDay) * 100, 100);
+    
+    document.getElementById('calendar-progress-text').textContent = `다음 스페셜 부적까지 단 ${daysLeft}일 남았어요!`;
+    document.getElementById('calendar-progress-fill').style.width = progressPercent + '%';
+
+    for(let day = 1; day <= currentDaysInMonth; day++) {
+      const isStamped = attendanceRecord.includes(day);
+      const isToday = day === todayDate;
+      const isStreakConnected = isStamped && attendanceRecord.includes(day - 1);
+      
+      const cell = document.createElement('div');
+      cell.className = 'calendar-cell';
+      if(isStamped) cell.classList.add('stamped');
+      if(isToday && !isStamped) cell.classList.add('today-pending');
+      if(isStreakConnected) cell.classList.add('streak-connected');
+      
+      const span = document.createElement('span');
+      span.className = 'day-number';
+      span.textContent = day;
+      cell.appendChild(span);
+      
+      if(isStamped) {
+        const stamp = document.createElement('div');
+        stamp.className = 'paw-stamp';
+        stamp.textContent = '🐾';
+        cell.appendChild(stamp);
+      }
+      
+      if(isToday) {
+        cell.addEventListener('click', handleStamp);
+      }
+      grid.appendChild(cell);
+    }
+  }
+
+  async function handleStamp() {
+    if(attendanceRecord.includes(todayDate)) return;
+
+    try {
+      const res = await fetch(`${BASE_URL}/api/saju/attendance/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ social_id: tossUserKey })
+      });
+      if (!res.ok) throw new Error('출석 저장 실패');
+      const data = await res.json();
+
+      if (!data.stamped) {
+        // 이미 출석한 경우 서버 응답으로도 처리
+        attendanceRecord = data.attended_days || attendanceRecord;
+        currentStreak = data.streak_count || currentStreak;
+        renderCalendar();
+        return;
+      }
+
+      attendanceRecord = data.attended_days || [];
+      currentStreak = data.streak_count || 0;
+
+      // LocalStorage에도 폴백으로 동기화
+      localStorage.setItem('daengsaju_attendance', JSON.stringify({
+        month: currentMonth, record: attendanceRecord, streakCount: currentStreak
+      }));
+
+      renderCalendar();
+
+      if(typeof confetti === 'function') {
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
+      }
+
+      // 신규 마일스톤 달성 시 부적 모달 표시
+      if(data.new_milestone) {
+        setTimeout(() => { showTalisman(data.new_milestone); }, 1000);
+      }
+    } catch(e) {
+      console.warn('[Attendance] POST 실패, LocalStorage 폴백:', e);
+      // 폴백 처리
+      const isConsecutive = attendanceRecord.includes(todayDate - 1);
+      currentStreak = isConsecutive ? currentStreak + 1 : 1;
+      attendanceRecord = [...new Set([...attendanceRecord, todayDate])].sort((a,b)=>a-b);
+      localStorage.setItem('daengsaju_attendance', JSON.stringify({
+        month: currentMonth, record: attendanceRecord, streakCount: currentStreak
+      }));
+      renderCalendar();
+      if(typeof confetti === 'function') {
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
+      }
+      if(TALISMAN_REWARDS[currentStreak]) { setTimeout(() => { showTalisman(currentStreak); }, 1000); }
+    }
+  }
+
+  function showTalisman(streak) {
+    currentTalismanDay = streak;
+    const reward = TALISMAN_REWARDS[streak];
+    document.getElementById('talisman-name').textContent = reward.name;
+    document.getElementById('talisman-desc').textContent = reward.desc;
+    const imgEl = document.getElementById('talisman-img');
+    imgEl.src = `/assets/talisman_${streak}.png`;
+    imgEl.onerror = () => { imgEl.style.display = 'none'; };
+    imgEl.style.display = 'block';
+    
+    talismanModal.classList.remove('hidden');
+  }
+
+  if(btnOpenAttendance) {
+    btnOpenAttendance.addEventListener('click', async () => {
+      await loadAttendance();
+      renderCalendar();
+      attendanceModal.classList.remove('hidden');
+    });
+  }
+
+  if(btnCloseAttendance) {
+    btnCloseAttendance.addEventListener('click', () => {
+      attendanceModal.classList.add('hidden');
+    });
+  }
+
+  if(btnCloseTalisman) {
+    btnCloseTalisman.addEventListener('click', () => {
+      talismanModal.classList.add('hidden');
+    });
+  }
+
+  if(btnDownloadTalisman) {
+    btnDownloadTalisman.addEventListener('click', async () => {
+      const origText = btnDownloadTalisman.innerHTML;
+      btnDownloadTalisman.innerHTML = "저장 중... ⏳";
+      try {
+        const wrapper = document.getElementById('talisman-content-wrapper');
+        const canvas = await html2canvas(wrapper, { backgroundColor: '#1E1E2A', useCORS: true });
+        const dataUrl = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `daengsaju_talisman_${currentStreak}.png`;
+        a.click();
+      } catch(e) {
+        console.error(e);
+        alert('이미지 저장에 실패했습니다.');
+      }
+      btnDownloadTalisman.innerHTML = origText;
+    });
+  }
+
+  if(btnShareTalisman) {
+    btnShareTalisman.addEventListener('click', async () => {
+      if(navigator.share) {
+        try {
+          const reward = TALISMAN_REWARDS[currentTalismanDay];
+          await navigator.share({
+            title: '댕사주 스페셜 부적',
+            text: `댕사주에서 ${currentStreak}일 연속 출석하고 '${reward.name}'을 획득했어요! 🐾`,
+            url: window.location.href,
+          });
+        } catch(e) {
+          console.log('Share canceled or failed', e);
+        }
+      } else {
+        alert('지원하지 않는 브라우저입니다.');
+      }
+    });
+  }
+
 });
