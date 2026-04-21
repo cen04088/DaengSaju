@@ -567,7 +567,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch(e) {
       console.warn('[Attendance] POST 실패, LocalStorage 폴백:', e);
-      attendanceRecord = [...new Set([...attendanceRecord, todayDate])].sort((a,b)=>a-b);
+      // ⚠️ [TEST MODE] 폴백 시에도 숫자가 늘어나도록 수정
+      let dayToAdd = todayDate;
+      if (attendanceRecord.includes(dayToAdd)) {
+        for (let d = 1; d <= 31; d++) {
+          if (!attendanceRecord.includes(d)) {
+            dayToAdd = d;
+            break;
+          }
+        }
+      }
+      attendanceRecord = [...new Set([...attendanceRecord, dayToAdd])].sort((a,b)=>a-b);
       currentStreak = attendanceRecord.length;
       localStorage.setItem('daengsaju_attendance', JSON.stringify({
         month: currentMonth, record: attendanceRecord, streakCount: currentStreak
