@@ -4,7 +4,7 @@ const BASE_URL = 'https://web-production-285b5.up.railway.app';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Get User Key from Toss Bridge
-  let tossUserKey = 'demo_toss_user';
+  let tossUserKey = null;
   try {
     const result = await getAnonymousKey();
     if (result && result.type === 'HASH') {
@@ -12,6 +12,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   } catch (e) {
     console.warn("Toss Bridge not available or failed to get user key", e);
+  }
+
+  function getUserKey() {
+    return typeof tossUserKey === 'string' ? tossUserKey.trim() : '';
+  }
+
+  function requireUserKey() {
+    const userKey = getUserKey();
+    if (userKey) return userKey;
+    alert('Toss user key is unavailable. Please reopen this app from Toss.');
+    return '';
+  }
+
+  function buildHeaders(includeJson = false) {
+    const headers = {};
+    const userKey = getUserKey();
+
+    if (includeJson) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    if (userKey) {
+      headers['X-Toss-User-Key'] = userKey;
+    }
+
+    return headers;
   }
 
   // Screens
@@ -350,10 +376,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    const userKey = requireUserKey();
+    if (!userKey) {
+      return;
+    }
+
     const dogName = dogNameInput.value.trim();
     document.querySelectorAll('.dog-name-display').forEach(el => el.textContent = dogName);
 
     if (testType === 'chemistry') {
+      const ownerDate = document.getElementById('owner-date').value;
+      if (!ownerDate) {
+        alert('보호자 생년월일을 입력해주세요!');
+        return;
+      }
       chemistryResultSection.style.display = 'block';
     } else {
       chemistryResultSection.style.display = 'none';
@@ -365,7 +401,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 2단계: API 호출을 백그라운드에서 즉시 시작 (광고와 병렬 실행)
     const dogGender = document.querySelector('input[name="dog-gender"]:checked').value;
     const postData = {
-      social_id: tossUserKey,
+      social_id: userKey,
       nickname: "Toss 사용자",
       dog: {
         name: dogName,
@@ -380,7 +416,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const apiPromise = (async () => {
       const regRes = await fetch(`${BASE_URL}/api/saju/dogs/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: buildHeaders(true),
         body: JSON.stringify(postData)
       });
       const regData = await regRes.json();
@@ -388,7 +424,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const dogId = regData.dog_id;
 
       // /basics/ 먼저 호출 (백엔드 사주 계산 트리거)
-      const basicRes = await fetch(`${BASE_URL}/api/saju/dogs/${dogId}/basics/`);
+      const basicRes = await fetch(`${BASE_URL}/api/saju/dogs/${dogId}/basics/`, {
+        headers: buildHeaders()
+      });
       const basicData = await basicRes.json();
 
       // 결과 화면 진입 전 이미지 프리로딩을 통해 렌더링 렉 최소화
@@ -403,8 +441,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // basics 완료 후 나머지 병렬 호출
       const [perRes, luckRes] = await Promise.all([
-        fetch(`${BASE_URL}/api/saju/dogs/${dogId}/personality/`),
-        fetch(`${BASE_URL}/api/saju/dogs/${dogId}/daily-luck/`),
+        fetch(`${BASE_URL}/api/saju/dogs/${dogId}/personality/`, {
+          headers: buildHeaders()
+        }),
+        fetch(`${BASE_URL}/api/saju/dogs/${dogId}/daily-luck/`, {
+          headers: buildHeaders()
+        }),
       ]);
       const perData = await perRes.json();
       const luckData = await luckRes.json();
@@ -416,7 +458,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
           const chemRes = await fetch(`${BASE_URL}/api/saju/dogs/${dogId}/compatibility/`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: buildHeaders(true),
             body: JSON.stringify({ owner_birth_date: ownerDate, owner_birth_time: ownerTime })
           });
           if (chemRes.ok) chemData = await chemRes.json();
@@ -771,6 +813,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const MILESTONES = [3, 7, 10, 15, 20];
 
   const btnOpenAttendance = document.getElementById('btn-open-attendance');
+  const btnAttendanceStamp = document.getElementById('btn-attendance-stamp');
   const attendanceModal = document.getElementById('attendance-modal');
   const btnCloseAttendance = document.getElementById('btn-close-attendance');
   const talismanModal = document.getElementById('talisman-modal');
@@ -787,27 +830,35 @@ document.addEventListener('DOMContentLoaded', async () => {
   const currentDaysInMonth = new Date(todayDateObj.getFullYear(), todayDateObj.getMonth() + 1, 0).getDate();
   const todayDate = todayDateObj.getDate();
 
+  function updateAttendanceStampButton() {
+    if (!btnAttendanceStamp) return;
+
+    const alreadyStamped = attendanceRecord.includes(todayDate);
+    btnAttendanceStamp.disabled = alreadyStamped;
+    btnAttendanceStamp.textContent = alreadyStamped ? '오늘 출석 완료' : '오늘 출석하기';
+  }
+
   // ─── API 기반 출석 로드 ───────────────────────────────────────────
   async function loadAttendance() {
+    const userKey = requireUserKey();
+    if (!userKey) {
+      return null;
+    }
+
     try {
-      const res = await fetch(`${BASE_URL}/api/saju/attendance/?social_id=${encodeURIComponent(tossUserKey)}`);
+      const res = await fetch(`${BASE_URL}/api/saju/attendance/`, {
+        headers: buildHeaders()
+      });
       if (!res.ok) throw new Error('출석 조회 실패');
       const data = await res.json();
       attendanceRecord = data.attended_days || [];
       currentStreak = data.streak_count || 0;
+      updateAttendanceStampButton();
       return data;
     } catch (e) {
-      console.warn('[Attendance] API 실패, LocalStorage 폴백:', e);
-      // 폴백: localStorage
-      const stored = localStorage.getItem('daengsaju_attendance');
-      if (stored) {
-        const d = JSON.parse(stored);
-        if (d.month === currentMonth) {
-          attendanceRecord = d.record || [];
-          currentStreak = d.streakCount || 0;
-        }
-      }
-      return { attended_days: attendanceRecord, streak_count: currentStreak, claimed_milestones: [] };
+      console.error('[Attendance] load failed:', e);
+      alert('출석 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+      return null;
     }
   }
 
@@ -848,21 +899,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         cell.appendChild(stamp);
       }
 
-      if (isToday) {
-        cell.addEventListener('click', handleStamp);
-      }
       grid.appendChild(cell);
     }
+
+    updateAttendanceStampButton();
   }
 
   async function handleStamp() {
-    if (attendanceRecord.includes(todayDate)) return;
+    const userKey = requireUserKey();
+    if (!userKey || attendanceRecord.includes(todayDate)) return;
 
     try {
       const res = await fetch(`${BASE_URL}/api/saju/attendance/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ social_id: tossUserKey })
+        headers: buildHeaders(true),
+        body: JSON.stringify({ social_id: userKey })
       });
       if (!res.ok) throw new Error('출석 저장 실패');
       const data = await res.json();
@@ -878,11 +929,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       attendanceRecord = data.attended_days || [];
       currentStreak = data.streak_count || 0;
 
-      // LocalStorage에도 폴백으로 동기화
-      localStorage.setItem('daengsaju_attendance', JSON.stringify({
-        month: currentMonth, record: attendanceRecord, streakCount: currentStreak
-      }));
-
       renderCalendar();
 
       if (typeof confetti === 'function') {
@@ -894,17 +940,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => { showTalisman(data.new_milestone); }, 1000);
       }
     } catch (e) {
-      if (attendanceRecord.includes(todayDate)) return;
-      attendanceRecord = [...new Set([...attendanceRecord, todayDate])].sort((a, b) => a - b);
-      currentStreak = attendanceRecord.length; // 누적 일수
-      localStorage.setItem('daengsaju_attendance', JSON.stringify({
-        month: currentMonth, record: attendanceRecord, streakCount: currentStreak
-      }));
-      renderCalendar();
-      if (typeof confetti === 'function') {
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
-      }
-      if (TALISMAN_REWARDS[currentStreak]) { setTimeout(() => { showTalisman(currentStreak); }, 1000); }
+      console.error('[Attendance] stamp failed:', e);
+      alert('출석 처리에 실패했어요. 잠시 후 다시 시도해주세요.');
     }
   }
 
@@ -923,10 +960,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (btnOpenAttendance) {
     btnOpenAttendance.addEventListener('click', async () => {
-      await loadAttendance();
+      const attendanceData = await loadAttendance();
+      if (!attendanceData) {
+        return;
+      }
       renderCalendar();
       attendanceModal.classList.remove('hidden');
     });
+  }
+
+  if (btnAttendanceStamp) {
+    btnAttendanceStamp.addEventListener('click', handleStamp);
   }
 
   if (btnCloseAttendance) {
