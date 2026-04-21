@@ -295,9 +295,9 @@ btnSubmit.addEventListener('click', async (e) => {
     const hanjaEl = elementHanjaMap[basicData.main_element] || '火';
 
     if (resultImage) {
-      resultImage.src = `./assets/${imgName}_dog.png`;
+      resultImage.src = `/static/assets/${imgName}_dog.png`;
     } else {
-      document.querySelector('.result-img').src = `./assets/${imgName}_dog.png`;
+      document.querySelector('.result-img').src = `/static/assets/${imgName}_dog.png`;
     }
     document.getElementById('res-summary').innerHTML = `${formatText(perData.personality_summary)}<br><span class="${colorClass}">${basicData.main_element}(${hanjaEl})</span>의 기운을 타고난 <span class="dog-name-display">${dogName}</span>!`;
     document.getElementById('res-food').innerHTML = formatText(perData.treat_luck);
@@ -658,7 +658,7 @@ function showTalisman(streak) {
   document.getElementById('talisman-name').textContent = reward.name;
   document.getElementById('talisman-desc').textContent = reward.desc;
   const imgEl = document.getElementById('talisman-img');
-  imgEl.src = `./assets/talisman_${streak}.png`;
+  imgEl.src = `/static/assets/talisman_${streak}.png`;
   imgEl.onerror = () => { imgEl.style.display = 'none'; };
   imgEl.style.display = 'block';
 

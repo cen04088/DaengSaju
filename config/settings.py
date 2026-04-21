@@ -172,6 +172,21 @@ STATICFILES_DIRS = [
     BASE_DIR  # Allows finding files in the root like app.js, style.css, etc.
 ]
 
+WHITENOISE_KEEP_ONLY_HASHED_FILES = True
+WHITENOISE_AUTOREFRESH = DEBUG
+WHITENOISE_USE_FINDERS = DEBUG
+WHITENOISE_IGNORE_PATTERNS = [
+    '*.py',
+    '*.pyc',
+    '*.sqlite3',
+    '*.json',
+    '.env*',
+    '.git/*',
+    'venv/*',
+    'scratch/*',
+    '__pycache__/*',
+]
+
 # Specifically exclude some files from being served as static
 # (Optional, but good for security)
 # WHITENOISE_IGNORE_PATTERNS = ['*.py', '*.sqlite3', '.env*']

@@ -15,10 +15,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include, re_path
+from django.urls import path, include
 from django.views.generic import TemplateView
-from django.conf import settings
-from django.views.static import serve
 import mimetypes
 
 # Windows 레지스트리 버그로 인해 JS 파일이 text/plain으로 서빙되는 문제 해결
@@ -28,5 +26,4 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/saju/', include('saju.urls')),
     path('', TemplateView.as_view(template_name='index.html'), name='home'),
-    re_path(r'^(?P<path>.*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))$', serve, {'document_root': settings.BASE_DIR}),
 ]

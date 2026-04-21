@@ -4,7 +4,35 @@ from django.test import TestCase
 from rest_framework.test import APIRequestFactory
 
 from .models import Compatibility, CompatibilityArchetype, Dog, SajuBasics, User
-from .views import CompatibilityResultView
+from .views import CompatibilityResultView, DogRegisterView
+
+
+class DogRegisterViewTests(TestCase):
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = DogRegisterView.as_view()
+
+    def test_reuses_existing_dog_for_identical_payload(self):
+        payload = {
+            'social_id': 'owner-key',
+            'nickname': 'Owner',
+            'dog': {
+                'name': 'Mung',
+                'birth_date': '2020-01-01',
+                'birth_time': None,
+                'is_lunar': False,
+                'gender': 'MALE',
+                'is_estimated_birth': False,
+            },
+        }
+
+        first = self.view(self.factory.post('/api/saju/dogs/', payload, format='json'))
+        second = self.view(self.factory.post('/api/saju/dogs/', payload, format='json'))
+
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(first.data['dog_id'], second.data['dog_id'])
+        self.assertEqual(Dog.objects.count(), 1)
 
 
 class CompatibilityViewTests(TestCase):
