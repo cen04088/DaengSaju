@@ -856,7 +856,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function handleStamp() {
-    if(attendanceRecord.includes(todayDate)) return;
+    // ⚠️ [TEST MODE] - 테스트 완료 후 아래 주석 해제
+    // if(attendanceRecord.includes(todayDate)) return;
 
     try {
       const res = await fetch(`${BASE_URL}/api/saju/attendance/`, {
