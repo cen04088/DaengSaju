@@ -113,6 +113,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         screenElement.classList.add('active');
+        
+        // 메모리/렌더링 최적화: 결과 화면은 배경 불투명(bg-gray)이므로 무거운 배경 애니메이션 전체 숨김처리
+        const bgBlobs = document.querySelector('.bg-blobs');
+        if (bgBlobs) {
+          if (screenElement.id === 'result-screen') {
+            bgBlobs.style.display = 'none';
+          } else {
+            bgBlobs.style.display = 'block';
+          }
+        }
+
         // 메인화면일 때만 배너 마운트 (active 추가 직후 실행 보장)
         if (screenElement.id === 'main-screen') {
           if (typeof mountTossBanner === 'function') mountTossBanner();
@@ -476,6 +487,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!container) return;
     container.classList.remove('is-unlocked');
     container.classList.add('is-locked');
+    
+    // 이전에 unlock 하면서 부여된 인라인 필터 스타일을 제거하여 CSS의 blur 효과가 다시 먹히도록 함
+    const texts = container.querySelectorAll('.lockable-text');
+    texts.forEach(t => t.style.filter = '');
+
     if (overlay) {
       // 인라인 스타일 초기화 (unlockReports에서 설정한 값 제거)
       overlay.style.opacity = '';
@@ -490,6 +506,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!container) return;
     container.classList.remove('is-unlocked');
     container.classList.add('is-locked');
+
+    // 리셋
+    const texts = container.querySelectorAll('.lockable-text');
+    texts.forEach(t => t.style.filter = '');
+
     if (overlay) {
       overlay.style.opacity = '';
       overlay.style.pointerEvents = '';
@@ -506,7 +527,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (overlay) {
       overlay.style.opacity = '0';
       overlay.style.pointerEvents = 'none';
-      setTimeout(() => { overlay.style.display = 'none'; }, 400);
+      setTimeout(() => { 
+        overlay.style.display = 'none'; 
+        // 500ms 트랜지션 완료 후 인라인 스타일로 필터 완전 제거 (GPU 메모리 절약)
+        const texts = container.querySelectorAll('.lockable-text');
+        texts.forEach(t => t.style.filter = 'none');
+      }, 500);
     }
     // Staggered card reveal after unlock
     const cards = container.querySelectorAll('.detail-card');
@@ -527,7 +553,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (overlay) {
       overlay.style.opacity = '0';
       overlay.style.pointerEvents = 'none';
-      setTimeout(() => { overlay.style.display = 'none'; }, 400);
+      setTimeout(() => { 
+        overlay.style.display = 'none'; 
+        // 트랜지션 완료 후 인라인 스타일로 필터 완전 제거 (GPU 메모리 절약)
+        const texts = container.querySelectorAll('.lockable-text');
+        texts.forEach(t => t.style.filter = 'none');
+      }, 500);
     }
   }
 
