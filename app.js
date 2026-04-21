@@ -22,7 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Config
   const BASE_URL = ''; // Same origin
-  let tossUserKey = 'demo_toss_user'; // Root app doesn't have framework imports, default to demo
+  // 고유 사용자 키 생성 (로컬스토리지에 저장하여 세션 유지)
+  let tossUserKey = localStorage.getItem('daengsaju_user_key');
+  if (!tossUserKey) {
+    tossUserKey = 'web_user_' + Math.random().toString(36).substring(2, 11);
+    localStorage.setItem('daengsaju_user_key', tossUserKey);
+  }
 
   // Attendance State
   let attendanceRecord = [];
@@ -209,12 +214,17 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify(postData)
       });
       const regData = await regRes.json();
-      if(!regRes.ok) throw new Error("등록 실패: " + JSON.stringify(regData));
+      if(!regRes.ok) {
+        console.error("등록 서버 에러:", regData);
+        throw new Error("등록 실패: " + (regData.error || JSON.stringify(regData)));
+      }
       
       const dogId = regData.dog_id;
+      console.log("[Analysis] 등록 성공, ID:", dogId);
 
       // 2. 사주 기본정보 (GET /basics/)
       const basicRes = await fetch(`/api/saju/dogs/${dogId}/basics/`);
+      if(!basicRes.ok) throw new Error("기본정보 로드 실패");
       const basicData = await basicRes.json();
       updateSajuTable(basicData);
       
