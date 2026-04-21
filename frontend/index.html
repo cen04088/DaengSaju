@@ -172,8 +172,10 @@
             </div>
 
             <!-- Attendance Button -->
-            <div class="card detail-card fade-in" style="margin-top: 16px; padding: 16px 20px; display: flex; align-items: center; justify-content: center;">
-              <button id="btn-open-attendance" class="btn-primary" style="width: 100%; height: 50px; font-size: 16px;">🐾 오늘 출석하고 도장 찍기</button>
+            <div class="card detail-card fade-in"
+              style="margin-top: 16px; padding: 16px 20px; display: flex; align-items: center; justify-content: center;">
+              <button id="btn-open-attendance" class="btn-primary"
+                style="width: 100%; height: 50px; font-size: 16px;">🧧오늘 출석하고 부적 모으기🧧</button>
             </div>
 
           </div>
@@ -407,7 +409,9 @@
         <div class="talisman-content">
           <h2>🎉 스페셜 댕댕 부적 획득 🎉</h2>
           <div class="talisman-image-placeholder">
-            <img id="talisman-img" src="/assets/talisman_3.png" alt="부적" style="width:100%; height:100%; object-fit:contain; border-radius:15px;" onerror="this.style.display='none'" />
+            <img id="talisman-img" src="/assets/talisman_3.png" alt="부적"
+              style="width:100%; height:100%; object-fit:contain; border-radius:15px;"
+              onerror="this.style.display='none'" />
           </div>
           <h3 id="talisman-name" class="talisman-name">부적 이름</h3>
           <p id="talisman-desc" class="talisman-desc">부적 설명</p>
@@ -430,11 +434,15 @@
     </div>
 
     <!-- Custom Error Modal -->
-    <div id="error-modal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);">
-      <div style="background: var(--color-surface); padding: 32px 24px; border-radius: 20px; width: 80%; max-width: 320px; text-align: center; box-shadow: 0 16px 40px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
+    <div id="error-modal"
+      style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);">
+      <div
+        style="background: var(--color-surface); padding: 32px 24px; border-radius: 20px; width: 80%; max-width: 320px; text-align: center; box-shadow: 0 16px 40px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
         <div style="font-size: 48px; margin-bottom: 16px;">🐕💨</div>
-        <h3 style="color: var(--color-text-title); font-size: 20px; font-weight: 700; margin-bottom: 12px;">앗, 오류가 발생했어요!</h3>
-        <p style="color: var(--color-text-body); font-size: 15px; line-height: 1.5; margin-bottom: 24px;">서버 댕댕이가 간식을 먹으러 가서<br>잠시 지연되고 있어요 🐾<br>잠시 후 다시 시도해주세요.</p>
+        <h3 style="color: var(--color-text-title); font-size: 20px; font-weight: 700; margin-bottom: 12px;">앗, 오류가
+          발생했어요!</h3>
+        <p style="color: var(--color-text-body); font-size: 15px; line-height: 1.5; margin-bottom: 24px;">서버 댕댕이가 간식을
+          먹으러 가서<br>잠시 지연되고 있어요 🐾<br>잠시 후 다시 시도해주세요.</p>
         <button id="btn-close-error" class="btn-primary" style="width: 100%;">확인</button>
       </div>
     </div>
