@@ -448,30 +448,26 @@ class AttendanceView(APIView):
                 'stamped': False,
                 'message': '오늘은 이미 출석하셨습니다.',
                 'attended_days': attendance.attended_days,
-                'streak_count': attendance.streak_count,
+                'streak_count': len(attendance.attended_days),
                 'claimed_milestones': attendance.claimed_milestones,
                 'new_milestone': None,
             }, status=status.HTTP_200_OK)
 
-        # 연속 출석 계산: 어제(today.day - 1)가 이미 출석 배열에 있는지 확인
-        yesterday = today.day - 1
-        is_consecutive = yesterday in attendance.attended_days
-        new_streak = attendance.streak_count + 1 if is_consecutive else 1
-
-        # 출석 일자 추가 및 정렬
+        # 연속 곋사 없이 단순 누적 일수로 쪽산
         new_days = sorted(set(attendance.attended_days + [today.day]))
+        new_total = len(new_days)  # 이번 달 누적 출석일수
 
-        # 신규 달성 마일스톤 확인 (이미 수령하지 않은 것만)
+        # 신규 달성 마일스톤 확인 (누적 일수 기준, 이미 수령하지 않은 것만)
         new_milestone = None
-        if new_streak in self.MILESTONES and new_streak not in attendance.claimed_milestones:
-            new_milestone = new_streak
-            new_claimed = sorted(set(attendance.claimed_milestones + [new_streak]))
+        if new_total in self.MILESTONES and new_total not in attendance.claimed_milestones:
+            new_milestone = new_total
+            new_claimed = sorted(set(attendance.claimed_milestones + [new_total]))
         else:
             new_claimed = attendance.claimed_milestones
 
         # DB 업데이트
         attendance.attended_days = new_days
-        attendance.streak_count = new_streak
+        attendance.streak_count = new_total  # 누적 일수를 streak_count 필드에 저장
         attendance.claimed_milestones = new_claimed
         attendance.save()
 
@@ -479,7 +475,7 @@ class AttendanceView(APIView):
             'stamped': True,
             'message': '출석 완료!',
             'attended_days': new_days,
-            'streak_count': new_streak,
+            'streak_count': new_total,
             'claimed_milestones': new_claimed,
-            'new_milestone': new_milestone,  # 부적 획득 시 일수 반환, 없으면 null
+            'new_milestone': new_milestone,
         }, status=status.HTTP_200_OK)

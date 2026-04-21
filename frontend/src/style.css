@@ -998,7 +998,7 @@ input[type="time"]:focus {
   border-radius: 24px;
   width: 90%;
   max-width: 400px;
-  padding: 30px 20px;
+  padding: 50px 20px 30px; /* top padding to make room for close-btn */
   position: relative;
   box-shadow: 0 15px 35px rgba(0,0,0,0.5);
   display: flex;
@@ -1008,10 +1008,30 @@ input[type="time"]:focus {
 .calendar-header {
   text-align: center;
   color: #fff;
-  margin-bottom: 25px;
+  margin-bottom: 20px;
+}
+/* 다크 테마 닫기 버튼 (왼쪽 위) */
+.close-btn-dark {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  font-family: inherit;
+}
+.close-btn-dark:active {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
 }
 .calendar-header h2 { font-size: 22px; margin: 0 0 10px 0; color: #f8c3d3; font-weight: 800; }
-.streak-status { font-size: 16px; margin: 0; color: #e2e8f0; }
+.streak-status { font-size: 15px; margin: 0 0 12px; color: #e2e8f0; text-align: center; }
 .streak-status strong { color: #ff69b4; font-size: 20px; text-shadow: 0 0 8px rgba(255,105,180,0.5); font-weight: 800; }
 
 .progress-container { margin-top: 15px; }
@@ -1025,29 +1045,28 @@ input[type="time"]:focus {
 
 .calendar-cell {
   aspect-ratio: 1;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   position: relative; transition: all 0.2s;
 }
 
-.calendar-cell.streak-connected {
-  border-left: 2px solid #ff69b4;
-}
+/* streak-connected 제거됨 - 누적 출석 방식으로 변경 */
 
-.day-number { color: #5c6374; font-weight: 600; z-index: 1; font-size: 14px; }
+.day-number { color: #ffffff; font-weight: 600; z-index: 1; font-size: 14px; }
 
 .calendar-cell.today-pending {
-  border: 1px dashed #ff69b4;
+  border: 2px dashed #ff69b4;
   cursor: pointer;
-  background: rgba(255,105,180,0.1);
+  background: rgba(255,105,180,0.12);
   animation: pulse-pink 1.5s infinite;
 }
 
 .calendar-cell.stamped {
-  background: rgba(255, 105, 180, 0.15);
-  border: 1px solid rgba(255, 105, 180, 0.3);
-  box-shadow: inset 0 0 10px rgba(255,105,180,0.1);
+  background: rgba(255, 105, 180, 0.2);
+  border: 1px solid rgba(255, 105, 180, 0.5);
+  box-shadow: 0 0 12px rgba(255,105,180,0.15);
 }
 
 .calendar-cell.stamped .day-number { color: transparent; }

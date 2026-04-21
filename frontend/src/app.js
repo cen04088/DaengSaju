@@ -814,27 +814,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     grid.innerHTML = '';
-    
-    document.getElementById('calendar-month').textContent = currentMonth;
-    document.getElementById('calendar-streak').textContent = currentStreak + '일';
-    
-    const nextRewardDay = MILESTONES.find(m => m > currentStreak) || 30;
-    const daysLeft = Math.max(0, nextRewardDay - currentStreak);
-    const progressPercent = Math.min((currentStreak / nextRewardDay) * 100, 100);
-    
+
+    // 단순 누적 출석 일수 표시
+    const totalAttended = attendanceRecord.length;
+    document.getElementById('calendar-streak').textContent = totalAttended + '일';
+
+    const nextRewardDay = MILESTONES.find(m => m > totalAttended) || 30;
+    const daysLeft = Math.max(0, nextRewardDay - totalAttended);
+    const progressPercent = Math.min((totalAttended / nextRewardDay) * 100, 100);
+
     document.getElementById('calendar-progress-text').textContent = `다음 스페셜 부적까지 단 ${daysLeft}일 남았어요!`;
     document.getElementById('calendar-progress-fill').style.width = progressPercent + '%';
 
     for(let day = 1; day <= currentDaysInMonth; day++) {
       const isStamped = attendanceRecord.includes(day);
       const isToday = day === todayDate;
-      const isStreakConnected = isStamped && attendanceRecord.includes(day - 1);
-      
+
       const cell = document.createElement('div');
       cell.className = 'calendar-cell';
       if(isStamped) cell.classList.add('stamped');
       if(isToday && !isStamped) cell.classList.add('today-pending');
-      if(isStreakConnected) cell.classList.add('streak-connected');
+      // streak-connected 제거 - 누적 방식
       
       const span = document.createElement('span');
       span.className = 'day-number';
@@ -895,10 +895,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } catch(e) {
       console.warn('[Attendance] POST 실패, LocalStorage 폴백:', e);
-      // 폴백 처리
-      const isConsecutive = attendanceRecord.includes(todayDate - 1);
-      currentStreak = isConsecutive ? currentStreak + 1 : 1;
+      // 폴백 처리: 누적 카운트
       attendanceRecord = [...new Set([...attendanceRecord, todayDate])].sort((a,b)=>a-b);
+      currentStreak = attendanceRecord.length; // 누적 일수
       localStorage.setItem('daengsaju_attendance', JSON.stringify({
         month: currentMonth, record: attendanceRecord, streakCount: currentStreak
       }));
