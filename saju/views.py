@@ -442,16 +442,16 @@ class AttendanceView(APIView):
             defaults={'attended_days': [], 'streak_count': 0, 'claimed_milestones': []}
         )
 
-        # 이미 오늘 출석한 경우
-        if today.day in attendance.attended_days:
-            return Response({
-                'stamped': False,
-                'message': '오늘은 이미 출석하셨습니다.',
-                'attended_days': attendance.attended_days,
-                'streak_count': len(attendance.attended_days),
-                'claimed_milestones': attendance.claimed_milestones,
-                'new_milestone': None,
-            }, status=status.HTTP_200_OK)
+        # ⚠️ [TEST MODE] 중복 출석 체크 비활성화 - 테스트 완료 후 주석 해제
+        # if today.day in attendance.attended_days:
+        #     return Response({
+        #         'stamped': False,
+        #         'message': '오늘은 이미 출석하셨습니다.',
+        #         'attended_days': attendance.attended_days,
+        #         'streak_count': len(attendance.attended_days),
+        #         'claimed_milestones': attendance.claimed_milestones,
+        #         'new_milestone': None,
+        #     }, status=status.HTTP_200_OK)
 
         # 연속 곋사 없이 단순 누적 일수로 쪽산
         new_days = sorted(set(attendance.attended_days + [today.day]))
