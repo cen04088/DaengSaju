@@ -946,7 +946,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (btnDownloadTalisman) {
     btnDownloadTalisman.addEventListener('click', async () => {
       const origText = btnDownloadTalisman.innerHTML;
-      btnDownloadTalisman.innerHTML = "저장 중... ⏳";
+      btnDownloadTalisman.innerHTML = "저장 중...";
       try {
         const wrapper = document.getElementById('talisman-content-wrapper');
         const canvas = await html2canvas(wrapper, { backgroundColor: '#1E1E2A', useCORS: true });
