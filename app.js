@@ -174,6 +174,89 @@
     document.getElementById('res-chem-advice').style.display = 'none';
   }
 
+  function renderAnalysisResult(basicData, perData, luckData, dogName) {
+    const elementMap = { '목': 'wood', '화': 'fire', '토': 'earth', '금': 'metal', '수': 'water' };
+    const elementColorMap = { '목': 'text-wood', '화': 'text-fire', '토': 'text-earth', '금': 'text-metal', '수': 'text-water' };
+    const elementHanjaMap = { '목': '木', '화': '火', '토': '土', '금': '金', '수': '水' };
+
+    updateSajuTable(basicData);
+
+    const imgName = elementMap[basicData.main_element] || 'fire';
+    const colorClass = elementColorMap[basicData.main_element] || 'text-fire';
+    const hanjaEl = elementHanjaMap[basicData.main_element] || '火';
+
+    if (resultImage) {
+      resultImage.src = `/static/assets/${imgName}_dog.png`;
+    } else {
+      document.querySelector('.result-img').src = `/static/assets/${imgName}_dog.png`;
+    }
+
+    document.getElementById('res-summary').innerHTML = `${formatText(perData.personality_summary)}<br><span class="${colorClass}">${basicData.main_element}(${hanjaEl})</span>의 기운을 타고난 <span class="dog-name-display">${dogName}</span>!`;
+    document.getElementById('res-food').innerHTML = formatText(perData.treat_luck);
+    document.getElementById('res-energy').innerHTML = formatText(perData.vitality_analysis);
+    document.getElementById('res-love').innerHTML = formatText(perData.care_tips);
+    document.getElementById('res-social').innerHTML = formatText(perData.social_analysis);
+
+    document.getElementById('res-luck-score').textContent = luckData.luck_score;
+    document.getElementById('res-luck-msg').innerHTML = formatText(luckData.message);
+    document.getElementById('res-luck-color').textContent = luckData.lucky_color;
+    document.getElementById('res-luck-dir').textContent = luckData.lucky_direction;
+  }
+
+  async function fetchAnalysisBundle(dogId) {
+    const response = await fetch(`/api/saju/dogs/${dogId}/analysis/`, { headers: buildHeaders() });
+    if (!response.ok) {
+      throw new Error('통합 분석 로드 실패');
+    }
+
+    return response.json();
+  }
+
+  async function fetchAnalysisWithFallback(dogId) {
+    try {
+      const bundleData = await fetchAnalysisBundle(dogId);
+      return {
+        basicData: bundleData.basics,
+        perData: bundleData.personality,
+        luckData: bundleData.daily_luck,
+      };
+    } catch (bundleError) {
+      console.warn('[Analysis] 통합 API fallback:', bundleError);
+
+      const basicRes = await fetch(`/api/saju/dogs/${dogId}/basics/`, { headers: buildHeaders() });
+      if (!basicRes.ok) throw new Error('기본정보 로드 실패');
+      const basicData = await basicRes.json();
+
+      const [perRes, luckRes] = await Promise.all([
+        fetch(`/api/saju/dogs/${dogId}/personality/`, { headers: buildHeaders() }),
+        fetch(`/api/saju/dogs/${dogId}/daily-luck/`, { headers: buildHeaders() }),
+      ]);
+
+      if (!perRes.ok) throw new Error('성격 분석 로드 실패');
+      if (!luckRes.ok) throw new Error('오늘 운세 로드 실패');
+
+      const [perData, luckData] = await Promise.all([perRes.json(), luckRes.json()]);
+      return { basicData, perData, luckData };
+    }
+  }
+
+  function getCaptureScale(targetElement) {
+    const maxDimension = Math.max(targetElement.scrollWidth || 0, targetElement.scrollHeight || 0);
+    if (maxDimension > 2200) return 1.2;
+    if (maxDimension > 1600) return 1.4;
+    return Math.min(window.devicePixelRatio || 1, 1.5);
+  }
+
+  function releaseCanvasResources(canvas, imageElement = null) {
+    if (canvas) {
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+    if (imageElement) {
+      imageElement.removeAttribute('src');
+    }
+  }
+
   function updateAttendanceStampButton() {
     if (!btnAttendanceStamp) return;
     const stampedToday = attendanceRecord.includes(todayDate);
@@ -322,58 +405,29 @@ btnSubmit.addEventListener('click', async (e) => {
     const dogId = regData.dog_id;
     console.log("[Analysis] 등록 성공, ID:", dogId);
 
-    // 2. 사주 기본정보 (GET /basics/)
-    const basicRes = await fetch(`/api/saju/dogs/${dogId}/basics/`, { headers: buildHeaders() });
-    if (!basicRes.ok) throw new Error("기본정보 로드 실패");
-    const basicData = await basicRes.json();
-    updateSajuTable(basicData);
-
-    // 3. AI 성격 분석 (GET /personality/)
-    const perRes = await fetch(`/api/saju/dogs/${dogId}/personality/`, { headers: buildHeaders() });
-    const perData = await perRes.json();
-
-    const elementMap = { '목': 'wood', '화': 'fire', '토': 'earth', '금': 'metal', '수': 'water' };
-    const elementColorMap = { '목': 'text-wood', '화': 'text-fire', '토': 'text-earth', '금': 'text-metal', '수': 'text-water' };
-    const elementHanjaMap = { '목': '木', '화': '火', '토': '土', '금': '金', '수': '水' };
-
-    const imgName = elementMap[basicData.main_element] || 'fire';
-    const colorClass = elementColorMap[basicData.main_element] || 'text-fire';
-    const hanjaEl = elementHanjaMap[basicData.main_element] || '火';
-
-    if (resultImage) {
-      resultImage.src = `/static/assets/${imgName}_dog.png`;
-    } else {
-      document.querySelector('.result-img').src = `/static/assets/${imgName}_dog.png`;
-    }
-    document.getElementById('res-summary').innerHTML = `${formatText(perData.personality_summary)}<br><span class="${colorClass}">${basicData.main_element}(${hanjaEl})</span>의 기운을 타고난 <span class="dog-name-display">${dogName}</span>!`;
-    document.getElementById('res-food').innerHTML = formatText(perData.treat_luck);
-    document.getElementById('res-energy').innerHTML = formatText(perData.vitality_analysis);
-    document.getElementById('res-love').innerHTML = formatText(perData.care_tips);
-    document.getElementById('res-social').innerHTML = formatText(perData.social_analysis);
-
-    // 4. 오늘의 산책운 (GET /daily-luck/)
-    const luckRes = await fetch(`/api/saju/dogs/${dogId}/daily-luck/`, { headers: buildHeaders() });
-    const luckData = await luckRes.json();
-
-    document.getElementById('res-luck-score').textContent = luckData.luck_score;
-    document.getElementById('res-luck-msg').innerHTML = formatText(luckData.message);
-    document.getElementById('res-luck-color').textContent = luckData.lucky_color;
-    document.getElementById('res-luck-dir').textContent = luckData.lucky_direction;
+    const analysisPromise = fetchAnalysisWithFallback(dogId);
 
     // 5. 댕궁합 분석 (testType이 chemistry일 때만 호출)
+    let chemistryPromise = null;
     if (testType === 'chemistry') {
       const ownerDate = document.getElementById('owner-date').value;
       const ownerTime = document.getElementById('owner-time').value;
+      chemistryPromise = fetch(`/api/saju/dogs/${dogId}/compatibility/`, {
+        method: 'POST',
+        headers: buildHeaders(true),
+        body: JSON.stringify({
+          owner_birth_date: ownerDate,
+          owner_birth_time: ownerTime
+        })
+      });
+    }
 
+    const { basicData, perData, luckData } = await analysisPromise;
+    renderAnalysisResult(basicData, perData, luckData, dogName);
+
+    if (chemistryPromise) {
       try {
-        const chemRes = await fetch(`/api/saju/dogs/${dogId}/compatibility/`, {
-          method: 'POST',
-          headers: buildHeaders(true),
-          body: JSON.stringify({
-            owner_birth_date: ownerDate,
-            owner_birth_time: ownerTime
-          })
-        });
+        const chemRes = await chemistryPromise;
         const chemData = await chemRes.json();
 
         if (chemRes.ok) {
@@ -421,15 +475,15 @@ btnShare.addEventListener('click', async () => {
     // 캡쳐할 영역 지정 (결과 컨텐츠 전체 영역)
     await ensureHtml2Canvas();
     const captureArea = document.querySelector('.result-scroll');
+    const captureScale = getCaptureScale(captureArea);
     const canvas = await html2canvas(captureArea, {
-      scale: 2,
+      scale: captureScale,
       backgroundColor: '#F9FAFB',
       useCORS: true,
       windowWidth: captureArea.scrollWidth,
       windowHeight: captureArea.scrollHeight
     });
-
-    const imgData = canvas.toDataURL('image/png');
+    let imgData = canvas.toDataURL('image/png');
 
     const modal = document.getElementById('image-modal');
     const genImage = document.getElementById('generated-image');
@@ -441,6 +495,7 @@ btnShare.addEventListener('click', async () => {
 
       closeBtn.onclick = () => {
         modal.style.display = 'none';
+        genImage.removeAttribute('src');
       };
     } else {
       const link = document.createElement('a');
@@ -448,6 +503,9 @@ btnShare.addEventListener('click', async () => {
       link.href = imgData;
       link.click();
     }
+
+    imgData = null;
+    releaseCanvasResources(canvas);
   } catch (e) {
     console.error(e);
     alert('이미지 저장 중 오류가 발생했습니다.');
@@ -724,12 +782,18 @@ if (btnDownloadTalisman) {
     try {
       await ensureHtml2Canvas();
       const wrapper = document.getElementById('talisman-content-wrapper');
-      const canvas = await html2canvas(wrapper, { backgroundColor: '#1E1E2A', useCORS: true });
-      const dataUrl = canvas.toDataURL('image/png');
+      const canvas = await html2canvas(wrapper, {
+        backgroundColor: '#1E1E2A',
+        useCORS: true,
+        scale: getCaptureScale(wrapper)
+      });
+      let dataUrl = canvas.toDataURL('image/png');
       const a = document.createElement('a');
       a.href = dataUrl;
       a.download = `daengsaju_talisman_${currentStreak}.png`;
       a.click();
+      dataUrl = null;
+      releaseCanvasResources(canvas);
     } catch (e) {
       console.error(e);
       alert('이미지 저장에 실패했습니다.');

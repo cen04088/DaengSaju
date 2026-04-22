@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       tossBannerInstance.destroy();
       tossBannerInstance = null;
     }
-    tossBannerInstance = TossAds.attachBanner('ait-ad-test-banner-id', adContainer, {
+    tossBannerInstance = TossAds.attachBanner('ait.v2.live.82786c3925d743b3', adContainer, {
       variant: 'expanded',
       theme: 'dark',
       callbacks: {
@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ─── Interstitial (전면) 광고 관리 ───────────────────────────────────────
-  const INTERSTITIAL_AD_ID = 'ait-ad-test-interstitial-id';
+  const INTERSTITIAL_AD_ID = 'ait.v2.live.3c235f3d3a424553';
   let interstitialAdLoaded = false;
   let interstitialUnregister = null;
 

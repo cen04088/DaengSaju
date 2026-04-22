@@ -1,4 +1,4 @@
-import os
+﻿import os
 import json
 import google.generativeai as genai
 
@@ -31,6 +31,13 @@ def generate_personality(dog_name, main_element, element_dist, saju_text="알 �
     josa_name = _get_josa_name(dog_name)
     
     prompt = f"""
+You are writing production-ready Korean app copy for a pet fortune service.
+Keep the tone warm, lightly playful, and polished.
+Do not use meme-heavy slang, degrading dominance language, awkward English mix-ins, or abrupt one-line fragments.
+Avoid examples such as: ???, ???, ??, ?? ??, ?? ??, ??, ?? ??, ????, playful, Beige, South-West.
+Write paragraphs in 2-3 sentences each, and keep placeholders natural so the final replaced sentence reads smoothly.
+
+
 당신은 다정하고 통찰력 있는 반려견 전용 사주명리학 전문가이자 최고의 반려견 스토리텔러입니다.
 강아지의 이름은 '{dog_name}'이며, 일간(타고난 본질) 오행은 '{main_element}', 
 전체 오행의 구성 비율은 다음과 같습니다: {element_dist}.
@@ -130,7 +137,7 @@ def generate_compatibility(dog_element, relationship_type, version="A"):
         '인성': "보호자의 오행 에너지가 강아지를 生해주는 인성(印星) 관계입니다. 보호자가 강아지에게 든든한 울타리와 헌신적인 사랑을 쏟아주는 이상적인 보호자-아이 관계예요.",
         '식상': "강아지의 오행 에너지가 보호자를 生해주는 식상(食傷) 관계입니다. 강아지가 보호자에게 활력과 기쁨을 선물하는, 보호자에게 에너지를 주는 특별한 존재예요.",
         '재성': "강아지의 오행 에너지가 보호자를 克하는 재성(財星) 관계입니다. 강아지가 보호자의 삶을 이끌고 변화를 주는 당당하고 개성 넘치는 관계예요.",
-        '관성': "보호자의 오행 에너지가 강아지를 克하는 관성(官星) 관계입니다. 보호자가 자연스럽게 리더십을 발휘하고 강아지가 보호자를 따르는 안정적인 주종 관계예요.",
+        '관성': "보호자의 오행 에너지가 강아지를 克하는 관성(官星) 관계입니다. 보호자가 자연스럽게 리더십을 발휘하고 강아지가 보호자를 믿고 따르는 안정적인 팀워크 관계예요.",
     }
 
     rel_desc = RELATIONSHIP_DESCRIPTIONS.get(relationship_type, "")
@@ -140,6 +147,13 @@ def generate_compatibility(dog_element, relationship_type, version="A"):
     }.get(version, "다정하게")
 
     prompt = f"""
+You are writing production-ready Korean app copy for a pet compatibility feature.
+Keep the tone charming, affectionate, and easy to read on mobile.
+Do not use degrading dominance language, over-the-top meme slang, or awkward English mix-ins.
+Avoid examples such as: ?? ??, ??, ?? ??, ????, ? ??, ??, ?? ??.
+Use placeholders naturally so the text still reads smoothly after replacement.
+
+
 당신은 다정하고 통찰력 있는 반려견 전용 사주명리학 전문가입니다.
 이번에는 강아지와 보호자의 '댕궁합'을 분석합니다.
 
@@ -213,6 +227,13 @@ def generate_daily_luck_template(dog_element, relationship_type, version="A"):
     style = VERSION_GUIDE.get(version, "다정한 스타일")
 
     prompt = f"""
+You are writing production-ready Korean app copy for a pet daily walk fortune feature.
+Keep the tone warm and a little fun, but still polished and concise.
+Do not mix English inside Korean prose or labels.
+Avoid examples such as: playful, Beige, South-West, ???, ???, ??.
+Return lucky_color and lucky_direction as short Korean-only labels without parentheses.
+
+
 당신은 다정하고 통찰력 있는 반려견 전용 사주명리학 전문가입니다.
 강아지의 본질 오행이 '{dog_element}'인 아이에게, 오늘의 기운이 '{relationship_type}'로 작용하는 날의 '산책운' 템플릿(버전 {version})을 작성해 주세요.
 
