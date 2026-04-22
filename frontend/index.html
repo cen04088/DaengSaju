@@ -25,23 +25,24 @@
 
     <section id="main-screen" class="screen active">
       <div class="body-content flex-center">
-        <h2 class="main-title text-center">어떤 댕사주를<br>살펴볼까요?</h2>
+        <h2 class="main-title text-center">우리 아이 댕사주를<br>확인해볼까요?</h2>
         <div class="menu-cards">
           <div class="menu-card" id="btn-general">
             <h3>평생 사주 보기</h3>
-            <p>우리아이의 타고난 기질과 성향을 깊이 있게 살펴봐요.</p>
+            <p>우리 아이의 타고난 기운과 성향을 깊이 있게 확인해보세요.</p>
           </div>
           <div class="menu-card" id="btn-chemistry">
             <h3>댕궁합 보기</h3>
-            <p>보호자와 강아지의 상생 궁합을 재미있게 확인해요.</p>
+            <p>보호자와 강아지의 타고난 궁합을 부드럽게 확인해보세요.</p>
           </div>
         </div>
+        <div id="toss-ad-container" style="width: 100%; min-height: 96px; margin-top: 18px; border-radius: 16px; overflow: hidden;"></div>
       </div>
     </section>
 
     <section id="input-screen" class="screen">
       <div class="body-content">
-        <h2 class="main-title" id="input-title">우리아이의 타고난<br>기질을 알아볼까요?</h2>
+        <h2 class="main-title" id="input-title">우리 아이의 타고난<br>기질을 알아볼까요?</h2>
 
         <form id="saju-form">
           <div class="form-group">
@@ -94,10 +95,10 @@
     <section id="loading-screen" class="screen">
       <div class="body-content flex-center">
         <div class="lottie-placeholder">
-          <div class="jumping-dog">🐶</div>
+          <div class="jumping-dog">🐕</div>
         </div>
-        <h2 class="loading-text">우리아이의 운세를<br>계산하는 중이에요...</h2>
-        <p class="loading-subtext">명리 흐름과 사주 데이터를 분석하고 있어요.</p>
+        <h2 class="loading-text">우리 아이의 운세를<br>계산하는 중이에요...</h2>
+        <p class="loading-subtext">이름과 사주 데이터를 분석하고 있어요.</p>
       </div>
     </section>
 
@@ -110,19 +111,19 @@
       <div class="body-content result-scroll pt-0">
         <div id="tab-today" class="tab-content active">
           <div class="card result-card chemistry-card fade-in">
-            <h3 class="card-title text-center" style="margin-bottom:16px;">✨ <span class="dog-name-display">댕댕이</span>의 오늘 운세</h3>
+            <h3 class="card-title text-center" style="margin-bottom:16px;"><span class="dog-name-display">댕댕이</span>의 오늘 운세</h3>
             <div class="chemistry-match" style="margin-bottom:16px;">
               <div class="chem-profile">행운 컬러<br><span id="res-luck-color" style="font-size:16px; font-weight:700; color:var(--color-primary)">-</span></div>
               <div class="chem-heart">오늘의 포인트</div>
               <div class="chem-profile">행운 방향<br><span id="res-luck-dir" style="font-size:16px; font-weight:700; color:var(--color-primary)">-</span></div>
             </div>
-            <p class="chem-desc">오늘의 컬러와 방향을 참고하면 산책 만족도가 조금 더 올라갈 수 있어요.</p>
+            <p class="chem-desc">오늘의 컬러와 방향을 참고하면 하루의 만족감이 조금 더 올라갈 수 있어요.</p>
           </div>
 
           <div class="card detail-card card-daily fade-in">
             <div class="detail-icon">🐾</div>
             <div class="detail-content" style="width: 100%;">
-              <h4>오늘의 산책 컨디션</h4>
+              <h4>오늘의 기분 컨디션</h4>
               <div style="font-size: 32px; font-weight:800; color: var(--color-primary); margin: 10px 0;">
                 <span id="res-luck-score">--</span>점
               </div>
@@ -133,7 +134,7 @@
           </div>
 
           <div class="card detail-card fade-in" style="margin-top: 8px; padding: 16px 20px; display: flex; align-items: center; justify-content: center;">
-            <button id="btn-open-attendance" class="btn-primary" style="width: 100%; height: 50px; font-size: 16px;">오늘 출석하고 발도장 찍기</button>
+            <button id="btn-open-attendance" class="btn-primary" style="width: 100%; height: 50px; font-size: 16px;">오늘 출석하고 부적 받기</button>
           </div>
         </div>
 
@@ -152,7 +153,7 @@
                   <th>시주</th>
                   <th>일주</th>
                   <th>월주</th>
-                  <th>년주</th>
+                  <th>연주</th>
                 </tr>
                 <tr id="saju-stem-row">
                   <td id="stem-hour"><span class="hanja">-</span><br>-</td>
@@ -167,13 +168,13 @@
                   <td id="branch-year"><span class="hanja">-</span><br>-</td>
                 </tr>
               </table>
-              <p class="saju-caption">태어난 시간에 따라 시주는 비어 있을 수 있어요.</p>
+              <p class="saju-caption">태어난 시간이 없으면 시주는 비어 있을 수 있어요.</p>
             </div>
           </div>
 
           <div class="card result-card graph-card fade-in">
             <h3 class="card-title">오행 기운 밸런스</h3>
-            <p class="card-desc" style="margin-bottom: 24px;">다섯 가지 기운이 <span class="dog-name-display">댕댕이</span>의 기질과 분위기를 만듭니다.</p>
+            <p class="card-desc" style="margin-bottom: 24px;">다섯 가지 기운은 <span class="dog-name-display">댕댕이</span>의 기질과 분위기를 만들어냅니다.</p>
 
             <div class="radar-chart-container" style="position: relative; width: 100%; height: 240px; margin-bottom: 30px;">
               <canvas id="radarChart"></canvas>
@@ -181,23 +182,23 @@
 
             <div class="bar-chart">
               <div class="bar-row">
-                <span class="bar-label">목(木)<br><small id="val-wood">0%</small></span>
+                <span class="bar-label">목 木<br><small id="val-wood">0%</small></span>
                 <div class="bar-track"><div id="bar-wood" class="bar-fill bg-wood" style="width: 0%;"></div></div>
               </div>
               <div class="bar-row">
-                <span class="bar-label">화(火)<br><small id="val-fire" class="text-fire font-bold">0%</small></span>
+                <span class="bar-label">화 火<br><small id="val-fire" class="text-fire font-bold">0%</small></span>
                 <div class="bar-track"><div id="bar-fire" class="bar-fill bg-fire" style="width: 0%;"></div></div>
               </div>
               <div class="bar-row">
-                <span class="bar-label">토(土)<br><small id="val-earth">0%</small></span>
+                <span class="bar-label">토 土<br><small id="val-earth">0%</small></span>
                 <div class="bar-track"><div id="bar-earth" class="bar-fill bg-earth" style="width: 0%;"></div></div>
               </div>
               <div class="bar-row">
-                <span class="bar-label">금(金)<br><small id="val-metal">0%</small></span>
+                <span class="bar-label">금 金<br><small id="val-metal">0%</small></span>
                 <div class="bar-track"><div id="bar-metal" class="bar-fill bg-metal" style="width: 0%;"></div></div>
               </div>
               <div class="bar-row">
-                <span class="bar-label">수(水)<br><small id="val-water">0%</small></span>
+                <span class="bar-label">수 水<br><small id="val-water">0%</small></span>
                 <div class="bar-track"><div id="bar-water" class="bar-fill bg-water" style="width: 0%;"></div></div>
               </div>
             </div>
@@ -207,8 +208,8 @@
 
           <div class="card detail-card card-food fade-in" style="flex-direction: column;">
             <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
-              <div class="detail-icon" style="flex-shrink:0;">🍖</div>
-              <h4 style="font-size: 18px; margin:0;">평생 간식운과 복 흐름</h4>
+              <div class="detail-icon" style="flex-shrink:0;">🦴</div>
+              <h4 style="font-size: 18px; margin:0;">평생 간식운과 복 기운</h4>
             </div>
             <div class="detail-content" style="width: 100%;">
               <p id="res-food" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">분석 결과를 불러오고 있습니다...</p>
@@ -227,7 +228,7 @@
 
           <div class="card detail-card card-love fade-in" style="flex-direction: column;">
             <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
-              <div class="detail-icon" style="flex-shrink:0;">💖</div>
+              <div class="detail-icon" style="flex-shrink:0;">💗</div>
               <h4 style="font-size: 18px; margin:0;">보호자와의 교감 포인트</h4>
             </div>
             <div class="detail-content" style="width: 100%;">
@@ -237,7 +238,7 @@
 
           <div class="card detail-card card-social fade-in" style="flex-direction: column;">
             <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
-              <div class="detail-icon" style="flex-shrink:0;">🌟</div>
+              <div class="detail-icon" style="flex-shrink:0;">🐶</div>
               <h4 style="font-size: 18px; margin:0;">사회성과 무리 생활</h4>
             </div>
             <div class="detail-content" style="width: 100%;">
@@ -247,7 +248,7 @@
         </div>
 
         <div id="chemistry-result-section" class="card result-card chemistry-card" style="display: none; margin-top:20px;">
-          <h3 class="card-title text-center">✨ <span id="res-chem-title">궁합 결과</span></h3>
+          <h3 class="card-title text-center"><span id="res-chem-title">궁합 결과</span></h3>
           <div class="chemistry-match">
             <div class="chem-profile">보호자<br><span id="res-chem-owner-element">(-)</span></div>
             <div class="chem-heart" id="res-chem-rel">궁합 분석 중</div>
@@ -262,13 +263,13 @@
         </div>
 
         <div class="fab-wrapper">
-          <button id="btn-share" class="btn-primary">운세 이미지 저장</button>
+          <button id="btn-share" class="btn-primary">운세 공유하기</button>
         </div>
       </div>
     </section>
 
     <div id="image-modal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
-      <p style="color: white; margin-bottom: 20px; font-weight: 700; font-size: 16px;">이미지를 길게 눌러 저장해주세요 🐾</p>
+      <p style="color: white; margin-bottom: 20px; font-weight: 700; font-size: 16px;">이미지를 길게 눌러 저장해 주세요. 🐾</p>
       <img id="generated-image" style="max-width: 85%; max-height: 70vh; border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.5);" alt="생성된 운세 이미지">
       <button id="close-modal" class="btn-primary" style="margin-top: 30px; width: 85%;">닫기</button>
     </div>

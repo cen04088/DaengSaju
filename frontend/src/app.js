@@ -1,4 +1,11 @@
-import { getAnonymousKey } from '@apps-in-toss/web-framework';
+import {
+  getAnonymousKey,
+  getTossShareLink,
+  share,
+  TossAds,
+  loadFullScreenAd,
+  showFullScreenAd,
+} from '@apps-in-toss/web-framework';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Screens
@@ -23,22 +30,64 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnDownloadTalisman = document.getElementById('btn-download-talisman');
   const btnShareTalisman = document.getElementById('btn-share-talisman');
   const resultImage = document.getElementById('result-img');
+  const tossAdContainer = document.getElementById('toss-ad-container');
 
   // Config
   const BASE_URL = 'https://web-production-285b5.up.railway.app';
-  const MIN_LOADING_MS = 250;
-  let tossUserKey = '';
+  const MIN_LOADING_MS = 80;
+  const TOSS_USER_KEY_STORAGE = 'daengsaju_user_key';
+  const BANNER_AD_GROUP_ID = 'ait.v2.live.82786c3925d743b3';
+  const FULLSCREEN_AD_GROUP_ID = window.__TOSS_FULLSCREEN_AD_GROUP_ID__ || 'ait.v2.live.3c235f3d3a424553';
+  const SHARE_BUTTON_LABEL = '\uC6B4\uC138 \uACF5\uC720\uD558\uAE30';
+  const SHARE_BUTTON_LOADING_LABEL = '\uACF5\uC720 \uB9C1\uD06C \uC900\uBE44 \uC911...';
+  const SHARE_MESSAGE = '\uB315\uC0AC\uC8FC \uACB0\uACFC\uAC00 \uB3C4\uCC29\uD588\uC5B4\uC694.\n\uD1A0\uC2A4\uC5D0\uC11C \uBC14\uB85C \uD655\uC778\uD574\uBCF4\uC138\uC694.';
+  const SHARE_ERROR_MESSAGE = '\uACF5\uC720 \uB9C1\uD06C\uB97C \uC900\uBE44\uD558\uC9C0 \uBABB\uD588\uC5B4\uC694. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.';
+  const FULLSCREEN_AD_FALLBACK_MESSAGE = '\uC804\uBA74 \uAD11\uACE0\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD574 \uBC14\uB85C \uB0B4\uC6A9\uC744 \uC5F4\uC5B4\uB4DC\uB9B4\uAC8C\uC694.';
+
+  const unlockedSections = {
+    lifetime: false,
+    chemistry: false,
+  };
+  let currentShareText = '\uB315\uB315\uC774\uB294 \uD0C0\uACE0\uB09C \uAE30\uC6B4\uC744 \uD655\uC778\uD574\uBCF4\uC138\uC694.';
+  let currentShareImageUrl = `${BASE_URL}/assets/logo.png`;
+
+  function resolveTossUserKey() {
+    const params = new URLSearchParams(window.location.search);
+    const candidates = [
+      window.__TOSS_USER_KEY__,
+      window.Toss?.userKey,
+      window.Toss?.tossUserKey,
+      params.get('toss_user_key'),
+      params.get('tossUserKey'),
+      params.get('userKey'),
+      localStorage.getItem(TOSS_USER_KEY_STORAGE),
+    ];
+    const stableKey = candidates.find(value => typeof value === 'string' && value.trim());
+    if (stableKey) {
+      localStorage.setItem(TOSS_USER_KEY_STORAGE, stableKey);
+      return stableKey;
+    }
+    return '';
+  }
+
+  let tossUserKey = resolveTossUserKey();
+
+  if (btnShare) {
+    btnShare.textContent = SHARE_BUTTON_LABEL;
+  }
 
   try {
     const result = await getAnonymousKey();
     if (result?.type === 'HASH' && typeof result.hash === 'string') {
       tossUserKey = result.hash.trim();
+      localStorage.setItem(TOSS_USER_KEY_STORAGE, tossUserKey);
     }
   } catch (error) {
     console.warn('[Toss] anonymous key unavailable:', error);
   }
 
   function requireUserKey() {
+    tossUserKey = resolveTossUserKey();
     if (tossUserKey) return true;
     alert('토스 사용자 정보를 확인할 수 없어 다시 열어주세요.');
     return false;
@@ -53,6 +102,50 @@ document.addEventListener('DOMContentLoaded', async () => {
       headers['X-Toss-User-Key'] = tossUserKey;
     }
     return headers;
+  }
+
+  function apiUrl(path) {
+    return `${BASE_URL}${path}`;
+  }
+
+  let isTossAdsReady = false;
+  let tossBannerInstance = null;
+
+  function mountTossBanner() {
+    if (!isTossAdsReady || !tossAdContainer || tossBannerInstance) return;
+    tossBannerInstance = TossAds.attachBanner(BANNER_AD_GROUP_ID, tossAdContainer, {
+      variant: 'expanded',
+      theme: 'dark',
+      callbacks: {
+        onAdFailedToRender: (payload) => console.warn('[Banner] failed:', payload),
+        onNoFill: (payload) => console.warn('[Banner] no fill:', payload),
+      },
+    });
+  }
+
+  function unmountTossBanner() {
+    if (!tossBannerInstance) return;
+    tossBannerInstance.destroy();
+    tossBannerInstance = null;
+  }
+
+  const bannerSupported =
+    TossAds && typeof TossAds.initialize === 'function'
+      ? (typeof TossAds.initialize.isSupported === 'function' ? TossAds.initialize.isSupported() : true)
+      : false;
+
+  if (bannerSupported) {
+    TossAds.initialize({
+      callbacks: {
+        onInitialized: () => {
+          isTossAdsReady = true;
+          mountTossBanner();
+        },
+        onInitializationFailed: (error) => {
+          console.warn('[TossAds] init failed:', error);
+        },
+      },
+    });
   }
 
   // Attendance State
@@ -201,8 +294,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       document.querySelector('.result-img').src = `/assets/${imgName}_dog.png`;
     }
-
-    document.getElementById('res-summary').innerHTML = `${formatText(perData.personality_summary)}<br><span class="${colorClass}">${basicData.main_element}(${hanjaEl})</span>의 기운을 타고난 <span class="dog-name-display">${dogName}</span>!`;
+    currentShareImageUrl = `${BASE_URL}/assets/${imgName}_dog.png`;
+    currentShareText = `${dogName}? ${basicData.main_element}(${hanjaEl})? ??? ?????.`;
+    document.getElementById('res-summary').innerHTML = `${formatText(perData.personality_summary)}<br><span class="${colorClass}">${basicData.main_element}(${hanjaEl})</span>? ??? ??? <span class="dog-name-display">${dogName}</span>!`;
     document.getElementById('res-food').innerHTML = formatText(perData.treat_luck);
     document.getElementById('res-energy').innerHTML = formatText(perData.vitality_analysis);
     document.getElementById('res-love').innerHTML = formatText(perData.care_tips);
@@ -215,7 +309,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function fetchAnalysisBundle(dogId) {
-    const response = await fetch(`/api/saju/dogs/${dogId}/analysis/`, { headers: buildHeaders() });
+    const response = await fetch(apiUrl(`/api/saju/dogs/${dogId}/analysis/`), { headers: buildHeaders() });
     if (!response.ok) {
       throw new Error('통합 분석 로드 실패');
     }
@@ -234,13 +328,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (bundleError) {
       console.warn('[Analysis] 통합 API fallback:', bundleError);
 
-      const basicRes = await fetch(`/api/saju/dogs/${dogId}/basics/`, { headers: buildHeaders() });
+      const basicRes = await fetch(apiUrl(`/api/saju/dogs/${dogId}/basics/`), { headers: buildHeaders() });
       if (!basicRes.ok) throw new Error('기본정보 로드 실패');
       const basicData = await basicRes.json();
 
       const [perRes, luckRes] = await Promise.all([
-        fetch(`/api/saju/dogs/${dogId}/personality/`, { headers: buildHeaders() }),
-        fetch(`/api/saju/dogs/${dogId}/daily-luck/`, { headers: buildHeaders() }),
+        fetch(apiUrl(`/api/saju/dogs/${dogId}/personality/`), { headers: buildHeaders() }),
+        fetch(apiUrl(`/api/saju/dogs/${dogId}/daily-luck/`), { headers: buildHeaders() }),
       ]);
 
       if (!perRes.ok) throw new Error('성격 분석 로드 실패');
@@ -276,8 +370,214 @@ document.addEventListener('DOMContentLoaded', async () => {
     btnAttendanceStamp.style.opacity = stampedToday ? '0.6' : '1';
   }
 
-  // Initialize History state
-  history.replaceState({ screenId: 'main-screen' }, '', '#main-screen');
+  const screens = Array.from(document.querySelectorAll('.screen'));
+
+  function showScreen(screenElement) {
+    screens.forEach(screen => {
+      const isActive = screen === screenElement;
+      screen.classList.toggle('active', isActive);
+      screen.style.display = isActive ? 'flex' : 'none';
+    });
+  }
+
+  function createUnlockOverlay(sectionKey) {
+    const overlay = document.createElement('div');
+    overlay.className = 'dynamic-unlock-overlay';
+    overlay.style.cssText = [
+      'position:absolute',
+      'inset:0',
+      'display:flex',
+      'flex-direction:column',
+      'justify-content:center',
+      'align-items:center',
+      'gap:10px',
+      'padding:20px',
+      'border-radius:18px',
+      'background:linear-gradient(180deg, rgba(11,17,33,0.55), rgba(11,17,33,0.92))',
+      'backdrop-filter:blur(8px)',
+      '-webkit-backdrop-filter:blur(8px)',
+      'z-index:2',
+      'text-align:center',
+    ].join(';');
+
+    const badge = document.createElement('div');
+    badge.textContent = '\uC7A0\uAE08 \uCF58\uD150\uCE20';
+    badge.style.cssText = [
+      'font-size:12px',
+      'font-weight:700',
+      'letter-spacing:0.02em',
+      'color:#F8FAFC',
+      'padding:6px 10px',
+      'border-radius:999px',
+      'background:rgba(255,255,255,0.12)',
+      'border:1px solid rgba(255,255,255,0.16)',
+    ].join(';');
+
+    const title = document.createElement('p');
+    title.textContent =
+      sectionKey === 'chemistry'
+        ? '\uC804\uBA74 \uAD11\uACE0\uB97C \uBCF4\uACE0 \uAD81\uD569 \uD574\uC11D \uC804\uCCB4\uB97C \uC5F4\uC5B4\uBCF4\uC138\uC694.'
+        : '\uC804\uBA74 \uAD11\uACE0\uB97C \uBCF4\uACE0 \uD3C9\uC0DD \uC0AC\uC8FC \uD574\uC11D \uC804\uCCB4\uB97C \uC5F4\uC5B4\uBCF4\uC138\uC694.';
+    title.style.cssText = 'margin:0;color:#FFFFFF;font-size:15px;font-weight:700;line-height:1.5;';
+
+    const sub = document.createElement('p');
+    sub.textContent = '\uAD11\uACE0 \uC2DC\uCCAD \uD6C4 \uBC14\uB85C \uC774\uC5B4\uC11C \uB0B4\uC6A9\uC744 \uD655\uC778\uD560 \uC218 \uC788\uC5B4\uC694.';
+    sub.style.cssText = 'margin:0;color:rgba(255,255,255,0.82);font-size:13px;line-height:1.45;';
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = '\uC804\uBA74 \uAD11\uACE0 \uBCF4\uACE0 \uC5F4\uAE30';
+    button.style.cssText = [
+      'margin-top:6px',
+      'width:100%',
+      'max-width:220px',
+      'height:46px',
+      'border:none',
+      'border-radius:14px',
+      'background:linear-gradient(135deg, #8B5CF6, #3B82F6)',
+      'color:#fff',
+      'font-size:14px',
+      'font-weight:800',
+      'cursor:pointer',
+      'box-shadow:0 10px 26px rgba(59,130,246,0.26)',
+    ].join(';');
+    button.addEventListener('click', () => requestSectionUnlock(sectionKey, button));
+
+    overlay.appendChild(badge);
+    overlay.appendChild(title);
+    overlay.appendChild(sub);
+    overlay.appendChild(button);
+    return overlay;
+  }
+
+  function ensureLockShell(target, sectionKey) {
+    if (!target) return null;
+
+    let shell = target.parentElement;
+    if (!shell || !shell.classList.contains('dynamic-lock-shell')) {
+      shell = document.createElement('div');
+      shell.className = 'dynamic-lock-shell';
+      shell.style.position = 'relative';
+      shell.style.width = '100%';
+      target.parentNode.insertBefore(shell, target);
+      shell.appendChild(target);
+    }
+
+    target.style.transition = 'filter 0.25s ease, opacity 0.25s ease';
+    target.style.willChange = 'filter, opacity';
+
+    let overlay = shell.querySelector('.dynamic-unlock-overlay');
+    if (!overlay) {
+      overlay = createUnlockOverlay(sectionKey);
+      shell.appendChild(overlay);
+    }
+
+    return { shell, overlay };
+  }
+
+  function setLocked(target, sectionKey, locked) {
+    const shellParts = ensureLockShell(target, sectionKey);
+    if (!shellParts) return;
+
+    target.style.filter = locked ? 'blur(7px)' : 'none';
+    target.style.opacity = locked ? '0.3' : '1';
+    target.style.pointerEvents = locked ? 'none' : 'auto';
+    shellParts.overlay.style.display = locked ? 'flex' : 'none';
+  }
+
+  function applyContentLocks() {
+    const lifetimeTargets = ['res-food', 'res-energy', 'res-love', 'res-social']
+      .map(id => document.getElementById(id))
+      .filter(Boolean)
+      .map(el => el.closest('.detail-content') || el);
+
+    lifetimeTargets.forEach(target => setLocked(target, 'lifetime', !unlockedSections.lifetime));
+
+    const chemDesc = document.getElementById('res-chem-desc');
+    const chemAdvice = document.getElementById('res-chem-advice');
+    const shouldLockChemistry = testType === 'chemistry' && !unlockedSections.chemistry;
+
+    if (chemDesc) {
+      setLocked(chemDesc, 'chemistry', shouldLockChemistry);
+    }
+    if (chemAdvice && chemAdvice.style.display !== 'none') {
+      setLocked(chemAdvice, 'chemistry', shouldLockChemistry);
+    }
+  }
+
+  async function openFullScreenAd() {
+    const canLoad =
+      typeof loadFullScreenAd === 'function' &&
+      (typeof loadFullScreenAd.isSupported !== 'function' || loadFullScreenAd.isSupported());
+    const canShow =
+      typeof showFullScreenAd === 'function' &&
+      (typeof showFullScreenAd.isSupported !== 'function' || showFullScreenAd.isSupported());
+
+    if (!FULLSCREEN_AD_GROUP_ID) {
+      console.warn('[FullscreenAd] missing ad group id');
+      return false;
+    }
+
+    if (!canLoad || !canShow) {
+      console.warn('[FullscreenAd] not supported in this environment');
+      return false;
+    }
+
+    await new Promise((resolve, reject) => {
+      loadFullScreenAd({
+        options: { adGroupId: FULLSCREEN_AD_GROUP_ID },
+        onEvent: (event) => {
+          if (event?.type === 'loaded') {
+            resolve(true);
+          }
+        },
+        onError: reject,
+      });
+    });
+
+    return new Promise((resolve, reject) => {
+      showFullScreenAd({
+        options: { adGroupId: FULLSCREEN_AD_GROUP_ID },
+        onEvent: (event) => {
+          if (!event) return;
+          if (event.type === 'dismissed' || event.type === 'userEarnedReward') {
+            resolve(true);
+          }
+          if (event.type === 'failedToShow') {
+            resolve(false);
+          }
+        },
+        onError: reject,
+      });
+    });
+  }
+
+  async function requestSectionUnlock(sectionKey, triggerButton) {
+    const originalLabel = triggerButton.textContent;
+    triggerButton.disabled = true;
+    triggerButton.textContent = '\uAD11\uACE0 \uC900\uBE44 \uC911...';
+
+    try {
+      const didComplete = await openFullScreenAd();
+      if (!didComplete) {
+        alert(FULLSCREEN_AD_FALLBACK_MESSAGE);
+      }
+      unlockedSections[sectionKey] = true;
+      applyContentLocks();
+    } catch (error) {
+      console.warn('[FullscreenAd] unlock fallback:', error);
+      alert(FULLSCREEN_AD_FALLBACK_MESSAGE);
+      unlockedSections[sectionKey] = true;
+      applyContentLocks();
+    } finally {
+      triggerButton.disabled = false;
+      triggerButton.textContent = originalLabel;
+    }
+  }
+
+  // Initialize screen state without owning the root history entry.
+  showScreen(mainScreen);
+  mountTossBanner();
 
   window.addEventListener('popstate', (e) => {
     if (e.state && e.state.screenId) {
@@ -292,11 +592,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Navigation logic
   function navigateTo(screenElement, pushHistory = true) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    screenElement.classList.add('active');
+    showScreen(screenElement);
 
-    if (pushHistory) {
+    if (pushHistory && screenElement.id !== 'main-screen') {
       history.pushState({ screenId: screenElement.id }, '', `#${screenElement.id}`);
+    }
+
+    if (screenElement === mainScreen) {
+      mountTossBanner();
+    } else {
+      unmountTossBanner();
     }
 
     // reset scroll to top
@@ -317,6 +622,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else {
         // 일반 댕사주 모드: 탭 UI 복원
         if (tabNav) tabNav.style.display = 'flex';
+        if (tabToday) tabToday.style.display = 'block';
+        if (tabLifetime) tabLifetime.style.display = 'block';
         if (chemSection) chemSection.style.display = 'none';
         // Default to first tab
         if (tabBtns && tabBtns.length > 0) {
@@ -325,6 +632,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Staggered Reveal Cards
         revealCards();
       }
+
+      applyContentLocks();
     }
   }
 
@@ -332,10 +641,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cards = document.querySelectorAll('.tab-content.active .fade-in, #chemistry-result-section.fade-in');
     cards.forEach(c => c.classList.remove('reveal'));
 
-    cards.forEach((card, index) => {
-      setTimeout(() => {
-        card.classList.add('reveal');
-      }, index * 150);
+    requestAnimationFrame(() => {
+      cards.forEach(card => card.classList.add('reveal'));
     });
   }
 
@@ -373,6 +680,8 @@ btnSubmit.addEventListener('click', async (e) => {
   }
 
   const dogName = dogNameInput.value.trim();
+  unlockedSections.lifetime = false;
+  unlockedSections.chemistry = false;
   document.querySelectorAll('.dog-name-display').forEach(el => el.textContent = dogName);
 
   if (testType === 'chemistry') {
@@ -402,7 +711,7 @@ btnSubmit.addEventListener('click', async (e) => {
       }
     };
 
-    const regRes = await fetch('/api/saju/dogs/', {
+    const regRes = await fetch(apiUrl('/api/saju/dogs/'), {
       method: 'POST',
       headers: buildHeaders(true),
       body: JSON.stringify(postData)
@@ -423,7 +732,7 @@ btnSubmit.addEventListener('click', async (e) => {
     if (testType === 'chemistry') {
       const ownerDate = document.getElementById('owner-date').value;
       const ownerTime = document.getElementById('owner-time').value;
-      chemistryPromise = fetch(`/api/saju/dogs/${dogId}/compatibility/`, {
+      chemistryPromise = fetch(apiUrl(`/api/saju/dogs/${dogId}/compatibility/`), {
         method: 'POST',
         headers: buildHeaders(true),
         body: JSON.stringify({
@@ -435,6 +744,7 @@ btnSubmit.addEventListener('click', async (e) => {
 
     const { basicData, perData, luckData } = await analysisPromise;
     renderAnalysisResult(basicData, perData, luckData, dogName);
+    applyContentLocks();
 
     if (chemistryPromise) {
       try {
@@ -457,6 +767,7 @@ btnSubmit.addEventListener('click', async (e) => {
           }
 
           chemistryResultSection.style.display = 'block';
+          applyContentLocks();
         }
       } catch (err) {
         console.error("궁합 조회 실패:", err);
@@ -478,52 +789,19 @@ btnSubmit.addEventListener('click', async (e) => {
 });
 
 btnShare.addEventListener('click', async () => {
-  const originalText = btnShare.textContent;
-  btnShare.textContent = "이미지 굽는 중... 🐾";
+  const originalText = SHARE_BUTTON_LABEL;
+  btnShare.textContent = SHARE_BUTTON_LOADING_LABEL;
   btnShare.disabled = true;
 
   try {
-    // 캡쳐할 영역 지정 (결과 컨텐츠 전체 영역)
-    const html2CanvasReady = await ensureHtml2Canvas();
-    if (!html2CanvasReady || typeof window.html2canvas !== 'function') {
-      alert('이미지 저장 기능을 불러오지 못했어요. 네트워크 상태를 확인한 뒤 다시 시도해주세요.');
-      return;
-    }
-    const captureArea = document.querySelector('.result-scroll');
-    const captureScale = getCaptureScale(captureArea);
-    const canvas = await html2canvas(captureArea, {
-      scale: captureScale,
-      backgroundColor: '#F9FAFB',
-      useCORS: true,
-      windowWidth: captureArea.scrollWidth,
-      windowHeight: captureArea.scrollHeight
+    const shareLink = await getTossShareLink('intoss://daengsaju', currentShareImageUrl);
+    await share({
+      message: `${currentShareText}
+${shareLink}`,
     });
-    let imgData = canvas.toDataURL('image/png');
-
-    const modal = document.getElementById('image-modal');
-    const genImage = document.getElementById('generated-image');
-    const closeBtn = document.getElementById('close-modal');
-
-    if (modal && genImage) {
-      genImage.src = imgData;
-      modal.style.display = 'flex';
-
-      closeBtn.onclick = () => {
-        modal.style.display = 'none';
-        genImage.removeAttribute('src');
-      };
-    } else {
-      const link = document.createElement('a');
-      link.download = `댕사주_운세결과_${Date.now()}.png`;
-      link.href = imgData;
-      link.click();
-    }
-
-    imgData = null;
-    releaseCanvasResources(canvas);
   } catch (e) {
     console.error(e);
-    alert('이미지 저장 중 오류가 발생했습니다.');
+    alert(SHARE_ERROR_MESSAGE);
   } finally {
     btnShare.textContent = originalText;
     btnShare.disabled = false;
