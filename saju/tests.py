@@ -4,7 +4,12 @@ from django.test import TestCase
 from rest_framework.test import APIRequestFactory
 
 from .models import Compatibility, CompatibilityArchetype, Dog, SajuBasics, User
-from .views import AttendanceView, CompatibilityResultView, DogRegisterView
+from .views import (
+    AttendanceView,
+    CompatibilityResultView,
+    DogRegisterView,
+    normalize_owner_honorific_text,
+)
 
 
 class DogRegisterViewTests(TestCase):
@@ -160,3 +165,13 @@ class CompatibilityViewTests(TestCase):
 
         cached = Compatibility.objects.get(dog=self.dog, user=self.user)
         self.assertTrue(cached.description.startswith('DOG|OWNER2|owner-rel-2|'))
+
+
+class HonorificNormalizationTests(TestCase):
+    def test_collapses_repeated_owner_honorific_patterns(self):
+        owner_name = '보호자님'
+        text = '보호자님님 보호자님이님 보호자님은님 보호자님이님이'
+
+        normalized = normalize_owner_honorific_text(text, owner_name)
+
+        self.assertEqual(normalized, '보호자님 보호자님이 보호자님은 보호자님이')

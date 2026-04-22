@@ -1,4 +1,5 @@
 ﻿from datetime import date, datetime
+import re
 
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -40,6 +41,23 @@ def resolve_social_id(request):
         or request.query_params.get('social_id')
         or ''
     )
+
+
+def normalize_owner_honorific_text(text, owner_name):
+    if not text or not owner_name or not owner_name.endswith('님'):
+        return text
+
+    normalized = text
+    particles = ['이', '가', '은', '는', '을', '를', '과', '와', '으로', '로', '의']
+
+    for particle in particles:
+        normalized = normalized.replace(f'{owner_name}{particle}님{particle}', f'{owner_name}{particle}')
+        normalized = normalized.replace(f'{owner_name}{particle}님', f'{owner_name}{particle}')
+        normalized = normalized.replace(f'{owner_name}{particle}{particle}', f'{owner_name}{particle}')
+
+    normalized = normalized.replace(f'{owner_name}님', owner_name)
+    normalized = re.sub(r'(님){2,}', '님', normalized)
+    return normalized
 
 
 class DogRegisterView(APIView):
@@ -325,9 +343,18 @@ class CompatibilityResultView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        result_title = smart_replace(archetype.title, dog.name, owner_name)
-        result_description = smart_replace(archetype.description, dog.name, owner_name)
-        result_advice = smart_replace(archetype.advice, dog.name, owner_name)
+        result_title = normalize_owner_honorific_text(
+            smart_replace(archetype.title, dog.name, owner_name),
+            owner_name,
+        )
+        result_description = normalize_owner_honorific_text(
+            smart_replace(archetype.description, dog.name, owner_name),
+            owner_name,
+        )
+        result_advice = normalize_owner_honorific_text(
+            smart_replace(archetype.advice, dog.name, owner_name),
+            owner_name,
+        )
 
         meta_prefix = f"{dog_element}|{owner_element}|{relationship_type}|"
         Compatibility.objects.update_or_create(
