@@ -139,8 +139,12 @@
       const script = document.createElement('script');
       script.src = src;
       script.async = true;
-      script.onload = resolve;
-      script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+      script.crossOrigin = 'anonymous';
+      script.onload = () => resolve(true);
+      script.onerror = () => {
+        externalScriptPromises.delete(src);
+        reject(new Error(`Failed to load script: ${src}`));
+      };
       document.head.appendChild(script);
     });
 
@@ -149,18 +153,36 @@
   }
 
   async function ensureChartJs() {
-    if (window.Chart) return;
-    await loadExternalScript('https://cdn.jsdelivr.net/npm/chart.js');
+    if (window.Chart) return true;
+    try {
+      await loadExternalScript('https://cdn.jsdelivr.net/npm/chart.js');
+      return true;
+    } catch (error) {
+      console.warn('[External] Chart.js 로드 실패:', error);
+      return false;
+    }
   }
 
   async function ensureHtml2Canvas() {
-    if (window.html2canvas) return;
-    await loadExternalScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
+    if (window.html2canvas) return true;
+    try {
+      await loadExternalScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
+      return true;
+    } catch (error) {
+      console.warn('[External] html2canvas 로드 실패:', error);
+      return false;
+    }
   }
 
   async function ensureConfetti() {
-    if (typeof window.confetti === 'function') return;
-    await loadExternalScript('https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js');
+    if (typeof window.confetti === 'function') return true;
+    try {
+      await loadExternalScript('https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js');
+      return true;
+    } catch (error) {
+      console.warn('[External] confetti 로드 실패:', error);
+      return false;
+    }
   }
 
   function resetChemistryResult() {
@@ -357,7 +379,7 @@ btnSubmit.addEventListener('click', async (e) => {
   }
 
   if (testType === 'chemistry' && !document.getElementById('owner-date').value) {
-    alert("蹂댄샇???앸뀈?붿씪???낅젰?댁＜?몄슂!");
+    alert("보호자 생년월일을 입력해주세요!");
     return;
   }
 
@@ -473,7 +495,11 @@ btnShare.addEventListener('click', async () => {
 
   try {
     // 캡쳐할 영역 지정 (결과 컨텐츠 전체 영역)
-    await ensureHtml2Canvas();
+    const html2CanvasReady = await ensureHtml2Canvas();
+    if (!html2CanvasReady || typeof window.html2canvas !== 'function') {
+      alert('이미지 저장 기능을 불러오지 못했어요. 네트워크 상태를 확인한 뒤 다시 시도해주세요.');
+      return;
+    }
     const captureArea = document.querySelector('.result-scroll');
     const captureScale = getCaptureScale(captureArea);
     const canvas = await html2canvas(captureArea, {
@@ -540,7 +566,7 @@ function updateSajuTable(data) {
 
 // Draw or Update Chart.js Radar and set bar variables
 async function updateGraphs(dist) {
-  await ensureChartJs();
+  const chartReady = await ensureChartJs();
   const woods = dist['목'] || 0;
   const fires = dist['화'] || 0;
   const earths = dist['토'] || 0;
@@ -558,6 +584,11 @@ async function updateGraphs(dist) {
   document.getElementById('bar-earth').dataset.targetWidth = earths + '%';
   document.getElementById('bar-metal').dataset.targetWidth = metals + '%';
   document.getElementById('bar-water').dataset.targetWidth = waters + '%';
+
+  if (!chartReady || typeof window.Chart !== 'function') {
+    animateBars();
+    return;
+  }
 
   // Chart.js Radar
   const ctx = document.getElementById('radarChart').getContext('2d');
@@ -724,8 +755,8 @@ async function handleStamp() {
 
     renderCalendar();
 
-    await ensureConfetti();
-    if (typeof confetti === 'function') {
+    const confettiReady = await ensureConfetti();
+    if (confettiReady && typeof confetti === 'function') {
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
     }
 
@@ -780,7 +811,11 @@ if (btnDownloadTalisman) {
     const origText = btnDownloadTalisman.innerHTML;
     btnDownloadTalisman.innerHTML = "저장 중...";
     try {
-      await ensureHtml2Canvas();
+      const html2CanvasReady = await ensureHtml2Canvas();
+      if (!html2CanvasReady || typeof window.html2canvas !== 'function') {
+        alert('이미지 저장 기능을 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+        return;
+      }
       const wrapper = document.getElementById('talisman-content-wrapper');
       const canvas = await html2canvas(wrapper, {
         backgroundColor: '#1E1E2A',

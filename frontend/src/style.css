@@ -208,21 +208,18 @@ body {
   background-color: var(--color-card);
   display: flex;
   flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
   opacity: 0;
   pointer-events: none;
   z-index: 1;
-  transition: opacity 0.25s ease-in-out;
-  visibility: hidden;
-  will-change: opacity;
-  /* GPU 합성 레이어 힌트 */
-  transform: translateZ(0);
 }
 
 .screen.active {
+  transform: translateX(0);
   opacity: 1;
   pointer-events: auto;
   z-index: 10;
-  visibility: visible;
 }
 
 .bg-gray {
@@ -237,9 +234,9 @@ body {
   padding-left: 20px;
   padding-right: 20px;
   position: relative;
-  background: rgba(15, 23, 42, 0.9);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   z-index: 20;
 }
 
@@ -280,9 +277,9 @@ body {
 /* Tabs */
 .tab-nav {
   display: flex;
-  background: rgba(15, 23, 42, 0.92);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   z-index: 19;
   padding: 8px 20px;
   gap: 8px;
@@ -322,15 +319,15 @@ body {
 
 .tab-content {
   display: none;
+  animation: fadeIn 0.3s ease-in-out;
 }
 .tab-content.active {
   display: block;
-  animation: fadeIn 0.2s ease-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .body-content {
@@ -338,7 +335,6 @@ body {
   padding: 24px 24px;
   overflow-y: auto;
   padding-bottom: 100px;
-  -webkit-overflow-scrolling: touch;
 }
 
 .pt-0 {
@@ -376,7 +372,9 @@ body {
 }
 
 .menu-card {
-  background: rgba(30, 41, 59, 0.92);
+  background: rgba(30, 41, 59, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--border-radius-lg);
   padding: 32px 24px;
@@ -560,8 +558,7 @@ input[type="time"]:focus {
 .fade-in {
   opacity: 0;
   transform: translateY(30px);
-  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: opacity, transform;
+  transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .fade-in.reveal {
@@ -574,7 +571,9 @@ input[type="time"]:focus {
 }
 
 .card {
-  background: rgba(30, 41, 59, 0.92);
+  background: rgba(30, 41, 59, 0.6);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--border-radius-lg);
   padding: 32px 24px;
@@ -770,10 +769,7 @@ input[type="time"]:focus {
   white-space: pre-wrap;
 }
 
-/* Bullet Point Indentation for AI generated lists - Note: CSS cannot directly select text nodes like '+' '-' */
-/* If needed, wrap bullets in spans during formatting in JS */
-
-
+/* Bullet Point Indentation for AI generated lists */
 /* Highlighter effect */
 .highlight-text {
   background: linear-gradient(to top, rgba(139, 92, 246, 0.3) 40%, transparent 40%);
@@ -790,7 +786,7 @@ input[type="time"]:focus {
 
 /* Chemistry Card */
 .chemistry-card {
-  background: linear-gradient(to bottom right, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.92));
+  background: linear-gradient(to bottom right, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6));
   border: 1px solid rgba(139, 92, 246, 0.2);
   box-shadow: 0 0 20px rgba(139, 92, 246, 0.1);
 }
@@ -843,151 +839,6 @@ input[type="time"]:focus {
 /* Utils */
 .font-bold { font-weight: 700 !important; }
 
-/* =============================================
-   Ad Unlock (Locked Report) System
-   ============================================= */
-
-/* Outer container - provides the stacking context for blur + overlay */
-.locked-container {
-  position: relative;
-}
-
-/* Chemistry locked container needs a min-height so the overlay button shows */
-#locked-chem-container {
-  min-height: 200px;
-}
-
-/* When locked: blur the text content inside each card */
-.locked-container.is-locked .lockable-text {
-  filter: blur(6px);
-  user-select: none;
-  -webkit-user-select: none;
-  transition: filter 0.5s ease;
-  /* Fake placeholder text lines that look real when blurred */
-}
-
-/* Unlock overlay - sits on top of the blurred cards */
-.unlock-overlay {
-  display: none; /* hidden by default, shown via JS when .is-locked */
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: var(--border-radius-lg);
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    rgba(11, 17, 33, 0.0) 10%,
-    rgba(11, 17, 33, 0.75) 25%,
-    rgba(11, 17, 33, 0.95) 40%,
-    rgba(11, 17, 33, 0.98) 100%
-  );
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 88px;
-  padding-bottom: 0;
-  z-index: 10;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-.locked-container.is-locked .unlock-overlay {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.unlock-overlay-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  text-align: center;
-  padding: 0 24px;
-}
-
-.unlock-lock-icon {
-  font-size: 36px;
-  margin-bottom: 4px;
-  animation: lockPulse 2s infinite ease-in-out;
-}
-
-@keyframes lockPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-}
-
-.unlock-title {
-  font-size: 18px;
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: -0.3px;
-}
-
-.unlock-desc {
-  font-size: 14px;
-  color: rgba(255,255,255,0.7);
-  line-height: 1.6;
-  margin-bottom: 4px;
-}
-
-/* The CTA button */
-.btn-unlock {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  max-width: 280px;
-  height: 52px;
-  background: linear-gradient(135deg, #F59E0B, #EF4444);
-  color: #fff;
-  border: none;
-  border-radius: 16px;
-  font-size: 16px;
-  font-weight: 800;
-  font-family: inherit;
-  cursor: pointer;
-  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.35);
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  margin-top: 8px;
-}
-
-.btn-unlock:active {
-  transform: scale(0.95);
-  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);
-}
-
-.btn-unlock-icon {
-  font-size: 18px;
-}
-
-/* Watching ad state */
-.btn-unlock.is-loading {
-  background: rgba(255,255,255,0.15);
-  box-shadow: none;
-  cursor: not-allowed;
-}
-
-/* Unlock reveal animation: fade in + slide up each card */
-.locked-container.is-unlocked .lockable-text {
-  filter: blur(0px);
-  transition: filter 0.5s ease;
-}
-
-@keyframes unlock-card-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 /* ========================================= */
 /* Monthly Attendance Calendar               */
 /* ========================================= */
@@ -1030,7 +881,6 @@ input[type="time"]:focus {
   background: rgba(255, 255, 255, 0.15);
   color: #fff;
 }
-.calendar-header h2 { font-size: 22px; margin: 0 0 10px 0; color: #f8c3d3; font-weight: 800; }
 .streak-status { font-size: 15px; margin: 0 0 12px; color: #e2e8f0; text-align: center; }
 .streak-status strong { color: #ff69b4; font-size: 20px; text-shadow: 0 0 8px rgba(255,105,180,0.5); font-weight: 800; }
 
@@ -1051,8 +901,6 @@ input[type="time"]:focus {
   display: flex; align-items: center; justify-content: center;
   position: relative; transition: all 0.2s;
 }
-
-/* streak-connected 제거됨 - 누적 출석 방식으로 변경 */
 
 .day-number { color: #ffffff; font-weight: 600; z-index: 1; font-size: 14px; }
 
@@ -1093,18 +941,22 @@ input[type="time"]:focus {
 
 .talisman-content h2 { color: #ffd700; font-size: 20px; margin-bottom: 20px; font-weight: 800; }
 .talisman-image-placeholder {
-  width: 180px; height: 260px;
+  width: 220px; height: 220px;
   margin: 0 auto;
   background: rgba(0,0,0,0.4); border: 2px dashed rgba(255,215,0,0.5);
   border-radius: 15px; display: flex; align-items: center; justify-content: center;
-  font-size: 50px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+  margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
   overflow: hidden;
 }
 .talisman-name { color: #fff; font-size: 22px; margin-bottom: 8px; font-weight: 800; }
 .talisman-desc { color: #b1b5c4; font-size: 14px; line-height: 1.5; margin-bottom: 25px; }
 
 .talisman-actions { display: flex; flex-direction: column; gap: 10px; }
-.action-btn { padding: 14px; border-radius: 16px; border: none; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.2s;}
+.action-btn { 
+  padding: 14px; border-radius: 16px; border: none; 
+  font-weight: bold; font-size: 15px; cursor: pointer; 
+  transition: 0.2s; text-align: center; display: block; width: 100%;
+}
 .download-btn { background: #ffd700; color: #1e1e2a; }
 .share-btn { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
 .close-talisman-btn { background: transparent; color: #7f8596; text-decoration: underline; margin-top: 5px; font-size: 14px; padding: 5px; }
