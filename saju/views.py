@@ -1,7 +1,5 @@
 ﻿from datetime import date, datetime
 
-import re
-
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -42,163 +40,6 @@ def resolve_social_id(request):
         or request.query_params.get('social_id')
         or ''
     )
-
-
-def render_compatibility_text(text, dog_name, owner_name):
-    rendered = smart_replace(text, dog_name, owner_name)
-    rendered = re.sub(r'\[\s*강아지\s*이름\s*\]', dog_name, rendered)
-    rendered = re.sub(r'\[\s*보호자\s*이름\s*\]', owner_name, rendered)
-
-    if owner_name == '보호자님':
-        rendered = rendered.replace('보호자님님', '보호자님')
-
-    return rendered
-
-
-def get_or_create_saju_basics_for_dog(dog):
-    if hasattr(dog, 'saju_basics'):
-        return dog.saju_basics, False
-
-    if not dog.birth_date:
-        return None, None
-
-    saju_data = get_saju_for_dog(dog.birth_date, dog.birth_time)
-    saju_basics = SajuBasics.objects.create(
-        dog=dog,
-        year_pillar=saju_data['year_pillar'],
-        month_pillar=saju_data['month_pillar'],
-        day_pillar=saju_data['day_pillar'],
-        hour_pillar=saju_data['hour_pillar'],
-        main_element=saju_data['main_element'],
-        element_distribution=saju_data['element_distribution'],
-        relationship_type=saju_data.get('relationship_type', '비겁'),
-        secondary_element=saju_data.get('secondary_element', ''),
-    )
-    return saju_basics, True
-
-
-def get_or_create_ai_interpretation_for_dog(dog):
-    if hasattr(dog, 'ai_interpretation'):
-        serializer = AIInterpretationSerializer(dog.ai_interpretation)
-        return serializer.data, False
-
-    saju = getattr(dog, 'saju_basics', None)
-    if not saju:
-        return None, None
-
-    primary = saju.main_element
-    relationship_type = saju.relationship_type or '비겁'
-    secondary_element = saju.secondary_element or primary
-
-    selected_version = ['A', 'B', 'C'][dog.id % 3]
-    archetype = ArchetypeSaju.objects.filter(
-        primary_element=primary,
-        relationship_type=relationship_type,
-        version=selected_version,
-    ).first() or ArchetypeSaju.objects.filter(
-        primary_element=primary,
-        relationship_type=relationship_type,
-    ).first()
-
-    if not archetype:
-        return None, None
-
-    def replace_name(text):
-        return smart_replace(text, dog.name)
-
-    keywords = [replace_name(k) for k in archetype.personality_keywords] if isinstance(archetype.personality_keywords, list) else []
-    secondary_text = get_secondary_influence_text(primary, secondary_element)
-    care_tips_with_secondary = replace_name(archetype.care_tips)
-    if secondary_text:
-        care_tips_with_secondary += f"\n\n\U0001f4a1 [추가 사주 분석] {secondary_text}"
-
-    interpretation = AIInterpretation.objects.create(
-        dog=dog,
-        personality_summary=add_hanja_to_terms(replace_name(archetype.personality_summary)),
-        personality_keywords=[add_hanja_to_terms(k) for k in keywords],
-        vitality_analysis=add_hanja_to_terms(replace_name(archetype.vitality_analysis)),
-        social_analysis=add_hanja_to_terms(replace_name(archetype.social_analysis)),
-        treat_luck=add_hanja_to_terms(replace_name(archetype.treat_luck)),
-        care_tips=add_hanja_to_terms(care_tips_with_secondary),
-    )
-    serializer = AIInterpretationSerializer(interpretation)
-    return serializer.data, True
-
-
-def get_or_create_daily_luck_for_dog(dog):
-    today = date.today()
-    luck = DailyWalkingLuck.objects.filter(dog=dog, date=today).first()
-    if luck:
-        serializer = DailyWalkingLuckSerializer(luck)
-        data = serializer.data
-        data['message'] = add_hanja_to_terms(data['message'])
-        return data, False
-
-    main_element = '알수없음'
-    relationship_type = '비겁'
-    if hasattr(dog, 'saju_basics'):
-        main_element = dog.saju_basics.main_element
-        relationship_type = dog.saju_basics.relationship_type or '비겁'
-
-    dog_version = ['A', 'B', 'C'][dog.id % 3]
-    from .models import DailyLuckArchetype
-
-    archetype = DailyLuckArchetype.objects.filter(
-        dog_element=main_element,
-        relationship_type=relationship_type,
-        version=dog_version,
-    ).first() or DailyLuckArchetype.objects.filter(
-        dog_element=main_element,
-        relationship_type=relationship_type,
-    ).first() or DailyLuckArchetype.objects.filter(
-        dog_element=main_element,
-    ).first()
-
-    if archetype:
-        import random
-
-        score_range = {
-            '인성': (88, 98),
-            '비겁': (82, 95),
-            '식상': (78, 92),
-            '재성': (72, 88),
-            '관성': (60, 78),
-        }.get(relationship_type, (70, 90))
-        luck_data = {
-            'luck_score': random.randint(*score_range),
-            'message': smart_replace(archetype.message, dog.name),
-            'lucky_color': archetype.lucky_color,
-            'lucky_direction': archetype.lucky_direction,
-        }
-    else:
-        daily_luck_record = DailyElementLuck.objects.filter(date=today, element=main_element).first()
-        if daily_luck_record:
-            luck_data = {
-                'luck_score': daily_luck_record.luck_score,
-                'message': smart_replace(daily_luck_record.message, dog.name),
-                'lucky_color': daily_luck_record.lucky_color,
-                'lucky_direction': daily_luck_record.lucky_direction,
-            }
-        else:
-            luck_data = {
-                'luck_score': 80,
-                'message': smart_replace("오늘은 [강아지이름]이와 동네 한 바퀴 도는 것만으로도 행복해지는 날이에요!", dog.name),
-                'lucky_color': '보라색',
-                'lucky_direction': '어디든',
-            }
-
-    luck = DailyWalkingLuck.objects.create(
-        dog=dog,
-        date=today,
-        luck_score=luck_data['luck_score'],
-        message=luck_data['message'],
-        lucky_color=luck_data['lucky_color'],
-        lucky_direction=luck_data['lucky_direction'],
-    )
-    serializer = DailyWalkingLuckSerializer(luck)
-    data = serializer.data
-    data['message'] = add_hanja_to_terms(data['message'])
-    return data, True
 
 
 class DogRegisterView(APIView):
@@ -260,12 +101,29 @@ class SajuBasicsView(APIView):
 
     def get(self, request, dog_id):
         dog = get_object_or_404(Dog.objects.select_related('saju_basics'), id=dog_id)
-        saju_basics, created = get_or_create_saju_basics_for_dog(dog)
-        if saju_basics is None:
+
+        if hasattr(dog, 'saju_basics'):
+            serializer = SajuBasicsSerializer(dog.saju_basics)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        if not dog.birth_date:
             return Response({"error": "강아지의 생일 정보가 없어 사주를 계산할 수 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
+        saju_data = get_saju_for_dog(dog.birth_date, dog.birth_time)
+        saju_basics = SajuBasics.objects.create(
+            dog=dog,
+            year_pillar=saju_data['year_pillar'],
+            month_pillar=saju_data['month_pillar'],
+            day_pillar=saju_data['day_pillar'],
+            hour_pillar=saju_data['hour_pillar'],
+            main_element=saju_data['main_element'],
+            element_distribution=saju_data['element_distribution'],
+            relationship_type=saju_data.get('relationship_type', '비겁'),
+            secondary_element=saju_data.get('secondary_element', ''),
+        )
+
         serializer = SajuBasicsSerializer(saju_basics)
-        return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class AIInterpretationView(APIView):
@@ -274,12 +132,53 @@ class AIInterpretationView(APIView):
 
     def get(self, request, dog_id):
         dog = get_object_or_404(Dog.objects.select_related('saju_basics', 'ai_interpretation'), id=dog_id)
+
+        if hasattr(dog, 'ai_interpretation'):
+            serializer = AIInterpretationSerializer(dog.ai_interpretation)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
         if not hasattr(dog, 'saju_basics'):
             return Response({"error": "먼저 사주 원국(/basics/)을 생성해야 합니다."}, status=status.HTTP_400_BAD_REQUEST)
-        interpretation_data, created = get_or_create_ai_interpretation_for_dog(dog)
-        if interpretation_data is None:
+
+        saju = dog.saju_basics
+        primary = saju.main_element
+        relationship_type = saju.relationship_type or '비겁'
+        secondary_element = saju.secondary_element or primary
+
+        selected_version = ['A', 'B', 'C'][dog.id % 3]
+        archetype = ArchetypeSaju.objects.filter(
+            primary_element=primary,
+            relationship_type=relationship_type,
+            version=selected_version,
+        ).first() or ArchetypeSaju.objects.filter(
+            primary_element=primary,
+            relationship_type=relationship_type,
+        ).first()
+
+        if not archetype:
             return Response({"error": "사전 생성된 사주 프로필을 찾을 수 없습니다. (pregenerate_saju 명령어 실행 필요)"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        return Response(interpretation_data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+        def replace_name(text):
+            return smart_replace(text, dog.name)
+
+        keywords = [replace_name(k) for k in archetype.personality_keywords] if isinstance(archetype.personality_keywords, list) else []
+        secondary_text = get_secondary_influence_text(primary, secondary_element)
+        care_tips_with_secondary = replace_name(archetype.care_tips)
+        if secondary_text:
+            care_tips_with_secondary += f"\n\n\U0001f4a1 [추가 사주 분석] {secondary_text}"
+
+        interpretation = AIInterpretation.objects.create(
+            dog=dog,
+            personality_summary=add_hanja_to_terms(replace_name(archetype.personality_summary)),
+            personality_keywords=[add_hanja_to_terms(k) for k in keywords],
+            vitality_analysis=add_hanja_to_terms(replace_name(archetype.vitality_analysis)),
+            social_analysis=add_hanja_to_terms(replace_name(archetype.social_analysis)),
+            treat_luck=add_hanja_to_terms(replace_name(archetype.treat_luck)),
+            care_tips=add_hanja_to_terms(care_tips_with_secondary),
+        )
+
+        serializer = AIInterpretationSerializer(interpretation)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class DailyWalkingLuckView(APIView):
@@ -288,38 +187,80 @@ class DailyWalkingLuckView(APIView):
 
     def get(self, request, dog_id):
         dog = get_object_or_404(Dog.objects.select_related('saju_basics'), id=dog_id)
-        luck_data, created = get_or_create_daily_luck_for_dog(dog)
-        return Response(luck_data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+        today = date.today()
 
+        luck = DailyWalkingLuck.objects.filter(dog=dog, date=today).first()
+        if luck:
+            serializer = DailyWalkingLuckSerializer(luck)
+            data = serializer.data
+            data['message'] = add_hanja_to_terms(data['message'])
+            return Response(data, status=status.HTTP_200_OK)
 
-class DogAnalysisBundleView(APIView):
-    authentication_classes = []
-    permission_classes = [AllowAny]
+        main_element = '알수없음'
+        relationship_type = '비겁'
+        if hasattr(dog, 'saju_basics'):
+            main_element = dog.saju_basics.main_element
+            relationship_type = dog.saju_basics.relationship_type or '비겁'
 
-    def get(self, request, dog_id):
-        dog = get_object_or_404(Dog.objects.select_related('saju_basics', 'ai_interpretation'), id=dog_id)
+        dog_version = ['A', 'B', 'C'][dog.id % 3]
+        from .models import DailyLuckArchetype
 
-        saju_basics, _ = get_or_create_saju_basics_for_dog(dog)
-        if saju_basics is None:
-            return Response({"error": "강아지의 생일 정보가 없어 사주를 계산할 수 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        archetype = DailyLuckArchetype.objects.filter(
+            dog_element=main_element,
+            relationship_type=relationship_type,
+            version=dog_version,
+        ).first() or DailyLuckArchetype.objects.filter(
+            dog_element=main_element,
+            relationship_type=relationship_type,
+        ).first() or DailyLuckArchetype.objects.filter(
+            dog_element=main_element,
+        ).first()
 
-        if not hasattr(dog, 'saju_basics'):
-            dog.saju_basics = saju_basics
+        if archetype:
+            import random
 
-        interpretation_data, _ = get_or_create_ai_interpretation_for_dog(dog)
-        if interpretation_data is None:
-            return Response({"error": "사전 생성된 사주 프로필을 찾을 수 없습니다. (pregenerate_saju 명령어 실행 필요)"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            score_range = {
+                '인성': (88, 98),
+                '비겁': (82, 95),
+                '식상': (78, 92),
+                '재성': (72, 88),
+                '관성': (60, 78),
+            }.get(relationship_type, (70, 90))
+            luck_data = {
+                'luck_score': random.randint(*score_range),
+                'message': smart_replace(archetype.message, dog.name),
+                'lucky_color': archetype.lucky_color,
+                'lucky_direction': archetype.lucky_direction,
+            }
+        else:
+            daily_luck_record = DailyElementLuck.objects.filter(date=today, element=main_element).first()
+            if daily_luck_record:
+                luck_data = {
+                    'luck_score': daily_luck_record.luck_score,
+                    'message': smart_replace(daily_luck_record.message, dog.name),
+                    'lucky_color': daily_luck_record.lucky_color,
+                    'lucky_direction': daily_luck_record.lucky_direction,
+                }
+            else:
+                luck_data = {
+                    'luck_score': 80,
+                    'message': smart_replace("오늘은 [강아지이름]이와 동네 한 바퀴 도는 것만으로도 행복해지는 날이에요!", dog.name),
+                    'lucky_color': '보라색',
+                    'lucky_direction': '어디든',
+                }
 
-        daily_luck_data, _ = get_or_create_daily_luck_for_dog(dog)
-
-        return Response(
-            {
-                'basics': SajuBasicsSerializer(saju_basics).data,
-                'personality': interpretation_data,
-                'daily_luck': daily_luck_data,
-            },
-            status=status.HTTP_200_OK,
+        luck = DailyWalkingLuck.objects.create(
+            dog=dog,
+            date=today,
+            luck_score=luck_data['luck_score'],
+            message=luck_data['message'],
+            lucky_color=luck_data['lucky_color'],
+            lucky_direction=luck_data['lucky_direction'],
         )
+        serializer = DailyWalkingLuckSerializer(luck)
+        data = serializer.data
+        data['message'] = add_hanja_to_terms(data['message'])
+        return Response(data, status=status.HTTP_201_CREATED)
 
 
 class CompatibilityResultView(APIView):
@@ -384,9 +325,9 @@ class CompatibilityResultView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        result_title = render_compatibility_text(archetype.title, dog.name, owner_name)
-        result_description = render_compatibility_text(archetype.description, dog.name, owner_name)
-        result_advice = render_compatibility_text(archetype.advice, dog.name, owner_name)
+        result_title = smart_replace(archetype.title, dog.name, owner_name)
+        result_description = smart_replace(archetype.description, dog.name, owner_name)
+        result_advice = smart_replace(archetype.advice, dog.name, owner_name)
 
         meta_prefix = f"{dog_element}|{owner_element}|{relationship_type}|"
         Compatibility.objects.update_or_create(

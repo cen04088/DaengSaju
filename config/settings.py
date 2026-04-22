@@ -31,14 +31,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-for-dev')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv(
-        'ALLOWED_HOSTS',
-        '127.0.0.1,localhost,.up.railway.app,daengsaju.apps.tossmini.com,daengsaju.private-apps.tossmini.com',
-    ).split(',')
-    if host.strip()
-]
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
 # CSRF Trusted Origins for Railway
 CSRF_TRUSTED_ORIGINS = [
@@ -48,14 +41,10 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv(
-        'CORS_ALLOWED_ORIGINS',
-        'https://daengsaju.apps.tossmini.com,https://daengsaju.private-apps.tossmini.com',
-    ).split(',')
-    if origin.strip()
+    'https://daengsaju.apps.tossmini.com',
+    'https://daengsaju.private-apps.tossmini.com',
 ]
-CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True'
+CORS_ALLOW_ALL_ORIGINS = True  # Added for debugging and robust connection
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -197,8 +186,6 @@ WHITENOISE_IGNORE_PATTERNS = [
     'scratch/*',
     '__pycache__/*',
 ]
-
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Specifically exclude some files from being served as static
 # (Optional, but good for security)

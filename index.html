@@ -1,17 +1,25 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>댕사주</title>
+
+  <!-- Toss App Icon / Brand Logo Settings -->
   <link rel="icon" href="/static/assets/logo.png">
   <link rel="apple-touch-icon" href="/static/assets/logo.png">
   <meta property="og:title" content="댕사주">
   <meta property="og:image" content="/static/assets/logo.png">
   <link rel="stylesheet" href="/static/style.css?v=16">
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
 </head>
+
 <body>
   <div class="app-container">
+    <!-- Decorative Background -->
     <div class="bg-blobs">
       <div class="stars"></div>
       <div class="shooting-stars">
@@ -23,264 +31,334 @@
       <div class="blob blob-3"></div>
     </div>
 
+
+    <!-- 1. 메인 ?�택 ?�면 -->
     <section id="main-screen" class="screen active">
       <div class="body-content flex-center">
-        <h2 class="main-title text-center">어떤 댕사주를<br>살펴볼까요?</h2>
+        <h2 class="main-title text-center">?�떤 ?�세�?br>?�아볼까??</h2>
         <div class="menu-cards">
           <div class="menu-card" id="btn-general">
-            <h3>평생 사주 보기</h3>
-            <p>우리아이의 타고난 기질과 성향을 깊이 있게 살펴봐요.</p>
+            <h3>?�� ?�반 ?�사�?/h3>
+              <p>?�리?�이???�고난 기질�??�격 ?�아보기</p>
           </div>
           <div class="menu-card" id="btn-chemistry">
-            <h3>댕궁합 보기</h3>
-            <p>보호자와 강아지의 상생 궁합을 재미있게 확인해요.</p>
+            <h3>?�� ?�궁??보기</h3>
+            <p>보호?��? 강아지??찰떡 케�??�인?�기</p>
           </div>
         </div>
       </div>
     </section>
 
+    <!-- 2. ?�력 ?�면 -->
     <section id="input-screen" class="screen">
+
       <div class="body-content">
-        <h2 class="main-title" id="input-title">우리아이의 타고난<br>기질을 알아볼까요?</h2>
+        <h2 class="main-title" id="input-title">?�리?�이???�고난<br>기질???�아볼까??</h2>
 
         <form id="saju-form">
           <div class="form-group">
-            <label for="dog-name">강아지 이름</label>
-            <input type="text" id="dog-name" placeholder="예: 뭉치" required>
+            <label>강아지 ?�름</label>
+            <input type="text" id="dog-name" placeholder="?? ?�댕?? required>
           </div>
 
-          <div class="form-group">
-            <label for="dog-date">강아지 생년월일</label>
+          <div class=" form-group">
+            <label>강아지 ?�년?�일</label>
             <input type="date" id="dog-date" required>
             <div class="checkbox-group">
-              <label><input type="checkbox" id="dog-lunar"> 음력</label>
-              <label><input type="checkbox" id="dog-leap"> 윤달</label>
+              <label><input type="checkbox" id="dog-lunar"> ?�력</label>
+              <label><input type="checkbox" id="dog-leap"> ?�달</label>
             </div>
           </div>
 
           <div class="form-group">
-            <label for="dog-time">강아지 태어난 시간 (선택)</label>
+            <label>강아지 ?�어???�간 (?�택)</label>
             <input type="time" id="dog-time">
           </div>
 
           <div class="form-group">
-            <label>강아지 성별</label>
+            <label>강아지 ?�별</label>
             <div class="segment-control">
               <input type="radio" name="dog-gender" id="dog-m" value="M" checked>
-              <label for="dog-m">남아</label>
+              <label for="dog-m">?�아</label>
               <input type="radio" name="dog-gender" id="dog-f" value="F">
-              <label for="dog-f">여아</label>
+              <label for="dog-f">?�아</label>
             </div>
           </div>
 
+          <!-- 궁합 ?�주??추�? ?�력 ?�역 -->
           <div id="owner-input-section" class="hidden" style="margin-top: 32px;">
-            <h3 class="section-subtitle">보호자 정보</h3>
+            <h3 class="section-subtitle">보호???�보 (궁합??</h3>
             <div class="form-group">
-              <label for="owner-date">보호자 생년월일</label>
+              <label>보호???�년?�일</label>
               <input type="date" id="owner-date">
             </div>
             <div class="form-group">
-              <label for="owner-time">보호자 태어난 시간 (선택)</label>
+              <label>보호???�어???�간 (?�택)</label>
               <input type="time" id="owner-time">
             </div>
           </div>
         </form>
       </div>
       <div class="fab-wrapper">
-        <button id="btn-submit" class="btn-primary">운세 보기</button>
+        <button id="btn-submit" class="btn-primary">?�세 보기</button>
       </div>
     </section>
 
+    <!-- 3. 로딩 ?�면 -->
     <section id="loading-screen" class="screen">
       <div class="body-content flex-center">
         <div class="lottie-placeholder">
-          <div class="jumping-dog">🐶</div>
+          <!-- 간단??CSS ?�니메이???��?-->
+          <div class="jumping-dog">?��</div>
         </div>
-        <h2 class="loading-text">우리아이의 운세를<br>계산하는 중이에요...</h2>
-        <p class="loading-subtext">명리 흐름과 사주 데이터를 분석하고 있어요.</p>
+        <h2 class="loading-text">?�리?�이???�세�?br>계산?�는 중이?�요...</h2>
+        <p class="loading-subtext">명리??빅데?�터�?분석?�고 ?�습?�다</p>
       </div>
     </section>
 
+    <!-- 4. 결과 ?�면 -->
     <section id="result-screen" class="screen bg-gray">
+
+
+      <!-- Tab Navigation -->
       <div class="tab-nav sticky-tab">
-        <button class="tab-btn active" data-tab="tab-today">오늘의 운세</button>
-        <button class="tab-btn" data-tab="tab-lifetime">평생 사주</button>
+        <button class="tab-btn active" data-tab="tab-today">?�늘???�세</button>
+        <button class="tab-btn" data-tab="tab-lifetime">?�생 ?�주</button>
       </div>
 
       <div class="body-content result-scroll pt-0">
+
+        <!-- =======================
+             TAB 1: ?�늘???�세 
+             ======================= -->
         <div id="tab-today" class="tab-content active">
+
           <div class="card result-card chemistry-card fade-in">
-            <h3 class="card-title text-center" style="margin-bottom:16px;">✨ <span class="dog-name-display">댕댕이</span>의 오늘 운세</h3>
-            <div class="chemistry-match" style="margin-bottom:16px;">
-              <div class="chem-profile">행운 컬러<br><span id="res-luck-color" style="font-size:16px; font-weight:700; color:var(--color-primary)">-</span></div>
-              <div class="chem-heart">오늘의 포인트</div>
-              <div class="chem-profile">행운 방향<br><span id="res-luck-dir" style="font-size:16px; font-weight:700; color:var(--color-primary)">-</span></div>
-            </div>
-            <p class="chem-desc">오늘의 컬러와 방향을 참고하면 산책 만족도가 조금 더 올라갈 수 있어요.</p>
-          </div>
+            <h3 class="card-title text-center" style="margin-bottom:16px;">?? <span
+                class="dog-name-display">?�댕??/span>??
+                ?�늘????��??/h3>
+                <div class="chemistry-match" style="margin-bottom:16px;">
+                  <div class="chem-profile">컬러<br><span id="res-luck-color"
+                      style="font-size:16px; font-weight:700; color:var(--color-primary)">-</span></div>
+                  <div class="chem-heart">??/div>
+                    <div class="chem-profile">?�책방향<br><span id="res-luck-dir"
+                        style="font-size:16px; font-weight:700; color:var(--color-primary)">-</span></div>
+                  </div>
+                  <p class="chem-desc">?�늘?� ??컬러??리드줄이???�책 코스�??�면 ?�책 만족?��? ??배�? ?�니??</p>
+                </div>
 
-          <div class="card detail-card card-daily fade-in">
-            <div class="detail-icon">🐾</div>
-            <div class="detail-content" style="width: 100%;">
-              <h4>오늘의 산책 컨디션</h4>
-              <div style="font-size: 32px; font-weight:800; color: var(--color-primary); margin: 10px 0;">
-                <span id="res-luck-score">--</span>점
-              </div>
-              <p id="res-luck-msg" style="font-weight: 500; font-size: 16px; color: var(--color-text-body); line-height:1.6;">
-                운세 메시지를 불러오고 있습니다...
-              </p>
-            </div>
-          </div>
+                <!-- Daily Luck Card -->
+                <div class="card detail-card card-daily fade-in">
+                  <div class="detail-icon">?��</div>
+                  <div class="detail-content" style="width: 100%;">
+                    <h4>?�늘???�책 컨디??/h4>
+                      <div style="font-size: 32px; font-weight:800; color: var(--color-primary); margin: 10px 0;"><span
+                          id="res-luck-score">--</span>??/div>
+                        <p id="res-luck-msg"
+                          style="font-weight: 500; font-size: 16px; color: var(--color-text-body); line-height:1.6;">
+                          ?�이?��? 불러?�고
+                          ?�습?�다...</p>
+                      </div>
+                  </div>
 
-          <div class="card detail-card fade-in" style="margin-top: 8px; padding: 16px 20px; display: flex; align-items: center; justify-content: center;">
-            <button id="btn-open-attendance" class="btn-primary" style="width: 100%; height: 50px; font-size: 16px;">오늘 출석하고 발도장 찍기</button>
-          </div>
-        </div>
+                  <!-- Attendance Button -->
+                  <div class="card detail-card fade-in"
+                    style="margin-top: 8px; padding: 16px 20px; display: flex; align-items: center; justify-content: center;">
+                    <button id="btn-open-attendance" class="btn-primary"
+                      style="width: 100%; height: 50px; font-size: 16px;">?�� ?�늘 출석?�고 ?�장 찍기</button>
+                  </div>
 
-        <div id="tab-lifetime" class="tab-content">
-          <div class="card result-card summary-card fade-in">
-            <div class="result-image-wrapper">
-              <img src="/static/assets/fire_dog.png" alt="강아지 대표 이미지" class="result-img" id="result-img" decoding="async" loading="lazy">
-            </div>
-            <h2 class="result-title" id="res-summary">
-              우리 아이의 타고난 기운과 성향을 분석하고 있어요.
-            </h2>
+                </div>
 
-            <div class="saju-table-wrapper">
-              <table class="saju-table">
-                <tr>
-                  <th>시주</th>
-                  <th>일주</th>
-                  <th>월주</th>
-                  <th>년주</th>
-                </tr>
-                <tr id="saju-stem-row">
-                  <td id="stem-hour"><span class="hanja">-</span><br>-</td>
-                  <td class="highlight" id="stem-day"><span class="hanja">-</span><br>-</td>
-                  <td id="stem-month"><span class="hanja">-</span><br>-</td>
-                  <td id="stem-year"><span class="hanja">-</span><br>-</td>
-                </tr>
-                <tr id="saju-branch-row">
-                  <td id="branch-hour"><span class="hanja">-</span><br>-</td>
-                  <td class="highlight" id="branch-day"><span class="hanja">-</span><br>-</td>
-                  <td id="branch-month"><span class="hanja">-</span><br>-</td>
-                  <td id="branch-year"><span class="hanja">-</span><br>-</td>
-                </tr>
-              </table>
-              <p class="saju-caption">태어난 시간에 따라 시주는 비어 있을 수 있어요.</p>
-            </div>
-          </div>
+                <!-- =======================
+             TAB 2: ?�생 ?�주
+             ======================= -->
+                <div id="tab-lifetime" class="tab-content">
 
-          <div class="card result-card graph-card fade-in">
-            <h3 class="card-title">오행 기운 밸런스</h3>
-            <p class="card-desc" style="margin-bottom: 24px;">다섯 가지 기운이 <span class="dog-name-display">댕댕이</span>의 기질과 분위기를 만듭니다.</p>
+                  <!-- Summary Section -->
+                  <div class="card result-card summary-card fade-in">
+                    <div class="result-image-wrapper">
+                      <img src="/static/assets/fire_dog.png" alt="?�향 ?�러?�트" class="result-img" id="result-img"
+                        decoding="async" loading="lazy">
+                    </div>
+                    <h2 class="result-title" id="res-summary">?�동?�이 ?�치???�너?�이?�,<br><span
+                        class="text-fire">�???</span>??기운???�고난
+                      <span class="dog-name-display">?�댕??/span>!
+                    </h2>
 
-            <div class="radar-chart-container" style="position: relative; width: 100%; height: 240px; margin-bottom: 30px;">
-              <canvas id="radarChart"></canvas>
-            </div>
+                    <div class="saju-table-wrapper">
+                      <table class="saju-table">
+                        <tr>
+                          <th>?�주</th>
+                          <th>?�주</th>
+                          <th>?�주</th>
+                          <th>?�주</th>
+                        </tr>
+                        <tr id="saju-stem-row">
+                          <td id="stem-hour"><span class="hanja">-</span><br>-</td>
+                          <td class="highlight" id="stem-day"><span class="hanja">-</span><br>-</td>
+                          <td id="stem-month"><span class="hanja">-</span><br>-</td>
+                          <td id="stem-year"><span class="hanja">-</span><br>-</td>
+                        </tr>
+                        <tr id="saju-branch-row">
+                          <td id="branch-hour"><span class="hanja">-</span><br>-</td>
+                          <td class="highlight" id="branch-day"><span class="hanja">-</span><br>-</td>
+                          <td id="branch-month"><span class="hanja">-</span><br>-</td>
+                          <td id="branch-year"><span class="hanja">-</span><br>-</td>
+                        </tr>
+                      </table>
+                      <p class="saju-caption">???�쪽부???�어???�간, ?? ?? ?�의 기운?�니??</p>
+                    </div>
+                  </div>
 
-            <div class="bar-chart">
-              <div class="bar-row">
-                <span class="bar-label">목(木)<br><small id="val-wood">0%</small></span>
-                <div class="bar-track"><div id="bar-wood" class="bar-fill bg-wood" style="width: 0%;"></div></div>
-              </div>
-              <div class="bar-row">
-                <span class="bar-label">화(火)<br><small id="val-fire" class="text-fire font-bold">0%</small></span>
-                <div class="bar-track"><div id="bar-fire" class="bar-fill bg-fire" style="width: 0%;"></div></div>
-              </div>
-              <div class="bar-row">
-                <span class="bar-label">토(土)<br><small id="val-earth">0%</small></span>
-                <div class="bar-track"><div id="bar-earth" class="bar-fill bg-earth" style="width: 0%;"></div></div>
-              </div>
-              <div class="bar-row">
-                <span class="bar-label">금(金)<br><small id="val-metal">0%</small></span>
-                <div class="bar-track"><div id="bar-metal" class="bar-fill bg-metal" style="width: 0%;"></div></div>
-              </div>
-              <div class="bar-row">
-                <span class="bar-label">수(水)<br><small id="val-water">0%</small></span>
-                <div class="bar-track"><div id="bar-water" class="bar-fill bg-water" style="width: 0%;"></div></div>
-              </div>
-            </div>
-          </div>
+                  <!-- Five Elements Graph Section (Radar + Bar) -->
+                  <div class="card result-card graph-card fade-in">
+                    <h3 class="card-title">?�행 ?��? 밸런??/h3>
+                      <p class="card-desc" style="margin-bottom: 24px;">?�섯 가지 기운??<span
+                          class="dog-name-display">?�댕??/span>???�격??
+                          만듭?�다.</p>
 
-          <h3 class="section-header">영역별 심층 분석 리포트</h3>
+                      <div class="radar-chart-container"
+                        style="position: relative; width: 100%; height: 240px; margin-bottom: 30px;">
+                        <canvas id="radarChart"></canvas>
+                      </div>
 
-          <div class="card detail-card card-food fade-in" style="flex-direction: column;">
-            <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
-              <div class="detail-icon" style="flex-shrink:0;">🍖</div>
-              <h4 style="font-size: 18px; margin:0;">평생 간식운과 복 흐름</h4>
-            </div>
-            <div class="detail-content" style="width: 100%;">
-              <p id="res-food" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">분석 결과를 불러오고 있습니다...</p>
-            </div>
-          </div>
+                      <div class="bar-chart">
+                        <div class="bar-row">
+                          <span class="bar-label">�???<br><small id="val-wood">0%</small></span>
+                          <div class="bar-track">
+                            <div id="bar-wood" class="bar-fill bg-wood" style="width: 0%;"></div>
+                          </div>
+                        </div>
+                        <div class="bar-row">
+                          <span class="bar-label">????<br><small id="val-fire"
+                              class="text-fire font-bold">0%</small></span>
+                          <div class="bar-track">
+                            <div id="bar-fire" class="bar-fill bg-fire" style="width: 0%;"></div>
+                          </div>
+                        </div>
+                        <div class="bar-row">
+                          <span class="bar-label">????<br><small id="val-earth">0%</small></span>
+                          <div class="bar-track">
+                            <div id="bar-earth" class="bar-fill bg-earth" style="width: 0%;"></div>
+                          </div>
+                        </div>
+                        <div class="bar-row">
+                          <span class="bar-label">�???<br><small id="val-metal">0%</small></span>
+                          <div class="bar-track">
+                            <div id="bar-metal" class="bar-fill bg-metal" style="width: 0%;"></div>
+                          </div>
+                        </div>
+                        <div class="bar-row">
+                          <span class="bar-label">??�?<br><small id="val-water">0%</small></span>
+                          <div class="bar-track">
+                            <div id="bar-water" class="bar-fill bg-water" style="width: 0%;"></div>
+                          </div>
+                        </div>
+                      </div>
+                  </div>
 
-          <div class="card detail-card card-energy fade-in" style="flex-direction: column;">
-            <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
-              <div class="detail-icon" style="flex-shrink:0;">💪</div>
-              <h4 style="font-size: 18px; margin:0;">건강과 에너지 흐름</h4>
-            </div>
-            <div class="detail-content" style="width: 100%;">
-              <p id="res-energy" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">분석 결과를 불러오고 있습니다...</p>
-            </div>
-          </div>
+                  <!-- Detailed Analysis Cards (Expanded) -->
+                  <h3 class="section-header">?�역�??�층 분석 리포??/h3>
 
-          <div class="card detail-card card-love fade-in" style="flex-direction: column;">
-            <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
-              <div class="detail-icon" style="flex-shrink:0;">💖</div>
-              <h4 style="font-size: 18px; margin:0;">보호자와의 교감 포인트</h4>
-            </div>
-            <div class="detail-content" style="width: 100%;">
-              <p id="res-love" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">분석 결과를 불러오고 있습니다...</p>
-            </div>
-          </div>
+                    <div class="card detail-card card-food fade-in" style="flex-direction: column;">
+                      <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
+                        <div class="detail-icon" style="flex-shrink:0;">?��</div>
+                        <h4 style="font-size: 18px; margin:0;">?�생 간식/?�복 ?�내</h4>
+                      </div>
+                      <div class="detail-content" style="width: 100%;">
+                        <p id="res-food" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">?�이?��?
+                          불러?�고 ?�습?�다...
+                        </p>
+                      </div>
+                    </div>
 
-          <div class="card detail-card card-social fade-in" style="flex-direction: column;">
-            <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
-              <div class="detail-icon" style="flex-shrink:0;">🌟</div>
-              <h4 style="font-size: 18px; margin:0;">사회성과 무리 생활</h4>
-            </div>
-            <div class="detail-content" style="width: 100%;">
-              <p id="res-social" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">분석 결과를 불러오고 있습니다...</p>
-            </div>
-          </div>
-        </div>
+                    <div class="card detail-card card-energy fade-in" style="flex-direction: column;">
+                      <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
+                        <div class="detail-icon" style="flex-shrink:0;">??/div>
+                          <h4 style="font-size: 18px; margin:0;">건강/?�너지 ?�이??/h4>
+                        </div>
+                        <div class="detail-content" style="width: 100%;">
+                          <p id="res-energy" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">
+                            ?�이?��? 불러?�고
+                            ?�습?�다...</p>
+                        </div>
+                      </div>
 
-        <div id="chemistry-result-section" class="card result-card chemistry-card" style="display: none; margin-top:20px;">
-          <h3 class="card-title text-center">✨ <span id="res-chem-title">궁합 결과</span></h3>
-          <div class="chemistry-match">
-            <div class="chem-profile">보호자<br><span id="res-chem-owner-element">(-)</span></div>
-            <div class="chem-heart" id="res-chem-rel">궁합 분석 중</div>
-            <div class="chem-profile"><span class="dog-name-display">댕댕이</span><br><span id="res-chem-dog-element">(-)</span></div>
-          </div>
-          <div style="text-align:center; margin-bottom: 12px; font-weight: 800; font-size: 20px; color: var(--color-primary);">
-            점수: <span id="res-chem-score">--</span>점
-          </div>
-          <p id="res-chem-desc" class="chem-desc" style="margin-bottom: 16px;">궁합 결과를 불러오는 중입니다...</p>
-          <p id="res-chem-advice" style="font-size: 15px; color: var(--color-text-body); background: rgba(255, 255, 255, 0.05); padding: 16px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); line-height: 1.6; display: none;"></p>
-          <div style="height: 100px;"></div>
-        </div>
+                      <div class="card detail-card card-love fade-in" style="flex-direction: column;">
+                        <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
+                          <div class="detail-icon" style="flex-shrink:0;">?��</div>
+                          <h4 style="font-size: 18px; margin:0;">보호?��???교감 ??/h4>
+                        </div>
+                        <div class="detail-content" style="width: 100%;">
+                          <p id="res-love" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">
+                            ?�이?��? 불러?�고 ?�습?�다...
+                          </p>
+                        </div>
+                      </div>
 
-        <div class="fab-wrapper">
-          <button id="btn-share" class="btn-primary">운세 이미지 저장</button>
-        </div>
-      </div>
+                      <div class="card detail-card card-social fade-in" style="flex-direction: column;">
+                        <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
+                          <div class="detail-icon" style="flex-shrink:0;">?��</div>
+                          <h4 style="font-size: 18px; margin:0;">?�회?�과 무리 ?�활</h4>
+                        </div>
+                        <div class="detail-content" style="width: 100%;">
+                          <p id="res-social" style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">
+                            ?�이?��? 불러?�고
+                            ?�습?�다...</p>
+                        </div>
+                      </div>
+
+                    </div> <!-- End of Tab 2 -->
+
+                    <!-- Compatibility Card (Hidden by default) -->
+                    <div id="chemistry-result-section" class="card result-card chemistry-card"
+                      style="display: none; margin-top:20px;">
+                      <h3 class="card-title text-center">?�� <span id="res-chem-title">궁합 결과</span></h3>
+                      <div class="chemistry-match">
+                        <div class="chem-profile">보호??br><span id="res-chem-owner-element">(-)</span></div>
+                        <div class="chem-heart" id="res-chem-rel">??궁합 분석 ??/div>
+                          <div class="chem-profile"><span class="dog-name-display">?�댕??/span><br><span
+                                id="res-chem-dog-element">(-)</span></div>
+                        </div>
+                        <div
+                          style="text-align:center; margin-bottom: 12px; font-weight: 800; font-size: 20px; color: var(--color-primary);">
+                          ?�수: <span id="res-chem-score">--</span>??
+                        </div>
+                        <p id="res-chem-desc" class="chem-desc" style="margin-bottom: 16px;">궁합 ?�이?��? 불러?�는 중입?�다...
+                        </p>
+                        <p id="res-chem-advice"
+                          style="font-size: 15px; color: var(--color-text-body); background: rgba(255, 255, 255, 0.05); padding: 16px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); line-height: 1.6; display: none;">
+                        </p>
+                      </div>
+
+                      <div style="height: 100px;"></div>
+                    </div>
+
+                    <div class="fab-wrapper">
+                      <button id="btn-share" class="btn-primary">???�세 ?�?�하�?/button>
+                    </div>
     </section>
 
-    <div id="image-modal" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
-      <p style="color: white; margin-bottom: 20px; font-weight: 700; font-size: 16px;">이미지를 길게 눌러 저장해주세요 🐾</p>
-      <img id="generated-image" style="max-width: 85%; max-height: 70vh; border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.5);" alt="생성된 운세 이미지">
-      <button id="close-modal" class="btn-primary" style="margin-top: 30px; width: 85%;">닫기</button>
+    <!-- Image Save Modal (Mobile Fallback) -->
+    <div id="image-modal"
+      style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
+      <p style="color: white; margin-bottom: 20px; font-weight: 700; font-size: 16px;">?��?지�?길게 ?�러???�?�하?�요 ?��</p>
+      <img id="generated-image"
+        style="max-width: 85%; max-height: 70vh; border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.5);" />
+      <button id="close-modal" class="btn-primary" style="margin-top: 30px; width: 85%;">?�기</button>
     </div>
+
   </div>
 
+  <!-- Attendance (Monthly Calendar) Modal -->
   <div id="attendance-modal" class="modal-overlay hidden">
     <div class="calendar-modal">
-      <button id="btn-close-attendance" class="close-btn-dark">닫기</button>
+      <button id="btn-close-attendance" class="close-btn-dark">???�기</button>
       <div class="calendar-header">
-        <p class="streak-status">이번 달 <strong id="calendar-streak">0일</strong> 출석했어요</p>
+        <p class="streak-status">?�번 ??<strong id="calendar-streak">0??/strong> 출석?�어??</p>
         <div class="progress-container">
-          <span id="calendar-progress-text" class="progress-text">다음 스페셜 부적까지 0일 남았어요!</span>
+          <span id="calendar-progress-text" class="progress-text">?�음 ?�페??부?�까지 ??-???�았?�요!</span>
           <div class="progress-bar-bg">
             <div id="calendar-progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
           </div>
@@ -291,20 +369,21 @@
     </div>
   </div>
 
+  <!-- Talisman Reward Modal -->
   <div id="talisman-modal" class="modal-overlay talisman-modal-overlay hidden">
     <div class="talisman-modal" id="talisman-content-wrapper">
       <div class="talisman-content">
-        <h2>스페셜 댕댕 부적 획득</h2>
+        <h2>?�� ?�페???�댕 부???�득 ?��</h2>
         <div class="talisman-image-placeholder">
-          <img id="talisman-img" alt="부적 이미지" style="width:100%; height:100%; object-fit:cover; border-radius:15px;">
+          <img id="talisman-img" alt="부적 이미지" style="width:100%; height:100%; object-fit:cover; border-radius:15px;" />
         </div>
-        <h3 id="talisman-name" class="talisman-name">부적 이름</h3>
-        <p id="talisman-desc" class="talisman-desc">부적 설명</p>
+        <h3 id="talisman-name" class="talisman-name">부???�름</h3>
+        <p id="talisman-desc" class="talisman-desc">부???�명</p>
       </div>
       <div class="talisman-actions" data-html2canvas-ignore>
-        <button id="btn-download-talisman" class="action-btn download-btn">부적 저장하기</button>
-        <button id="btn-share-talisman" class="action-btn share-btn">공유하기</button>
-        <button id="btn-close-talisman" class="action-btn close-talisman-btn">닫기</button>
+        <button id="btn-download-talisman" class="action-btn download-btn">부???�?�하�?/button>
+          <button id="btn-share-talisman" class="action-btn share-btn">?�랑?�기</button>
+          <button id="btn-close-talisman" class="action-btn close-talisman-btn">?�기</button>
       </div>
     </div>
   </div>
@@ -312,6 +391,7 @@
   <script>
     window.__TOSS_USER_KEY__ = "{{ toss_user_key|escapejs }}";
   </script>
-  <script src="/static/app.js?v=18"></script>
+  <script src="/static/app.js?v=17"></script>
 </body>
+
 </html>
