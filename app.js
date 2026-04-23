@@ -16,6 +16,7 @@
   const attendanceModal = document.getElementById('attendance-modal');
   const btnCloseAttendance = document.getElementById('btn-close-attendance');
   const btnAttendanceStamp = document.getElementById('btn-attendance-stamp');
+  const btnAttendanceReset = document.getElementById('btn-attendance-reset');
   const talismanModal = document.getElementById('talisman-modal');
   const talismanContentWrapper = document.getElementById('talisman-content-wrapper');
   const resultImage = document.getElementById('result-img');
@@ -68,6 +69,8 @@
   let attendanceRecord = [];
   let currentStreak = 0;
   let currentTalismanDay = null;
+  const ATTENDANCE_TEST_MODE = true;
+  const ATTENDANCE_TEST_STORAGE_KEY = 'daengsaju_test_attendance';
 
   const TALISMAN_REWARDS = {
     1: { name: '시작의 코기 부적', desc: '첫 출석 완료! 오늘의 시작마다 산뜻한 행운이 따라붙을 거예요.' },
@@ -176,6 +179,15 @@
 
   function updateAttendanceStampButton() {
     if (!btnAttendanceStamp) return;
+    if (btnAttendanceReset) {
+      btnAttendanceReset.style.display = ATTENDANCE_TEST_MODE ? 'block' : 'none';
+    }
+    if (ATTENDANCE_TEST_MODE) {
+      btnAttendanceStamp.disabled = false;
+      btnAttendanceStamp.textContent = '테스트 도장 찍기';
+      btnAttendanceStamp.style.opacity = '1';
+      return;
+    }
     const stampedToday = attendanceRecord.includes(todayDate);
     btnAttendanceStamp.disabled = stampedToday;
     btnAttendanceStamp.textContent = stampedToday ? '오늘 출석 완료' : '오늘 출석하기';
@@ -584,6 +596,27 @@ function formatText(text) {
 
 // ─── Attendance Logic ───────────────────────────────────────────
 async function loadAttendance() {
+  if (ATTENDANCE_TEST_MODE) {
+    try {
+      const saved = localStorage.getItem(ATTENDANCE_TEST_STORAGE_KEY);
+      attendanceRecord = saved ? JSON.parse(saved) : [];
+      currentStreak = attendanceRecord.length;
+      updateAttendanceStampButton();
+      return {
+        attended_days: attendanceRecord,
+        streak_count: currentStreak,
+      };
+    } catch (e) {
+      console.warn('[Attendance] 테스트 데이터 로드 실패:', e);
+      attendanceRecord = [];
+      currentStreak = 0;
+      updateAttendanceStampButton();
+      return {
+        attended_days: [],
+        streak_count: 0,
+      };
+    }
+  }
   if (!requireUserKey()) {
     throw new Error('Missing toss user key');
   }
@@ -645,6 +678,29 @@ function renderCalendar() {
 }
 
 async function handleStamp() {
+  if (ATTENDANCE_TEST_MODE) {
+    const nextDay = Array.from({ length: currentDaysInMonth }, (_, index) => index + 1)
+      .find(day => !attendanceRecord.includes(day));
+    if (!nextDay) {
+      alert('이번 달 테스트 도장을 모두 찍었어요.');
+      return;
+    }
+
+    attendanceRecord = [...attendanceRecord, nextDay];
+    currentStreak = attendanceRecord.length;
+    localStorage.setItem(ATTENDANCE_TEST_STORAGE_KEY, JSON.stringify(attendanceRecord));
+    renderCalendar();
+
+    await ensureConfetti();
+    if (typeof confetti === 'function') {
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
+    }
+
+    if (MILESTONES.includes(currentStreak)) {
+      setTimeout(() => { showTalisman(currentStreak); }, 300);
+    }
+    return;
+  }
   if (!requireUserKey()) return;
   if (attendanceRecord.includes(todayDate)) return;
 
@@ -709,6 +765,16 @@ if (btnOpenAttendance) {
 }
 if (btnAttendanceStamp) {
   btnAttendanceStamp.addEventListener('click', handleStamp);
+}
+if (btnAttendanceReset) {
+  btnAttendanceReset.addEventListener('click', () => {
+    if (!ATTENDANCE_TEST_MODE) return;
+    localStorage.removeItem(ATTENDANCE_TEST_STORAGE_KEY);
+    attendanceRecord = [];
+    currentStreak = 0;
+    currentTalismanDay = null;
+    renderCalendar();
+  });
 }
 if (btnCloseAttendance) {
   btnCloseAttendance.addEventListener('click', () => {

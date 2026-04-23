@@ -966,6 +966,14 @@ input[type="time"]:focus {
 .download-btn { background: #ffd700; color: #1e1e2a; }
 .share-btn { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
 .close-talisman-btn { background: transparent; color: #7f8596; text-decoration: underline; margin-top: 5px; font-size: 14px; padding: 5px; }
+.attendance-reset-btn {
+  background: rgba(255,255,255,0.08);
+  color: #e2e8f0;
+  border: 1px solid rgba(255,255,255,0.16);
+}
+.attendance-reset-btn:active {
+  background: rgba(255,255,255,0.14);
+}
 
 /* Modal overlay general */
 .modal-overlay {

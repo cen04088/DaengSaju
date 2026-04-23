@@ -1,4 +1,4 @@
-import { getAnonymousKey, share, getTossShareLink, TossAds, loadFullScreenAd, showFullScreenAd } from '@apps-in-toss/web-framework';
+import { getAnonymousKey, saveBase64Data, share, getTossShareLink, TossAds, loadFullScreenAd, showFullScreenAd } from '@apps-in-toss/web-framework';
 
 const BASE_URL = 'https://web-production-285b5.up.railway.app';
 
@@ -51,6 +51,34 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnChemistry = document.getElementById('btn-chemistry');
   const btnSubmit = document.getElementById('btn-submit');
   const btnShare = document.getElementById('btn-share');
+  const imageModal = document.getElementById('image-modal');
+  const generatedImage = document.getElementById('generated-image');
+  const btnCloseImageModal = document.getElementById('close-modal');
+
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = typeof reader.result === 'string' ? reader.result : '';
+        const base64 = result.includes(',') ? result.split(',')[1] : result;
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function openImageSaveModal(imageUrl) {
+    if (!imageModal || !generatedImage) return;
+    generatedImage.src = imageUrl;
+    imageModal.style.display = 'flex';
+  }
+
+  function closeImageSaveModal() {
+    if (!imageModal || !generatedImage) return;
+    imageModal.style.display = 'none';
+    generatedImage.removeAttribute('src');
+  }
 
   // Tab Logic
   const tabBtns = document.querySelectorAll('.tab-btn');
@@ -815,16 +843,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const btnOpenAttendance = document.getElementById('btn-open-attendance');
   const btnAttendanceStamp = document.getElementById('btn-attendance-stamp');
+  const btnAttendanceReset = document.getElementById('btn-attendance-reset');
   const attendanceModal = document.getElementById('attendance-modal');
   const btnCloseAttendance = document.getElementById('btn-close-attendance');
   const talismanModal = document.getElementById('talisman-modal');
   const talismanContentWrapper = document.getElementById('talisman-content-wrapper');
-  const btnDownloadTalisman = null;
-  const btnShareTalisman = null;
+  const btnDownloadTalisman = document.getElementById('btn-download-talisman');
+  const btnCloseTalisman = document.getElementById('btn-close-talisman');
 
   let attendanceRecord = [];
   let currentStreak = 0;
   let currentTalismanDay = null;
+  const ATTENDANCE_TEST_MODE = false;
+  const ATTENDANCE_TEST_STORAGE_KEY = 'daengsaju_test_attendance';
 
   const todayDateObj = new Date();
   const currentMonth = todayDateObj.getMonth() + 1;
@@ -833,6 +864,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function updateAttendanceStampButton() {
     if (!btnAttendanceStamp) return;
+    if (btnAttendanceReset) {
+      btnAttendanceReset.style.display = ATTENDANCE_TEST_MODE ? 'block' : 'none';
+    }
+    if (ATTENDANCE_TEST_MODE) {
+      btnAttendanceStamp.disabled = false;
+      btnAttendanceStamp.textContent = '테스트 도장 찍기';
+      return;
+    }
 
     const alreadyStamped = attendanceRecord.includes(todayDate);
     btnAttendanceStamp.disabled = alreadyStamped;
@@ -841,6 +880,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ─── API 기반 출석 로드 ───────────────────────────────────────────
   async function loadAttendance() {
+    if (ATTENDANCE_TEST_MODE) {
+      try {
+        const saved = localStorage.getItem(ATTENDANCE_TEST_STORAGE_KEY);
+        attendanceRecord = saved ? JSON.parse(saved) : [];
+        currentStreak = attendanceRecord.length;
+        updateAttendanceStampButton();
+        return {
+          attended_days: attendanceRecord,
+          streak_count: currentStreak
+        };
+      } catch (e) {
+        console.error('[Attendance] test load failed:', e);
+        attendanceRecord = [];
+        currentStreak = 0;
+        updateAttendanceStampButton();
+        return {
+          attended_days: [],
+          streak_count: 0
+        };
+      }
+    }
     const userKey = requireUserKey();
     if (!userKey) {
       return null;
@@ -907,6 +967,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function handleStamp() {
+    if (ATTENDANCE_TEST_MODE) {
+      const nextDay = Array.from({ length: currentDaysInMonth }, (_, index) => index + 1)
+        .find(day => !attendanceRecord.includes(day));
+
+      if (!nextDay) {
+        alert('이번 달 테스트 도장을 모두 찍었어요.');
+        return;
+      }
+
+      attendanceRecord = [...attendanceRecord, nextDay];
+      currentStreak = attendanceRecord.length;
+      localStorage.setItem(ATTENDANCE_TEST_STORAGE_KEY, JSON.stringify(attendanceRecord));
+      renderCalendar();
+
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
+      }
+
+      if (MILESTONES.includes(currentStreak)) {
+        setTimeout(() => { showTalisman(currentStreak); }, 300);
+      }
+      return;
+    }
     const userKey = requireUserKey();
     if (!userKey || attendanceRecord.includes(todayDate)) return;
 
@@ -948,7 +1031,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function showTalisman(streak) {
     currentTalismanDay = streak;
-    const reward = TALISMAN_REWARDS[streak];
+    const reward = TALISMAN_REWARDS[streak] || (
+      streak === 5
+        ? { name: '복슬복슬 말티즈 부적', desc: '5일 연속 출석! 포근한 기운이 차곡차곡 쌓이며 기분 좋은 순간들이 더 자주 찾아올 거예요.' }
+        : null
+    );
+    if (!reward) return;
     document.getElementById('talisman-name').textContent = reward.name;
     document.getElementById('talisman-desc').textContent = reward.desc;
     const imgEl = document.getElementById('talisman-img');
@@ -974,6 +1062,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     btnAttendanceStamp.addEventListener('click', handleStamp);
   }
 
+  if (btnAttendanceReset) {
+    btnAttendanceReset.addEventListener('click', () => {
+      if (!ATTENDANCE_TEST_MODE) return;
+      localStorage.removeItem(ATTENDANCE_TEST_STORAGE_KEY);
+      attendanceRecord = [];
+      currentStreak = 0;
+      currentTalismanDay = null;
+      renderCalendar();
+    });
+  }
+
   if (btnCloseAttendance) {
     btnCloseAttendance.addEventListener('click', () => {
       attendanceModal.classList.add('hidden');
@@ -992,42 +1091,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  if (btnCloseTalisman) {
+    btnCloseTalisman.addEventListener('click', () => {
+      talismanModal.classList.add('hidden');
+    });
+  }
+
+  if (btnCloseImageModal) {
+    btnCloseImageModal.addEventListener('click', closeImageSaveModal);
+  }
+
+  if (imageModal) {
+    imageModal.addEventListener('click', (event) => {
+      if (event.target === imageModal) {
+        closeImageSaveModal();
+      }
+    });
+  }
+
   if (btnDownloadTalisman) {
     btnDownloadTalisman.addEventListener('click', async () => {
       const origText = btnDownloadTalisman.innerHTML;
       btnDownloadTalisman.innerHTML = "저장 중...";
       try {
-        const wrapper = document.getElementById('talisman-content-wrapper');
-        const canvas = await html2canvas(wrapper, { backgroundColor: '#1E1E2A', useCORS: true });
-        const dataUrl = canvas.toDataURL('image/png');
-        const a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = `daengsaju_talisman_${currentStreak}.png`;
-        a.click();
+        const imgEl = document.getElementById('talisman-img');
+        const imageUrl = imgEl?.currentSrc || imgEl?.src;
+        if (!imageUrl) {
+          throw new Error('No talisman image source');
+        }
+
+        const response = await fetch(imageUrl, { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error('Failed to fetch talisman image');
+        }
+
+        const blob = await response.blob();
+        const fileName = `daengsaju_talisman_${currentTalismanDay || currentStreak}.png`;
+
+        try {
+          const base64Data = await blobToBase64(blob);
+          await saveBase64Data({
+            data: base64Data,
+            fileName,
+            mimeType: 'image/png',
+          });
+          alert('부적 이미지를 저장했어요.');
+        } catch (bridgeError) {
+          console.warn('saveBase64Data failed, falling back to image modal', bridgeError);
+          const objectUrl = URL.createObjectURL(blob);
+          openImageSaveModal(objectUrl);
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
+        }
       } catch (e) {
         console.error(e);
         alert('이미지 저장에 실패했습니다.');
       }
       btnDownloadTalisman.innerHTML = origText;
-    });
-  }
-
-  if (btnShareTalisman) {
-    btnShareTalisman.addEventListener('click', async () => {
-      if (navigator.share) {
-        try {
-          const reward = TALISMAN_REWARDS[currentTalismanDay];
-          await navigator.share({
-            title: '댕사주 스페셜 부적',
-            text: `댕사주에서 ${currentStreak}일 연속 출석하고 '${reward.name}'을 획득했어요! 🐾`,
-            url: window.location.href,
-          });
-        } catch (e) {
-          console.log('Share canceled or failed', e);
-        }
-      } else {
-        alert('지원하지 않는 브라우저입니다.');
-      }
     });
   }
 

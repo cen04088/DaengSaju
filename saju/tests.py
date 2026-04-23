@@ -8,6 +8,7 @@ from .views import (
     AttendanceView,
     CompatibilityResultView,
     DogRegisterView,
+    normalize_compatibility_owner_text,
     normalize_owner_honorific_text,
 )
 
@@ -175,6 +176,39 @@ class CompatibilityViewTests(TestCase):
         cached = Compatibility.objects.get(dog=self.dog, user=self.user)
         self.assertTrue(cached.description.startswith('DOG|OWNER2|owner-rel-2|'))
 
+    @patch('saju.views.add_hanja_to_terms', side_effect=lambda text: text)
+    @patch('saju.views.get_relationship_type', return_value='owner-rel-1')
+    @patch('saju.views.get_saju_for_dog', return_value={'main_element': 'OWNER1'})
+    def test_compatibility_hides_owner_name_and_uses_generic_honorific(
+        self,
+        _mock_get_saju_for_dog,
+        _mock_get_relationship_type,
+        _mock_add_hanja,
+    ):
+        CompatibilityArchetype.objects.filter(
+            dog_element='DOG',
+            relationship_type='owner-rel-1',
+            version='B',
+        ).update(
+            title='[강아지이름]과 [보호자이름]의 궁합',
+            description='[보호자 이름]와 [강아지이름]는 잘 맞고 민수님이의 마음도 편안해져요.',
+            advice='민수와 [강아지이름]가 함께할 때는 [보호자이름]를 바라보는 시간을 늘려주세요.',
+        )
+
+        request = self.factory.post(
+            f'/api/saju/dogs/{self.dog.id}/compatibility/',
+            {'owner_birth_date': '1990-01-01', 'owner_name': '민수님'},
+            format='json',
+        )
+        response = self.view(request, dog_id=self.dog.id)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('보호자님', response.data['title'])
+        self.assertIn('보호자님과', response.data['description'])
+        self.assertIn('보호자님을', response.data['advice'])
+        self.assertNotIn('민수', response.data['description'])
+        self.assertNotIn('[보호자', response.data['advice'])
+
 
 class HonorificNormalizationTests(TestCase):
     def test_collapses_repeated_owner_honorific_patterns(self):
@@ -192,3 +226,13 @@ class HonorificNormalizationTests(TestCase):
         normalized = normalize_owner_honorific_text(text, owner_name)
 
         self.assertEqual(normalized, '보호자님의 마음과 보호자님께 드리는 인사, 보호자님에게 전하는 소식')
+
+    def test_normalizes_compatibility_owner_placeholders(self):
+        text = '[보호자 이름]와 [강아지이름]의 궁합, [보호자이름]를 향한 마음, 보호자님가 전하는 말'
+
+        normalized = normalize_compatibility_owner_text(text, '민수님')
+
+        self.assertEqual(
+            normalized,
+            '보호자님과 [강아지이름]의 궁합, 보호자님을 향한 마음, 보호자님이 전하는 말',
+        )

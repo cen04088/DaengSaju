@@ -71,6 +71,33 @@ def normalize_owner_honorific_text(text, owner_name):
     return normalized
 
 
+def normalize_compatibility_owner_text(text, owner_name=''):
+    if not text:
+        return text
+
+    normalized = text
+    display_owner_name = '보호자님'
+    placeholder_variants = ['[보호자이름]', '[보호자 이름]', '[보호자명]']
+
+    for placeholder in placeholder_variants:
+        normalized = normalized.replace(placeholder, display_owner_name)
+
+    if owner_name:
+        normalized = normalized.replace(owner_name, display_owner_name)
+
+    generic_particle_fixes = {
+        '보호자님가': '보호자님이',
+        '보호자님는': '보호자님은',
+        '보호자님를': '보호자님을',
+        '보호자님와': '보호자님과',
+        '보호자님로': '보호자님으로',
+    }
+    for source, target in generic_particle_fixes.items():
+        normalized = normalized.replace(source, target)
+
+    return normalize_owner_honorific_text(normalized, display_owner_name)
+
+
 class DogRegisterView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -300,7 +327,8 @@ class CompatibilityResultView(APIView):
         dog = get_object_or_404(Dog.objects.select_related('user', 'saju_basics'), id=dog_id)
         owner_birth_date_str = request.data.get('owner_birth_date')
         owner_birth_time_str = request.data.get('owner_birth_time')
-        owner_name = request.data.get('owner_name', '보호자님')
+        owner_name = request.data.get('owner_name', '')
+        display_owner_name = '보호자님'
 
         if not owner_birth_date_str:
             return Response({"error": "보호자 생년월일을 입력해주세요."}, status=status.HTTP_400_BAD_REQUEST)
@@ -355,16 +383,25 @@ class CompatibilityResultView(APIView):
             )
 
         result_title = normalize_owner_honorific_text(
-            smart_replace(archetype.title, dog.name, owner_name),
-            owner_name,
+            normalize_compatibility_owner_text(
+                smart_replace(archetype.title, dog.name, display_owner_name),
+                owner_name,
+            ),
+            display_owner_name,
         )
         result_description = normalize_owner_honorific_text(
-            smart_replace(archetype.description, dog.name, owner_name),
-            owner_name,
+            normalize_compatibility_owner_text(
+                smart_replace(archetype.description, dog.name, display_owner_name),
+                owner_name,
+            ),
+            display_owner_name,
         )
         result_advice = normalize_owner_honorific_text(
-            smart_replace(archetype.advice, dog.name, owner_name),
-            owner_name,
+            normalize_compatibility_owner_text(
+                smart_replace(archetype.advice, dog.name, display_owner_name),
+                owner_name,
+            ),
+            display_owner_name,
         )
 
         meta_prefix = f"{dog_element}|{owner_element}|{relationship_type}|"
