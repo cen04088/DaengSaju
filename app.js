@@ -575,6 +575,9 @@ function animateBars() {
 function formatText(text) {
   if (!text) return '';
   return text
+    .replace(/보호자님님/g, '보호자님')
+    .replace(/보호자님이의/g, '보호자님의')
+    .replace(/보호자님이께/g, '보호자님께')
     .replace(/\*\*(.*?)\*\*/g, '<span class="highlight-text">$1</span>') // **강조** 처리
     .replace(/\n/g, '<br>'); // 개행 처리
 }
