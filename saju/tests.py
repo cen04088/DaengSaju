@@ -236,3 +236,17 @@ class HonorificNormalizationTests(TestCase):
             normalized,
             '보호자님과 [강아지이름]의 궁합, 보호자님을 향한 마음, 보호자님이 전하는 말',
         )
+
+    def test_normalizes_stacked_compatibility_owner_particles(self):
+        text = (
+            '보호자님이은 웃고, 보호자님이와 걷고, 보호자님가를 바라보고, '
+            '보호자님가의 마음을 읽고, 보호자님은은 다정해요.'
+        )
+
+        normalized = normalize_compatibility_owner_text(text, '민수님')
+
+        self.assertEqual(
+            normalized,
+            '보호자님은 웃고, 보호자님과 걷고, 보호자님을 바라보고, '
+            '보호자님의 마음을 읽고, 보호자님은 다정해요.',
+        )

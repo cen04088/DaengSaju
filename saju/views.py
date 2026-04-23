@@ -95,6 +95,40 @@ def normalize_compatibility_owner_text(text, owner_name=''):
     for source, target in generic_particle_fixes.items():
         normalized = normalized.replace(source, target)
 
+    stacked_particle_fixes = {
+        '보호자님이은': '보호자님은',
+        '보호자님이는': '보호자님은',
+        '보호자님이을': '보호자님을',
+        '보호자님이를': '보호자님을',
+        '보호자님이와': '보호자님과',
+        '보호자님이과': '보호자님과',
+        '보호자님이의': '보호자님의',
+        '보호자님이께': '보호자님께',
+        '보호자님이에게': '보호자님에게',
+        '보호자님이으로': '보호자님으로',
+        '보호자님이로': '보호자님으로',
+        '보호자님가은': '보호자님은',
+        '보호자님가는': '보호자님은',
+        '보호자님가을': '보호자님을',
+        '보호자님가를': '보호자님을',
+        '보호자님가와': '보호자님과',
+        '보호자님가과': '보호자님과',
+        '보호자님가의': '보호자님의',
+        '보호자님가께': '보호자님께',
+        '보호자님가에게': '보호자님에게',
+        '보호자님가으로': '보호자님으로',
+        '보호자님가로': '보호자님으로',
+        '보호자님은은': '보호자님은',
+        '보호자님는는': '보호자님은',
+        '보호자님을을': '보호자님을',
+        '보호자님를를': '보호자님을',
+        '보호자님과과': '보호자님과',
+        '보호자님와와': '보호자님과',
+        '보호자님의의': '보호자님의',
+    }
+    for source, target in stacked_particle_fixes.items():
+        normalized = normalized.replace(source, target)
+
     return normalize_owner_honorific_text(normalized, display_owner_name)
 
 
