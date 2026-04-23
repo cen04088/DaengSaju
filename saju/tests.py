@@ -71,6 +71,15 @@ class AttendanceViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(User.objects.get().social_id, 'header-key')
 
+    def test_first_attendance_claims_day_one_milestone(self):
+        request = self.factory.post('/api/saju/attendance/', {'social_id': 'first-day-key'}, format='json')
+        response = self.view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data['stamped'])
+        self.assertEqual(response.data['streak_count'], 1)
+        self.assertEqual(response.data['new_milestone'], 1)
+
 
 class CompatibilityViewTests(TestCase):
     def setUp(self):
@@ -175,3 +184,11 @@ class HonorificNormalizationTests(TestCase):
         normalized = normalize_owner_honorific_text(text, owner_name)
 
         self.assertEqual(normalized, '보호자님 보호자님이 보호자님은 보호자님이')
+
+    def test_normalizes_stacked_owner_particles(self):
+        owner_name = '보호자님'
+        text = '보호자님이의 마음과 보호자님이께 드리는 인사, 보호자님가에게 전하는 소식'
+
+        normalized = normalize_owner_honorific_text(text, owner_name)
+
+        self.assertEqual(normalized, '보호자님의 마음과 보호자님께 드리는 인사, 보호자님에게 전하는 소식')

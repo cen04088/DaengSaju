@@ -804,22 +804,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ─── Attendance & Streak Logic ───────────────────────────────────────────
   const TALISMAN_REWARDS = {
+    1: { name: '시작의 코기 부적', desc: '첫 출석 완료! 오늘의 시작마다 산뜻한 행운이 따라붙을 거예요.' },
     3: { name: '초심자의 뼈다귀 부적', desc: '3일 연속 출석! 멍멍이의 에너지가 솟아납니다.' },
     7: { name: '행운의 댕댕 부적', desc: '럭키 7일! 이번 주 내내 기분 좋은 일이 가득할 거예요.' },
     10: { name: '재물운 명탐정 부적', desc: '10일 달성! 생각지도 못한 간식이나 행운이 찾아옵니다.' },
     15: { name: '대박 황금 부적', desc: '15일 달성! 주변에서 많은 복이 찾아오는 시기예요.' },
     20: { name: '전설의 댕댕 부적', desc: '당신은 진정한 댕사주 마스터!' },
   };
-  const MILESTONES = [3, 7, 10, 15, 20];
+  const MILESTONES = [1, 3, 5, 7, 10, 15, 20];
 
   const btnOpenAttendance = document.getElementById('btn-open-attendance');
   const btnAttendanceStamp = document.getElementById('btn-attendance-stamp');
   const attendanceModal = document.getElementById('attendance-modal');
   const btnCloseAttendance = document.getElementById('btn-close-attendance');
   const talismanModal = document.getElementById('talisman-modal');
-  const btnCloseTalisman = document.getElementById('btn-close-talisman');
-  const btnDownloadTalisman = document.getElementById('btn-download-talisman');
-  const btnShareTalisman = document.getElementById('btn-share-talisman');
+  const talismanContentWrapper = document.getElementById('talisman-content-wrapper');
+  const btnDownloadTalisman = null;
+  const btnShareTalisman = null;
 
   let attendanceRecord = [];
   let currentStreak = 0;
@@ -979,9 +980,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  if (btnCloseTalisman) {
-    btnCloseTalisman.addEventListener('click', () => {
+  if (talismanModal) {
+    talismanModal.addEventListener('click', () => {
       talismanModal.classList.add('hidden');
+    });
+  }
+
+  if (talismanContentWrapper) {
+    talismanContentWrapper.addEventListener('click', (event) => {
+      event.stopPropagation();
     });
   }
 

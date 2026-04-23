@@ -48,7 +48,18 @@ def normalize_owner_honorific_text(text, owner_name):
         return text
 
     normalized = text
+    special_replacements = {
+        f'{owner_name}이의': f'{owner_name}의',
+        f'{owner_name}가의': f'{owner_name}의',
+        f'{owner_name}이께': f'{owner_name}께',
+        f'{owner_name}가께': f'{owner_name}께',
+        f'{owner_name}이에게': f'{owner_name}에게',
+        f'{owner_name}가에게': f'{owner_name}에게',
+    }
     particles = ['이', '가', '은', '는', '을', '를', '과', '와', '으로', '로', '의']
+
+    for source, target in special_replacements.items():
+        normalized = normalized.replace(source, target)
 
     for particle in particles:
         normalized = normalized.replace(f'{owner_name}{particle}님{particle}', f'{owner_name}{particle}')
@@ -385,7 +396,7 @@ class AttendanceView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
-    MILESTONES = [3, 7, 10, 15, 30]
+    MILESTONES = [1, 3, 5, 7, 10, 15, 20]
 
     def _get_or_create_user(self, social_id):
         user, _ = User.objects.get_or_create(
