@@ -198,7 +198,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       const chemSection = document.getElementById('chemistry-result-section');
 
       // Re-lock the report on every new result
-      lockReports();
       lockChemReport();
 
       if (testType === 'chemistry') {
@@ -557,24 +556,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }); // btnSubmit end
 
   // ─── Locked Report: 잠금/해제 시스템 ────────────────────────────────────
-  function lockReports() {
-    const container = document.getElementById('locked-reports-container');
-    const overlay = document.getElementById('unlock-overlay');
-    if (!container) return;
-    container.classList.remove('is-unlocked');
-    container.classList.add('is-locked');
 
-    // 이전에 unlock 하면서 부여된 인라인 필터 스타일을 제거하여 CSS의 blur 효과가 다시 먹히도록 함
-    const texts = container.querySelectorAll('.lockable-text');
-    texts.forEach(t => t.style.filter = '');
-
-    if (overlay) {
-      // 인라인 스타일 초기화 (unlockReports에서 설정한 값 제거)
-      overlay.style.opacity = '';
-      overlay.style.pointerEvents = '';
-      overlay.style.display = 'flex';
-    }
-  }
 
   function lockChemReport() {
     const container = document.getElementById('locked-chem-container');
@@ -594,31 +576,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  function unlockReports() {
-    const container = document.getElementById('locked-reports-container');
-    const overlay = document.getElementById('unlock-overlay');
-    if (!container) return;
-    container.classList.remove('is-locked');
-    container.classList.add('is-unlocked');
-    if (overlay) {
-      overlay.style.opacity = '0';
-      overlay.style.pointerEvents = 'none';
-      setTimeout(() => {
-        overlay.style.display = 'none';
-        // 500ms 트랜지션 완료 후 인라인 스타일로 필터 완전 제거 (GPU 메모리 절약)
-        const texts = container.querySelectorAll('.lockable-text');
-        texts.forEach(t => t.style.filter = 'none');
-      }, 500);
-    }
-    // Staggered card reveal after unlock
-    const cards = container.querySelectorAll('.detail-card');
-    cards.forEach((card, i) => {
-      card.style.animation = 'none';
-      setTimeout(() => {
-        card.style.animation = `unlock-card-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both`;
-      }, i * 120);
-    });
-  }
+
 
   function unlockChemReport() {
     const container = document.getElementById('locked-chem-container');
@@ -638,20 +596,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  const btnUnlock = document.getElementById('btn-unlock-report');
-  if (btnUnlock) {
-    btnUnlock.addEventListener('click', () => {
-      if (btnUnlock.classList.contains('is-loading')) return;
-      btnUnlock.classList.add('is-loading');
-      btnUnlock.textContent = '⏳ 광고 준비 중...';
 
-      showInterstitialThenDo(() => {
-        btnUnlock.classList.remove('is-loading');
-        btnUnlock.innerHTML = '<span class="btn-unlock-icon">🎬</span> 광고 보고 전체 해석 보기';
-        unlockReports();
-      });
-    });
-  }
 
   const btnUnlockChem = document.getElementById('btn-unlock-chem');
   if (btnUnlockChem) {
