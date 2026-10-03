@@ -2,7 +2,10 @@
   /* Mystic Dark Theme Palette */
   --color-primary: #8B5CF6; /* Mystic Purple */
   --color-primary-soft: rgba(139, 92, 246, 0.15);
-  --color-primary-gradient: linear-gradient(135deg, #8B5CF6, #3B82F6);
+  /* 흰 글자를 얹는 배경: 흰 글자 대비 5.2:1 이상 (WCAG AA) */
+  --color-primary-gradient: linear-gradient(135deg, #7C3AED, #2563EB);
+  /* 어두운 배경 위 작은 보라 글자 (primary는 큰 글자에만) */
+  --color-primary-text: #A78BFA;
   --color-bg: #0B1121; /* Deep space navy */
   --color-card: rgba(30, 41, 59, 0.6); /* Dark Glass */
   --color-surface: #1E293B; /* Solid modal surface */
@@ -40,13 +43,23 @@
   display: none;
 }
 
+/* 기본값 bolder는 굵은 부모 안에서 900이 되어 Black 서체를 따로 내려받음 → 700으로 고정 */
+b,
+strong {
+  font-weight: 700;
+}
 
+
+/* Tossface는 Pretendard 바로 다음: 맨 앞에 두면 Tossface가 가진 숫자·#·* 글리프가 본문 숫자를 덮고,
+   시스템 글꼴(-apple-system 등) 뒤에 두면 그 안의 시스템 이모지가 먼저 잡혀 적용되지 않음 */
 body {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+  font-family: 'Pretendard', 'Tossface', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
   background: #000;
   color: var(--color-text-title);
   -webkit-font-smoothing: antialiased;
   line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: break-word;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -223,7 +236,9 @@ body {
   width: 100%;
   height: 100%;
   background-color: var(--color-card);
-  display: flex;
+  /* 비활성 화면은 레이아웃에서 빼 둠: 숨긴 화면의 글자·이모지까지 서체를 미리 내려받지 않게.
+     전환 중 표시는 showScreen이 인라인 display로 관리 */
+  display: none;
   flex-direction: column;
   opacity: 0;
   pointer-events: none;
@@ -234,6 +249,7 @@ body {
 }
 
 .screen.active {
+  display: flex;
   opacity: 1;
   pointer-events: auto;
   z-index: 10;
@@ -266,7 +282,7 @@ body {
 
 .header h1 {
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
   margin: 0 auto;
   letter-spacing: -0.5px;
 }
@@ -313,6 +329,7 @@ body {
   font-size: 15px;
   font-weight: 700;
   color: var(--color-text-hint);
+  min-height: 44px;
   padding: 10px 0;
   cursor: pointer;
   border-radius: 12px;
@@ -351,7 +368,7 @@ body {
   flex: 1;
   padding: 24px 24px;
   overflow-y: auto;
-  padding-bottom: 100px;
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
   -webkit-overflow-scrolling: touch;
 }
 
@@ -381,13 +398,13 @@ body {
   margin-bottom: 28px;
 }
 
+/* 배너 컨테이너는 화면 너비와 같아야 함(앱인토스 WebView 배너 가이드) → 본문 좌우 여백 24px만큼 넓힘.
+   광고 모양(좌우 여백·모서리)은 직접 자르지 않고 SDK의 card 변형이 그림 */
 .toss-ad-container {
-  width: 100%;
+  width: calc(100% + 48px);
   height: 96px;
   flex-shrink: 0;
-  margin-top: 24px;
-  border-radius: 12px;
-  overflow: hidden;
+  margin: 24px -24px 0;
 }
 
 .text-center {
@@ -438,17 +455,36 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
-.menu-card h3 {
+.menu-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.menu-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.menu-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.menu-title {
   font-size: 20px;
-  margin-bottom: 8px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--color-text-title);
 }
 
-.menu-card p {
+.menu-desc {
   color: var(--color-text-body);
   font-size: 15px;
   opacity: 0.8;
+  word-break: keep-all;
 }
 
 /* Forms */
@@ -473,8 +509,9 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 12px 0 0;
-  font-size: 13px;
+  min-height: 44px;
+  margin: 4px 0 0;
+  font-size: 15px;
   font-weight: 400;
   opacity: 0.85;
 }
@@ -498,7 +535,7 @@ input[type="time"] {
   border-radius: var(--border-radius-sm);
   background-color: rgba(255, 255, 255, 0.05);
   color: var(--color-text-title);
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'Pretendard', 'Tossface', sans-serif;
   transition: border-color 0.2s;
   user-select: auto;
   -webkit-user-select: auto;
@@ -523,6 +560,9 @@ input[type="time"]:focus {
   display: flex;
   align-items: center;
   gap: 4px;
+  min-height: 44px;
+  min-width: 44px;
+  padding-right: 4px;
 }
 
 .segment-control {
@@ -567,7 +607,8 @@ input[type="time"]:focus {
   bottom: 0;
   left: 0;
   width: 100%;
-  padding: 0 20px calc(12px + env(safe-area-inset-bottom));
+  /* 하단 고정 CTA는 화면 맨 밑에서 최소 34px 띄움 (홈 인디케이터가 있으면 그만큼 더) */
+  padding: 0 20px max(34px, calc(12px + env(safe-area-inset-bottom)));
   background: linear-gradient(to top, var(--color-bg) 30%, transparent);
   z-index: 100;
 }
@@ -580,7 +621,7 @@ input[type="time"]:focus {
   border: none;
   border-radius: 20px;
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 700;
   font-family: inherit;
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -625,7 +666,7 @@ input[type="time"]:focus {
 .loading-subtext {
   text-align: center;
   color: var(--color-text-hint);
-  font-size: 14px;
+  font-size: 15px;
 }
 
 /* Results */
@@ -678,16 +719,16 @@ input[type="time"]:focus {
   text-align: center;
   font-size: 22px;
   line-height: 1.6;
-  font-weight: 800;
+  font-weight: 700;
   margin-bottom: 24px;
   letter-spacing: -0.5px;
 }
 
-.text-fire { color: var(--elem-fire); font-weight: 800; }
-.text-wood { color: var(--elem-wood); font-weight: 800; }
-.text-earth { color: var(--elem-earth); font-weight: 800; }
-.text-metal { color: var(--elem-metal); font-weight: 800; }
-.text-water { color: var(--elem-water); font-weight: 800; }
+.text-fire { color: var(--elem-fire); font-weight: 700; }
+.text-wood { color: var(--elem-wood); font-weight: 700; }
+.text-earth { color: var(--elem-earth); font-weight: 700; }
+.text-metal { color: var(--elem-metal); font-weight: 700; }
+.text-water { color: var(--elem-water); font-weight: 700; }
 
 .saju-table-wrapper {
   background: rgba(255, 255, 255, 0.03);
@@ -714,7 +755,7 @@ input[type="time"]:focus {
   background: rgba(30, 41, 59, 0.8);
   border-radius: 12px;
   padding: 12px 0;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--color-text-body);
   box-shadow: var(--shadow-sm);
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -749,7 +790,7 @@ input[type="time"]:focus {
 }
 
 .card-desc {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--color-text-hint);
   margin-bottom: 20px;
 }
@@ -767,14 +808,23 @@ input[type="time"]:focus {
 }
 
 .bar-label {
-  width: 70px;
+  width: 76px;
+  display: flex;
+  flex-direction: column;
   font-size: 14px;
   font-weight: 600;
   line-height: 1.3;
 }
 
+.bar-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
 .bar-label small {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-hint);
   font-weight: 400;
 }
@@ -915,17 +965,16 @@ input[type="time"]:focus {
 
 .chem-heart.two-line strong {
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .chem-heart.two-line small {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  opacity: 0.85;
 }
 
 .chem-desc {
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.6;
   text-align: center;
   color: #FFFFFF;
@@ -1000,6 +1049,7 @@ input[type="time"]:focus {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  width: 100%; /* 안내 문구 길이에 따라 버튼 폭이 줄지 않게 */
   text-align: center;
   padding: 0 24px;
 }
@@ -1017,13 +1067,13 @@ input[type="time"]:focus {
 
 .unlock-title {
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
   color: #fff;
   letter-spacing: -0.3px;
 }
 
 .unlock-desc {
-  font-size: 14px;
+  font-size: 15px;
   color: rgba(255,255,255,0.7);
   line-height: 1.6;
   margin-bottom: 4px;
@@ -1038,12 +1088,13 @@ input[type="time"]:focus {
   width: 100%;
   max-width: 280px;
   height: 52px;
-  background: linear-gradient(135deg, #F59E0B, #EF4444);
+  padding: 0 20px;
+  background: linear-gradient(135deg, #C2410C, #DC2626); /* 흰 글자 대비 4.8:1 이상 */
   color: #fff;
   border: none;
   border-radius: 16px;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
   font-family: inherit;
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(239, 68, 68, 0.35);
@@ -1109,15 +1160,19 @@ input[type="time"]:focus {
 /* 다크 테마 닫기 버튼 (왼쪽 위) */
 .close-btn-dark {
   position: absolute;
-  top: 14px;
-  left: 16px;
+  top: 8px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 10px;
   color: rgba(255, 255, 255, 0.7);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  padding: 6px 12px;
+  padding: 0 14px 0 10px;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
   font-family: inherit;
@@ -1126,9 +1181,10 @@ input[type="time"]:focus {
   background: rgba(255, 255, 255, 0.15);
   color: #fff;
 }
-.calendar-header h2 { font-size: 22px; margin: 0 0 10px 0; color: #f8c3d3; font-weight: 800; }
+.calendar-header h2 { font-size: 22px; margin: 0 0 10px 0; color: #f8c3d3; font-weight: 700; }
 .streak-status { font-size: 15px; margin: 0 0 12px; color: #e2e8f0; text-align: center; }
-.streak-status strong { color: #ff69b4; font-size: 20px; text-shadow: 0 0 8px rgba(255,105,180,0.5); font-weight: 800; }
+/* 문장 안 숫자는 크기를 키우지 않고 색·굵기로만 강조 */
+.streak-status strong { color: #ff69b4; text-shadow: 0 0 8px rgba(255,105,180,0.5); font-weight: 700; }
 
 .progress-container { margin-top: 15px; }
 .progress-text { font-size: 13px; color: #9da4b4; display: block; margin-bottom: 8px; font-weight: 600; }
@@ -1187,7 +1243,7 @@ input[type="time"]:focus {
   position: relative;
 }
 
-.talisman-content h2 { color: #ffd700; font-size: 20px; margin-bottom: 20px; font-weight: 800; }
+.talisman-content h2 { color: #ffd700; font-size: 20px; margin-bottom: 20px; font-weight: 700; }
 .talisman-image-placeholder {
   width: 180px; height: 260px;
   margin: 0 auto;
@@ -1196,14 +1252,15 @@ input[type="time"]:focus {
   font-size: 50px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
   overflow: hidden;
 }
-.talisman-name { color: #fff; font-size: 22px; margin-bottom: 8px; font-weight: 800; }
-.talisman-desc { color: #b1b5c4; font-size: 14px; line-height: 1.5; margin-bottom: 25px; }
+.talisman-name { color: #fff; font-size: 22px; margin-bottom: 8px; font-weight: 700; }
+.talisman-desc { color: #b1b5c4; font-size: 15px; line-height: 1.5; margin-bottom: 25px; }
 
 .talisman-actions { display: flex; flex-direction: column; gap: 10px; }
 .action-btn { padding: 14px; border-radius: 16px; border: none; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.2s;}
 .download-btn { background: #ffd700; color: #1e1e2a; }
 .share-btn { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
-.close-talisman-btn { background: transparent; color: #7f8596; text-decoration: underline; margin-top: 5px; font-size: 14px; padding: 5px; }
+/* 보조 버튼도 버튼으로 읽히게 옅은 배경·테두리 (밑줄 글자만으로는 버튼인지 알기 어려움) */
+.close-talisman-btn { background: rgba(255, 255, 255, 0.06); color: #B1B5C4; border: 1px solid rgba(255, 255, 255, 0.12); margin-top: 5px; font-size: 15px; padding: 10px; min-height: 44px; }
 
 /* Modal overlay general */
 .modal-overlay {
@@ -1288,7 +1345,7 @@ input[type="time"]:focus {
 
 .today-card-title {
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.3px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1296,7 +1353,7 @@ input[type="time"]:focus {
 }
 
 .today-card-desc {
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.45;
   opacity: 0.8;
   overflow: hidden;
@@ -1307,7 +1364,10 @@ input[type="time"]:focus {
 }
 
 .today-card-arrow {
-  font-size: 28px;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: var(--color-text-hint);
   opacity: 0.7;
 }
 
@@ -1321,7 +1381,10 @@ input[type="time"]:focus {
 
 .dog-chip {
   flex-shrink: 0;
-  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(255, 255, 255, 0.05);
@@ -1357,7 +1420,7 @@ input[type="time"]:focus {
 
 .attendance-status {
   text-align: center;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--color-text-hint);
 }
@@ -1368,7 +1431,7 @@ input[type="time"]:focus {
 }
 
 .streak-run {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: #FDBA74;
   margin: -4px 0 8px;
@@ -1392,7 +1455,7 @@ input[type="time"]:focus {
 
 .ilju-nickname {
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.5px;
   line-height: 1.4;
   word-break: keep-all;
@@ -1412,8 +1475,12 @@ input[type="time"]:focus {
 }
 
 .zodiac-badge {
-  font-size: 12px;
-  padding: 2px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 3px 10px 3px 4px;
   border-radius: 999px;
   background: rgba(253, 230, 138, 0.14);
   color: #FDE68A;
@@ -1461,14 +1528,14 @@ input[type="time"]:focus {
 .score-line {
   text-align: center;
   margin-bottom: 12px;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 20px;
   color: var(--color-primary);
 }
 
 .zodiac-line {
   text-align: center;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.5;
   color: #FDE68A;
   margin: -4px auto 16px;
@@ -1490,7 +1557,7 @@ input[type="time"]:focus {
 .friend-profile-line {
   margin-top: 16px;
   text-align: center;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--color-text-hint);
   word-break: keep-all;
 }
@@ -1537,7 +1604,7 @@ input[type="time"]:focus {
 
 .share-hint {
   text-align: center;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--color-text-hint);
   opacity: 0.8;
 }
@@ -1651,3 +1718,57 @@ input[type="time"]:focus {
     transition: none;
   }
 }
+
+/* ========================================= */
+/* 아이콘 (assets/icons/sprite.svg)            */
+/* ========================================= */
+/* 글자 옆 오행 아이콘: 부모 글자 크기를 따라감, 색은 .text-wood 등(currentColor) */
+.el-icon {
+  width: 1.1em;
+  height: 1.1em;
+  flex-shrink: 0;
+  vertical-align: -0.18em;
+  margin-right: 0.2em;
+}
+
+.bar-name .el-icon {
+  margin-right: 0; /* flex gap으로 띄움 */
+}
+
+/* 궁합 카드의 12px 오행 이름 옆은 아이콘이 너무 작아지지 않게 */
+.chem-profile .el-icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+}
+
+.btn-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* 띠 도장 배지 */
+.zodiac-seal {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.zodiac-badge:not(.has-seal) {
+  padding-left: 10px;
+}
+
+/* 연속 출석 메달: 단계별 색 */
+.streak-medal {
+  width: 1.25em;
+  height: 1.25em;
+  flex-shrink: 0;
+  vertical-align: -0.28em;
+  margin-right: 0.2em;
+}
+
+.streak-tier-1 { color: #D97706; }
+.streak-tier-2 { color: #94A3B8; }
+.streak-tier-3 { color: #FACC15; }
+.streak-tier-4 { color: #A78BFA; }

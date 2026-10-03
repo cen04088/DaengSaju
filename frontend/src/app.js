@@ -14,8 +14,10 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://web-producti
 const APP_SCHEME = 'intoss://daengsaju';
 const USER_KEY_TIMEOUT_MS = 4000;
 const DEV_USER_KEY_STORAGE = 'daengsaju_dev_user_key';
-const BANNER_AD_ID = 'ait.v2.live.82786c3925d743b3';
-const INTERSTITIAL_AD_ID = 'ait.v2.live.3c235f3d3a424553';
+// QR 테스트(private-apps)·로컬 개발에서는 테스트 광고 ID를 써야 실제 광고 노출로 집계되지 않음
+const USE_TEST_ADS = import.meta.env.DEV || /\.private-(apps|web)\.tossmini\.com$/.test(window.location.hostname);
+const BANNER_AD_ID = USE_TEST_ADS ? 'ait-ad-test-banner-id' : 'ait.v2.live.82786c3925d743b3';
+const REWARDED_AD_ID = USE_TEST_ADS ? 'ait-ad-test-rewarded-id' : 'ait.v2.live.3c235f3d3a424553';
 const DEFAULT_ERROR_MESSAGE = '서버 댕댕이가 간식을 먹으러 가서\n잠시 지연되고 있어요 🐾\n잠시 후 다시 시도해주세요.';
 
 const ELEMENTS = {
@@ -95,6 +97,59 @@ function elementLabel(element) {
 
 function dogImageUrl(element) {
   return `./assets/${elementInfo(element).slug}_dog.webp`;
+}
+
+// ─── 아이콘 (public/assets/icons/sprite.svg) ─────────────────────────────
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const ICON_SPRITE = './assets/icons/sprite.svg';
+
+function svgIcon(id, className) {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('class', className);
+  svg.setAttribute('aria-hidden', 'true');
+  const use = document.createElementNS(SVG_NS, 'use');
+  use.setAttribute('href', `${ICON_SPRITE}#${id}`);
+  svg.append(use);
+  return svg;
+}
+
+// 오행 아이콘: 색은 .text-wood 등 오행 글자색을 그대로 따름
+function elementIcon(element) {
+  const info = elementInfo(element);
+  return svgIcon(`el-${info.slug}`, `el-icon ${info.className}`);
+}
+
+// "화(火)" 같은 오행 이름 앞에 아이콘을 붙여 채움
+function setElementLabel(target, element) {
+  if (ELEMENTS[element]) {
+    target.replaceChildren(elementIcon(element), elementLabel(element));
+  } else {
+    target.textContent = elementLabel(element);
+  }
+}
+
+const ZODIAC_HANJA = {
+  자: '子', 축: '丑', 인: '寅', 묘: '卯', 진: '辰', 사: '巳', 오: '午', 미: '未', 신: '申', 유: '酉', 술: '戌', 해: '亥',
+};
+
+// 띠 도장: 붉은 인장 위에 지지 한자 (예: 해 → 亥)
+function zodiacSeal(branch) {
+  const hanja = ZODIAC_HANJA[branch];
+  if (!hanja) return null;
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('class', 'zodiac-seal');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.innerHTML = '<rect x="1" y="1" width="22" height="22" rx="6" fill="#E5533D"/>'
+    + '<rect x="3.2" y="3.2" width="17.6" height="17.6" rx="4.2" fill="none" stroke="#FFE4DC" stroke-opacity=".65" stroke-width="1"/>'
+    + `<text x="12" y="16.4" text-anchor="middle" font-size="12.5" font-weight="700" fill="#FFF7ED">${hanja}</text>`;
+  return svg;
+}
+
+// 연속 출석 메달: 7·14·30일마다 색이 바뀜 (동 → 은 → 금 → 보라)
+function streakMedal(days) {
+  const tier = days >= 30 ? 4 : days >= 14 ? 3 : days >= 7 ? 2 : 1;
+  return svgIcon('streak', `streak-medal streak-tier-${tier}`);
 }
 
 function todayIso() {
@@ -309,6 +364,8 @@ function init() {
     activeScreen = screenElement;
     document.querySelectorAll('.screen').forEach((s) => {
       if (s === screenElement) return;
+      // 비활성 화면은 CSS에서 display:none이라, 나가는 화면은 페이드아웃 동안 인라인으로 붙잡아 둠
+      if (s.classList.contains('active')) s.style.display = 'flex';
       s.classList.remove('active');
       // 페이드아웃이 끝난 뒤 레이아웃에서 빼서 메모리 절약.
       // 첫 프레임이 늦게 그려져도 지금 보여줄 화면은 숨기지 않도록 클래스 대신 activeScreen으로 판단
@@ -385,7 +442,7 @@ function init() {
       tossBannerInstance = null;
     }
     tossBannerInstance = TossAds.attachBanner(BANNER_AD_ID, adContainer, {
-      variant: 'expanded',
+      variant: 'card',
       theme: 'dark',
       callbacks: {
         onAdFailedToRender: (p) => console.error('[Banner] failed', p),
@@ -422,71 +479,105 @@ function init() {
     });
   }
 
-  // ─── 전면 광고 (궁합 상세 해석 잠금 해제) ───
-  let interstitialAdLoaded = false;
-  let interstitialUnregister = null;
+  // ─── 보상형 광고 (궁합 상세 풀이 잠금 해제) ───
+  // 보상(잠금 해제)은 userEarnedReward를 받았을 때만 준다.
+  // 광고를 쓸 수 없는 환경(토스 밖·미지원 버전·광고 없음)이면 사용자를 막지 않고 그냥 연다.
+  const AD_LOAD_STALE_MS = 15000;
+  const rewardedAd = { loaded: false, loadingSince: 0, unregister: null, waiters: [] };
 
-  function preloadInterstitialAd() {
+  function isFullScreenAdSupported() {
     // isSupported()는 토스 웹뷰에서만 동작 - try-catch 필수
     try {
-      if (typeof loadFullScreenAd.isSupported === 'function' && !loadFullScreenAd.isSupported()) {
-        return;
-      }
+      return typeof loadFullScreenAd.isSupported !== 'function' || loadFullScreenAd.isSupported();
     } catch {
-      return; // 웹뷰 외부(일반 브라우저) 환경
+      return false; // 웹뷰 외부(일반 브라우저) 환경
     }
+  }
 
-    if (interstitialUnregister) {
-      interstitialUnregister();
-      interstitialUnregister = null;
+  function settleRewardedWaiters(ready) {
+    rewardedAd.waiters.splice(0).forEach((resolve) => resolve(ready));
+  }
+
+  function preloadRewardedAd() {
+    if (rewardedAd.loaded || !isFullScreenAdSupported()) return;
+    // 로드 이벤트가 유실돼도(배너와 동시 로드 등) 다음 시도에서 다시 불러오도록 오래된 로드는 버림
+    if (rewardedAd.loadingSince && Date.now() - rewardedAd.loadingSince < AD_LOAD_STALE_MS) return;
+
+    if (rewardedAd.unregister) rewardedAd.unregister();
+    rewardedAd.loadingSince = Date.now();
+    const onFailed = (err) => {
+      console.error('[RewardedAd] load error:', err);
+      rewardedAd.loadingSince = 0;
+      settleRewardedWaiters(false);
+    };
+    try {
+      rewardedAd.unregister = loadFullScreenAd({
+        options: { adGroupId: REWARDED_AD_ID },
+        onEvent: (event) => {
+          if (event.type !== 'loaded') return;
+          rewardedAd.loaded = true;
+          rewardedAd.loadingSince = 0;
+          settleRewardedWaiters(true);
+        },
+        onError: onFailed,
+      });
+    } catch (err) {
+      onFailed(err);
     }
-    interstitialAdLoaded = false;
+  }
 
-    interstitialUnregister = loadFullScreenAd({
-      options: { adGroupId: INTERSTITIAL_AD_ID },
-      onEvent: (event) => {
-        if (event.type === 'loaded') interstitialAdLoaded = true;
-      },
-      onError: (err) => {
-        console.error('[Interstitial] load error:', err);
-        interstitialAdLoaded = false;
-      },
+  /** 광고가 준비되면 true, 시간 안에 못 불러오면 false */
+  function waitForRewardedAd(timeoutMs) {
+    preloadRewardedAd();
+    if (rewardedAd.loaded) return Promise.resolve(true);
+    if (!rewardedAd.loadingSince) return Promise.resolve(false);
+    return new Promise((resolve) => {
+      rewardedAd.waiters.push(resolve);
+      setTimeout(() => resolve(false), timeoutMs);
     });
   }
 
-  preloadInterstitialAd();
-
-  /** 전면 광고를 보여준 뒤 callback 실행. 미지원이거나 아직 로드 전이면 바로 실행 */
-  function showInterstitialThenDo(callback) {
-    let isSupported = false;
-    try {
-      isSupported = typeof showFullScreenAd.isSupported === 'function' ? showFullScreenAd.isSupported() : true;
-    } catch {
-      callback();
-      return;
-    }
-
-    if (!isSupported || !interstitialAdLoaded) {
-      callback();
-      return;
-    }
-
-    interstitialAdLoaded = false; // 중복 호출 방지
-    const unregisterShow = showFullScreenAd({
-      options: { adGroupId: INTERSTITIAL_AD_ID },
-      onEvent: (event) => {
-        if (event.type === 'dismissed' || event.type === 'failedToShow') {
-          if (typeof unregisterShow === 'function') unregisterShow();
-          preloadInterstitialAd(); // load→show→load 순환
-          callback();
-        }
-      },
-      onError: (err) => {
-        console.error('[Interstitial] show error:', err);
+  /** 보상형 광고를 보여주고 'rewarded' | 'skipped' | 'unavailable' 중 하나로 끝남 */
+  function showRewardedAd() {
+    return new Promise((resolve) => {
+      let earned = false;
+      let settled = false;
+      let unregisterShow = null;
+      let timer = null;
+      const finish = (result) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
         if (typeof unregisterShow === 'function') unregisterShow();
-        preloadInterstitialAd();
-        callback();
-      },
+        preloadRewardedAd(); // load→show→load 순환
+        resolve(result);
+      };
+      // 이벤트가 오지 않으면 버튼이 '불러오는 중'에 갇히지 않게: 시작 신호 10초, 시청 중 3분
+      const armTimer = (ms) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => finish(earned ? 'rewarded' : 'unavailable'), ms);
+      };
+
+      rewardedAd.loaded = false; // 한 번 보여준 광고는 다시 쓰지 않음
+      armTimer(10000);
+      try {
+        unregisterShow = showFullScreenAd({
+          options: { adGroupId: REWARDED_AD_ID },
+          onEvent: (event) => {
+            if (event.type === 'userEarnedReward') earned = true;
+            if (event.type === 'dismissed') finish(earned ? 'rewarded' : 'skipped');
+            else if (event.type === 'failedToShow') finish(earned ? 'rewarded' : 'unavailable');
+            else armTimer(180000);
+          },
+          onError: (err) => {
+            console.error('[RewardedAd] show error:', err);
+            finish(earned ? 'rewarded' : 'unavailable');
+          },
+        });
+      } catch (err) {
+        console.error('[RewardedAd] show error:', err);
+        finish('unavailable');
+      }
     });
   }
 
@@ -522,16 +613,24 @@ function init() {
   }
 
   const btnUnlockChem = $('btn-unlock-chem');
-  btnUnlockChem.addEventListener('click', () => {
+  const unlockButtonHtml = btnUnlockChem.innerHTML;
+  btnUnlockChem.addEventListener('click', async () => {
     if (btnUnlockChem.classList.contains('is-loading')) return;
     btnUnlockChem.classList.add('is-loading');
-    btnUnlockChem.textContent = '⏳ 광고 준비 중...';
+    btnUnlockChem.textContent = '⏳ 광고 불러오는 중...';
 
-    showInterstitialThenDo(() => {
+    try {
+      const ready = await waitForRewardedAd(8000);
+      const result = ready ? await showRewardedAd() : 'unavailable';
+      if (result === 'skipped') {
+        showToast('광고를 끝까지 보면 전체 풀이가 열려요');
+      } else {
+        unlockChemReport();
+      }
+    } finally {
       btnUnlockChem.classList.remove('is-loading');
-      btnUnlockChem.innerHTML = '<span class="btn-unlock-icon">🎬</span> 광고 보고 전체 풀이 보기';
-      unlockChemReport();
-    });
+      btnUnlockChem.innerHTML = unlockButtonHtml;
+    }
   });
 
   // ─── 입력 폼 ───
@@ -758,7 +857,11 @@ function init() {
     $('res-ilju-nickname').textContent = `“${profile.nickname}”`;
     $('res-ilju-pillar').textContent = `${profile.pillar}(${profile.pillar_hanja})일주`;
     const zodiacBadge = $('res-zodiac');
-    zodiacBadge.textContent = zodiac ? `${zodiac.label} 댕댕이` : '';
+    if (zodiac) {
+      const seal = zodiacSeal(zodiac.branch);
+      zodiacBadge.replaceChildren(...(seal ? [seal] : []), `${zodiac.label} 댕댕이`);
+      zodiacBadge.classList.toggle('has-seal', Boolean(seal));
+    }
     zodiacBadge.classList.toggle('hidden', !zodiac);
     $('res-ilju-desc').textContent = profile.description;
     renderChips($('res-ilju-keywords'), (profile.keywords || []).map((k) => `#${k}`));
@@ -785,7 +888,11 @@ function init() {
 
     const pillarLine = $('res-today-pillar');
     if (luck.today_pillar) {
-      pillarLine.textContent = `오늘은 ${luck.today_pillar}(${luck.today_pillar_hanja})일 · ${elementLabel(luck.today_element)} 기운이 흐르는 날`;
+      pillarLine.replaceChildren(
+        `오늘은 ${luck.today_pillar}(${luck.today_pillar_hanja})일 · `,
+        ...(ELEMENTS[luck.today_element] ? [elementIcon(luck.today_element)] : []),
+        `${elementLabel(luck.today_element)} 기운이 흐르는 날`,
+      );
       pillarLine.classList.remove('hidden');
     } else {
       pillarLine.classList.add('hidden');
@@ -832,8 +939,8 @@ function init() {
 
     $('res-chem-score').textContent = data.score ?? '--';
     $('res-chem-title').textContent = data.title || '궁합 결과';
-    $('res-chem-owner-element').textContent = elementLabel(data.owner_element);
-    $('res-chem-dog-element').textContent = elementLabel(data.dog_element);
+    setElementLabel($('res-chem-owner-element'), data.owner_element);
+    setElementLabel($('res-chem-dog-element'), data.dog_element);
     // 쉬운 말(닮은꼴형 등)을 위에, 명리 용어는 아래 작게: 한 줄로 두면 칩이 길어져 양옆 이름이 줄바꿈됨
     const relationChip = $('res-chem-rel');
     const plainLabel = document.createElement('strong');
@@ -854,6 +961,9 @@ function init() {
 
     prepareResultScreen();
     navigateTo(screens.result);
+    // 풀이 잠금 해제용 광고는 결과를 띄운 뒤에 미리 불러둠
+    // (메인 배너가 내려간 다음이라야 안드로이드에서 두 광고의 이벤트가 섞여 유실되지 않음)
+    setTimeout(preloadRewardedAd, 400);
   }
 
   function showFriendResult(dog, data) {
@@ -863,9 +973,9 @@ function init() {
     setDogNameDisplays(dog.name);
 
     $('res-friend-title').textContent = data.title;
-    $('res-friend-my-element').textContent = elementLabel(data.my_element);
+    setElementLabel($('res-friend-my-element'), data.my_element);
     $('res-friend-name').textContent = data.friend_name;
-    $('res-friend-element').textContent = elementLabel(data.friend_element);
+    setElementLabel($('res-friend-element'), data.friend_element);
     $('res-friend-rel').textContent = `✨ ${data.relationship_type} 관계 ✨`;
     $('res-friend-score').textContent = data.score;
     $('res-friend-desc').textContent = data.description;
@@ -1077,7 +1187,11 @@ function init() {
     }
     const streak = data.streak_days || 0;
     if (data.already_stamped_today) {
-      badge.textContent = streak > 1 ? `🔥 ${streak}일 연속 출석 중` : '✅ 오늘 출석 완료';
+      if (streak > 1) {
+        badge.replaceChildren(streakMedal(streak), `${streak}일 연속 출석 중`);
+      } else {
+        badge.textContent = '✅ 오늘 출석 완료';
+      }
     } else {
       badge.textContent = streak > 0 ? `오늘 보면 ${streak + 1}일 연속 출석!` : '오늘의 산책운 도착 🐾';
     }
@@ -1091,9 +1205,14 @@ function init() {
       return;
     }
     const streak = data.streak_days || 0;
-    status.textContent = data.already_stamped_today
-      ? `✅ 오늘 출석 완료 · 이번 달 ${attendanceTotal(data)}일${streak > 1 ? ` · 🔥 ${streak}일 연속` : ''}`
-      : `이번 달 ${attendanceTotal(data)}일 출석 · 오늘 도장은 아직이에요`;
+    if (!data.already_stamped_today) {
+      status.textContent = `이번 달 ${attendanceTotal(data)}일 출석 · 오늘 도장은 아직이에요`;
+      return;
+    }
+    status.replaceChildren(
+      `✅ 오늘 출석 완료 · 이번 달 ${attendanceTotal(data)}일`,
+      ...(streak > 1 ? [' · ', streakMedal(streak), `${streak}일 연속`] : []),
+    );
   }
 
   function applyAttendance(data) {
@@ -1154,7 +1273,11 @@ function init() {
     $('calendar-streak').textContent = `${total}일`;
     const run = $('calendar-run');
     const streak = data.streak_days || 0;
-    run.textContent = streak > 1 ? `🔥 ${streak}일 연속 출석 중이에요` : '';
+    if (streak > 1) {
+      run.replaceChildren(streakMedal(streak), `${streak}일 연속 출석 중이에요`);
+    } else {
+      run.textContent = '';
+    }
     run.classList.toggle('hidden', streak <= 1);
 
     const nextReward = MILESTONES.find((m) => m > total);

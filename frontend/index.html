@@ -17,6 +17,8 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" as="style" crossorigin
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+  <!-- 이모지 서체 Tossface (https://github.com/toss/tossface). 화면에 나온 이모지가 속한 묶음만 내려받음 -->
+  <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/toss/tossface@1.6.1/dist/tossface.css" />
 </head>
 
 <body>
@@ -50,23 +52,32 @@
                   <span id="my-dog-today-title" class="today-card-title">댕댕이의 오늘 운세 보기</span>
                   <span id="my-dog-today-desc" class="today-card-desc">탭 한 번이면 출석 도장까지 쾅!</span>
                 </span>
-                <span class="today-card-arrow" aria-hidden="true">›</span>
+                <svg class="today-card-arrow" aria-hidden="true"><use href="./assets/icons/sprite.svg#chevron-right"></use></svg>
               </button>
               <div id="my-dog-chips" class="my-dog-chips" role="list"></div>
             </div>
 
             <div class="menu-cards">
               <button type="button" class="menu-card" id="btn-general">
-                <h3>🐕 일반 댕사주</h3>
-                <p>우리아이의 타고난 기질과 성격 알아보기</p>
+                <svg class="menu-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#menu-saju"></use></svg>
+                <span class="menu-text">
+                  <span class="menu-title">일반 댕사주</span>
+                  <span class="menu-desc">우리아이의 타고난 기질과 성격 알아보기</span>
+                </span>
               </button>
               <button type="button" class="menu-card" id="btn-chemistry">
-                <h3>💑 댕궁합 보기</h3>
-                <p>보호자와 강아지의 찰떡 케미 확인하기</p>
+                <svg class="menu-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#menu-match"></use></svg>
+                <span class="menu-text">
+                  <span class="menu-title">댕궁합 보기</span>
+                  <span class="menu-desc">보호자와 강아지의 찰떡 케미 확인하기</span>
+                </span>
               </button>
               <button type="button" class="menu-card" id="btn-friend">
-                <h3>🐶 댕친 궁합</h3>
-                <p>우리 아이와 친구 강아지의 케미 확인하기</p>
+                <svg class="menu-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#menu-friend"></use></svg>
+                <span class="menu-text">
+                  <span class="menu-title">댕친 궁합</span>
+                  <span class="menu-desc">우리 아이와 친구 강아지의 케미 확인하기</span>
+                </span>
               </button>
             </div>
           </div>
@@ -188,10 +199,10 @@
                 오늘의 럭키템</h3>
               <div class="chemistry-match" style="margin-bottom:16px;">
                 <div class="chem-profile">컬러<br><span id="res-luck-color"
-                    style="font-size:16px; font-weight:700; color:var(--color-primary)">-</span></div>
+                    style="font-size:16px; font-weight:700; color:var(--color-primary-text)">-</span></div>
                 <div class="chem-heart">✨</div>
                 <div class="chem-profile">산책방향<br><span id="res-luck-dir"
-                    style="font-size:16px; font-weight:700; color:var(--color-primary)">-</span></div>
+                    style="font-size:16px; font-weight:700; color:var(--color-primary-text)">-</span></div>
               </div>
               <p class="chem-desc">오늘은 이 컬러의 리드줄이나 산책 코스를 돌면 산책 만족도가 두 배가 됩니다!</p>
             </div>
@@ -201,7 +212,7 @@
               <div class="detail-icon">🐾</div>
               <div class="detail-content" style="width: 100%;">
                 <h4>오늘의 산책 컨디션</h4>
-                <div style="font-size: 32px; font-weight:800; color: var(--color-primary); margin: 10px 0;"><span
+                <div style="font-size: 32px; font-weight:700; color: var(--color-primary); margin: 10px 0;"><span
                     id="res-luck-score">--</span>점</div>
                 <p id="res-luck-msg"
                   style="font-weight: 500; font-size: 16px; color: var(--color-text-body); line-height:1.6;">데이터를 불러오고
@@ -279,31 +290,31 @@
 
               <div class="bar-chart">
                 <div class="bar-row">
-                  <span class="bar-label">목(木)<br><small id="val-wood">0%</small></span>
+                  <span class="bar-label"><span class="bar-name"><svg class="el-icon text-wood" aria-hidden="true"><use href="./assets/icons/sprite.svg#el-wood"></use></svg>목(木)</span><small id="val-wood">0%</small></span>
                   <div class="bar-track">
                     <div id="bar-wood" class="bar-fill bg-wood" style="width: 0%;"></div>
                   </div>
                 </div>
                 <div class="bar-row">
-                  <span class="bar-label">화(火)<br><small id="val-fire" class="text-fire font-bold">0%</small></span>
+                  <span class="bar-label"><span class="bar-name"><svg class="el-icon text-fire" aria-hidden="true"><use href="./assets/icons/sprite.svg#el-fire"></use></svg>화(火)</span><small id="val-fire" class="text-fire font-bold">0%</small></span>
                   <div class="bar-track">
                     <div id="bar-fire" class="bar-fill bg-fire" style="width: 0%;"></div>
                   </div>
                 </div>
                 <div class="bar-row">
-                  <span class="bar-label">토(土)<br><small id="val-earth">0%</small></span>
+                  <span class="bar-label"><span class="bar-name"><svg class="el-icon text-earth" aria-hidden="true"><use href="./assets/icons/sprite.svg#el-earth"></use></svg>토(土)</span><small id="val-earth">0%</small></span>
                   <div class="bar-track">
                     <div id="bar-earth" class="bar-fill bg-earth" style="width: 0%;"></div>
                   </div>
                 </div>
                 <div class="bar-row">
-                  <span class="bar-label">금(金)<br><small id="val-metal">0%</small></span>
+                  <span class="bar-label"><span class="bar-name"><svg class="el-icon text-metal" aria-hidden="true"><use href="./assets/icons/sprite.svg#el-metal"></use></svg>금(金)</span><small id="val-metal">0%</small></span>
                   <div class="bar-track">
                     <div id="bar-metal" class="bar-fill bg-metal" style="width: 0%;"></div>
                   </div>
                 </div>
                 <div class="bar-row">
-                  <span class="bar-label">수(水)<br><small id="val-water">0%</small></span>
+                  <span class="bar-label"><span class="bar-name"><svg class="el-icon text-water" aria-hidden="true"><use href="./assets/icons/sprite.svg#el-water"></use></svg>수(水)</span><small id="val-water">0%</small></span>
                   <div class="bar-track">
                     <div id="bar-water" class="bar-fill bg-water" style="width: 0%;"></div>
                   </div>
@@ -391,7 +402,7 @@
                 <div class="unlock-overlay-content">
                   <div class="unlock-lock-icon">🔒</div>
                   <p class="unlock-title">자세한 궁합 풀이</p>
-                  <p class="unlock-desc">짧은 광고를 보면<br>전체 풀이와 함께 지내는 팁을 볼 수 있어요</p>
+                  <p class="unlock-desc">짧은 광고를 보면 전체 풀이와<br>함께 지내는 팁을 볼 수 있어요</p>
                   <button id="btn-unlock-chem" class="btn-unlock">
                     <span class="btn-unlock-icon">🎬</span>
                     광고 보고 전체 풀이 보기
@@ -451,7 +462,9 @@
     <!-- Attendance (Monthly Calendar) Modal -->
     <div id="attendance-modal" class="modal-overlay hidden">
       <div class="calendar-modal">
-        <button id="btn-close-attendance" class="close-btn-dark">← 닫기</button>
+        <button id="btn-close-attendance" class="close-btn-dark">
+          <svg class="btn-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#close"></use></svg>닫기
+        </button>
         <div class="calendar-header">
           <p class="streak-status">이번 달 <strong id="calendar-streak">0일</strong> 출석했어요!</p>
           <p id="calendar-run" class="streak-run hidden"></p>
