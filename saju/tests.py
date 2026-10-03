@@ -537,11 +537,18 @@ class SecurityConfigTests(TestCase):
         client = APIClient()
         preflight = {'HTTP_ACCESS_CONTROL_REQUEST_METHOD': 'GET', 'HTTP_ACCESS_CONTROL_REQUEST_HEADERS': 'x-toss-user-key'}
 
-        allowed = client.options('/api/saju/attendance/', HTTP_ORIGIN='https://daengsaju.apps.tossmini.com', **preflight)
-        blocked = client.options('/api/saju/attendance/', HTTP_ORIGIN='https://evil.example', **preflight)
+        for origin in (
+            'https://daengsaju.apps.tossmini.com',
+            'https://daengsaju.private-apps.tossmini.com',
+            'https://daengsaju.web.tossmini.com',
+            'https://daengsaju.private-web.tossmini.com',
+        ):
+            allowed = client.options('/api/saju/attendance/', HTTP_ORIGIN=origin, **preflight)
+            self.assertEqual(allowed['Access-Control-Allow-Origin'], origin)
 
-        self.assertEqual(allowed['Access-Control-Allow-Origin'], 'https://daengsaju.apps.tossmini.com')
-        self.assertNotIn('Access-Control-Allow-Origin', blocked)
+        for origin in ('https://evil.example', 'https://other.apps.tossmini.com'):
+            blocked = client.options('/api/saju/attendance/', HTTP_ORIGIN=origin, **preflight)
+            self.assertNotIn('Access-Control-Allow-Origin', blocked)
 
     def test_root_is_a_health_check(self):
         response = self.client.get('/')

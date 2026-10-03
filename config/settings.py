@@ -45,9 +45,12 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # 토스 미니앱 도메인만 허용. 추가 도메인은 CORS_EXTRA_ORIGINS(쉼표 구분) 환경변수로 넣습니다.
+# 앱인토스 문서 기준: SDK 1.x~2.x·3.1.1+ 는 *.apps.tossmini.com, SDK 3.0.0~3.1.1 미만은 *.web.tossmini.com
 CORS_ALLOWED_ORIGINS = [
-    'https://daengsaju.apps.tossmini.com',
-    'https://daengsaju.private-apps.tossmini.com',
+    'https://daengsaju.apps.tossmini.com',          # 실제 서비스
+    'https://daengsaju.private-apps.tossmini.com',  # 콘솔 QR 테스트
+    'https://daengsaju.web.tossmini.com',           # SDK 3.0.x 실제 서비스
+    'https://daengsaju.private-web.tossmini.com',   # SDK 3.0.x QR 테스트
 ] + [origin.strip() for origin in os.getenv('CORS_EXTRA_ORIGINS', '').split(',') if origin.strip()]
 # 로컬·사내망 개발 서버(granite dev 등)에서 붙는 경우
 CORS_ALLOWED_ORIGIN_REGEXES = [
