@@ -566,6 +566,8 @@ class ProfileContentTests(TestCase):
 class SecurityConfigTests(TestCase):
     def test_only_public_assets_are_collected_as_static_files(self):
         self.assertIsNotNone(finders.find(os.path.join('assets', 'fire_dog.png')))
+        for slug in ('wood', 'fire', 'earth', 'metal', 'water'):
+            self.assertIsNotNone(finders.find(os.path.join('assets', f'og_{slug}.jpg')), f'공유 카드 og_{slug}.jpg')
         self.assertIsNone(finders.find('config/settings.py'))
         self.assertIsNone(finders.find('full_saju_data.json'))
 

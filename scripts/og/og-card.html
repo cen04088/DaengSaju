@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>댕사주 공유 카드</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 1200px; height: 630px; overflow: hidden; }
+    body {
+      font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+      color: #fff;
+      background: linear-gradient(135deg, #0B1121 0%, #161237 55%, #2E1765 100%);
+      position: relative;
+    }
+    /* 앱 배경과 같은 은은한 빛번짐 + 별 */
+    .glow { position: absolute; border-radius: 50%; pointer-events: none; }
+    .glow-a { width: 760px; height: 760px; left: -220px; top: -260px; background: radial-gradient(circle closest-side, var(--el-glow), transparent 100%); }
+    .glow-b { width: 900px; height: 900px; right: -380px; bottom: -520px; background: radial-gradient(circle closest-side, rgba(124, 58, 237, 0.45), transparent 100%); }
+    .stars {
+      position: absolute; inset: 0; opacity: 0.55;
+      background-image:
+        radial-gradient(1.6px 1.6px at 640px 70px, #fff, transparent),
+        radial-gradient(1.2px 1.2px at 1090px 120px, #fff, transparent),
+        radial-gradient(1.4px 1.4px at 760px 560px, rgba(255,255,255,0.8), transparent),
+        radial-gradient(1px 1px at 1150px 420px, #fff, transparent),
+        radial-gradient(1.8px 1.8px at 980px 40px, rgba(255,255,255,0.9), transparent),
+        radial-gradient(1.2px 1.2px at 520px 590px, #fff, transparent),
+        radial-gradient(1px 1px at 60px 560px, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1.4px 1.4px at 450px 40px, #fff, transparent);
+    }
+
+    .photo {
+      position: absolute; left: 92px; top: 107px;
+      width: 416px; height: 416px; border-radius: 50%;
+      padding: 8px;
+      background: linear-gradient(145deg, var(--el-color), rgba(255,255,255,0.15));
+      box-shadow: 0 0 70px var(--el-glow), 0 24px 60px rgba(0, 0, 0, 0.45);
+    }
+    .photo img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+    .element-seal {
+      position: absolute; left: 404px; top: 424px;
+      width: 104px; height: 104px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 56px; font-weight: 800; color: #1E1B4B;
+      background: var(--el-color);
+      border: 6px solid #0F0B26;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .copy { position: absolute; left: 580px; top: 88px; width: 560px; }
+    .brand {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-size: 26px; font-weight: 800; color: #C4B5FD; letter-spacing: -0.3px;
+      padding: 8px 18px 8px 14px; border-radius: 999px;
+      background: rgba(139, 92, 246, 0.16); border: 1px solid rgba(196, 181, 253, 0.3);
+    }
+    .brand svg { width: 26px; height: 26px; }
+    h1 {
+      margin-top: 24px;
+      font-size: 60px; line-height: 1.22; font-weight: 800; letter-spacing: -1.6px;
+      word-break: keep-all;
+    }
+    h1 .el { color: var(--el-color); }
+    .sub {
+      margin-top: 18px;
+      font-size: 27px; line-height: 1.5; font-weight: 500; color: #CBD5E1; letter-spacing: -0.4px;
+      word-break: keep-all;
+    }
+    .cta {
+      margin-top: 28px;
+      display: inline-flex; align-items: center; gap: 10px;
+      font-size: 26px; font-weight: 800; letter-spacing: -0.4px;
+      padding: 16px 30px; border-radius: 999px;
+      background: linear-gradient(135deg, #8B5CF6, #3B82F6);
+      box-shadow: 0 12px 30px rgba(59, 130, 246, 0.35);
+    }
+  </style>
+</head>
+<body>
+  <div class="glow glow-a"></div>
+  <div class="glow glow-b"></div>
+  <div class="stars"></div>
+
+  <div class="photo"><img id="dog" alt=""></div>
+  <div class="element-seal" id="hanja"></div>
+
+  <div class="copy">
+    <span class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><g fill="#C4B5FD"><ellipse cx="16" cy="21.5" rx="7.5" ry="6.5"/><circle cx="7" cy="13" r="3.4"/><circle cx="12.5" cy="7.5" r="3.4"/><circle cx="19.5" cy="7.5" r="3.4"/><circle cx="25" cy="13" r="3.4"/></g></svg>
+      댕사주
+    </span>
+    <h1>우리 아이는<br><span class="el" id="label"></span> 기운을<br>타고났어요</h1>
+    <p class="sub">타고난 성격 · 오늘의 산책운 · 보호자 궁합까지<br>생년월일만 넣으면 바로 볼 수 있어요</p>
+    <span class="cta">토스에서 우리 아이 사주 보기 ›</span>
+  </div>
+
+  <script>
+    // 렌더 스크립트가 ?el=fire 처럼 넘겨줌
+    const ELEMENTS = {
+      wood: { label: '목(木)', hanja: '木', color: '#4ADE80', glow: 'rgba(74, 222, 128, 0.35)' },
+      fire: { label: '화(火)', hanja: '火', color: '#FF7043', glow: 'rgba(255, 112, 67, 0.38)' },
+      earth: { label: '토(土)', hanja: '土', color: '#FCD34D', glow: 'rgba(252, 211, 77, 0.32)' },
+      metal: { label: '금(金)', hanja: '金', color: '#E2E8F0', glow: 'rgba(226, 232, 240, 0.28)' },
+      water: { label: '수(水)', hanja: '水', color: '#60A5FA', glow: 'rgba(96, 165, 250, 0.38)' },
+    };
+    const slug = new URLSearchParams(location.search).get('el') || 'fire';
+    const el = ELEMENTS[slug];
+    document.body.style.setProperty('--el-color', el.color);
+    document.body.style.setProperty('--el-glow', el.glow);
+    document.getElementById('label').textContent = el.label;
+    document.getElementById('hanja').textContent = el.hanja;
+    document.getElementById('dog').src = `../../assets/${slug}_dog.png`;
+  </script>
+</body>
+</html>

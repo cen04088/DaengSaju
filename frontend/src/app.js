@@ -1332,8 +1332,8 @@ function init() {
 
     try {
       const { token } = await api(`/api/saju/dogs/${dog.id}/share/`, { method: 'POST', body: {} });
-      // 링크 미리보기 썸네일: 백엔드가 고정 URL로 제공하는 오행 강아지 이미지
-      const ogImageUrl = `${API_BASE_URL}/static/assets/${elementInfo(dog.main_element).slug}_dog.png`;
+      // 링크 미리보기 썸네일: 백엔드가 고정 URL로 제공하는 오행별 공유 카드(1200×630, scripts/og 로 생성)
+      const ogImageUrl = `${API_BASE_URL}/static/assets/og_${elementInfo(dog.main_element).slug}.jpg`;
       const tossLink = await getTossShareLink(`${APP_SCHEME}?share=${encodeURIComponent(token)}`, ogImageUrl);
       await share({ message: `${buildShareMessage()}\n\n${tossLink}` });
     } catch (error) {
