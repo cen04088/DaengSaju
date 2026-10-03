@@ -1,256 +1,395 @@
-import { getAnonymousKey, saveBase64Data, share, getTossShareLink, TossAds, loadFullScreenAd, showFullScreenAd } from '@apps-in-toss/web-framework';
+import {
+  getAnonymousKey,
+  getSchemeUri,
+  getTossShareLink,
+  loadFullScreenAd,
+  saveBase64Data,
+  share,
+  showFullScreenAd,
+  TossAds,
+} from '@apps-in-toss/web-framework';
 
-const BASE_URL = 'https://web-production-285b5.up.railway.app';
+// 로컬 개발 시 VITE_API_BASE_URL 로 로컬 백엔드를 가리킬 수 있음
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://web-production-285b5.up.railway.app').replace(/\/+$/, '');
+const APP_SCHEME = 'intoss://daengsaju';
+const USER_KEY_TIMEOUT_MS = 4000;
+const DEV_USER_KEY_STORAGE = 'daengsaju_dev_user_key';
+const BANNER_AD_ID = 'ait.v2.live.82786c3925d743b3';
+const INTERSTITIAL_AD_ID = 'ait.v2.live.3c235f3d3a424553';
+const DEFAULT_ERROR_MESSAGE = '서버 댕댕이가 간식을 먹으러 가서\n잠시 지연되고 있어요 🐾\n잠시 후 다시 시도해주세요.';
 
-document.addEventListener('DOMContentLoaded', async () => {
-  // Get User Key from Toss Bridge
-  let tossUserKey = null;
+const ELEMENTS = {
+  '목': { slug: 'wood', hanja: '木', className: 'text-wood' },
+  '화': { slug: 'fire', hanja: '火', className: 'text-fire' },
+  '토': { slug: 'earth', hanja: '土', className: 'text-earth' },
+  '금': { slug: 'metal', hanja: '金', className: 'text-metal' },
+  '수': { slug: 'water', hanja: '水', className: 'text-water' },
+};
+const DEFAULT_ELEMENT = '화';
+
+const MODE_COPY = {
+  general: { title: '우리아이의 타고난<br>기질을 알아볼까요?', submit: '운세 보기', share: '운세 공유하기' },
+  chemistry: { title: '보호자와 댕댕이의<br>상생 궁합은?', submit: '궁합 보기', share: '궁합 결과 공유하기' },
+  friend: { title: '우리 아이와 친구 강아지의<br>댕친 궁합은?', submit: '댕친 궁합 보기', share: '댕친 궁합 공유하기' },
+};
+
+// 출석 부적: 이번 달 누적 출석 일수 기준
+const MILESTONES = [1, 3, 5, 7, 10, 15, 20];
+const TALISMAN_REWARDS = {
+  1: { name: '시작의 코기 부적', desc: '첫 출석 완료! 오늘의 시작마다 산뜻한 행운이 따라붙을 거예요.' },
+  3: { name: '초심자의 뼈다귀 부적', desc: '이번 달 3번째 출석! 멍멍이의 에너지가 솟아납니다.' },
+  5: { name: '복슬복슬 말티즈 부적', desc: '이번 달 5번째 출석! 포근한 기운이 차곡차곡 쌓이고 있어요.' },
+  7: { name: '행운의 댕댕 부적', desc: '럭키 7번째 출석! 기분 좋은 일이 가득할 거예요.' },
+  10: { name: '재물운 명탐정 부적', desc: '이번 달 10번째 출석! 생각지도 못한 간식이나 행운이 찾아옵니다.' },
+  15: { name: '대박 황금 부적', desc: '이번 달 15번째 출석! 주변에서 많은 복이 찾아오는 시기예요.' },
+  20: { name: '전설의 댕댕 부적', desc: '이번 달 20번째 출석! 당신은 진정한 댕사주 마스터!' },
+};
+
+// ─── 공용 유틸 ───────────────────────────────────────────────────────────
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[ch]));
+}
+
+// 서버 문구에는 사용자가 입력한 이름이 섞여 있으므로 반드시 이스케이프 후 강조/줄바꿈만 허용
+function formatText(text) {
+  if (!text) return '';
+  return escapeHtml(text)
+    .replace(/\*\*(.*?)\*\*/g, '<span class="highlight-text">$1</span>')
+    .replace(/\n/g, '<br>');
+}
+
+function hasBatchim(name) {
+  if (!name) return false;
+  const code = name.charCodeAt(name.length - 1);
+  if (code < 0xAC00 || code > 0xD7A3) return false;
+  return (code - 0xAC00) % 28 > 0;
+}
+
+function withJosa(name, josa) {
+  const [withBatchim, withoutBatchim] = {
+    '은/는': ['은', '는'],
+    '이/가': ['이', '가'],
+    '을/를': ['을', '를'],
+    '와/과': ['과', '와'],
+  }[josa];
+  return name + (hasBatchim(name) ? withBatchim : withoutBatchim);
+}
+
+function elementInfo(element) {
+  return ELEMENTS[element] || ELEMENTS[DEFAULT_ELEMENT];
+}
+
+function elementLabel(element) {
+  const info = ELEMENTS[element];
+  return info ? `${element}(${info.hanja})` : (element || '-');
+}
+
+function dogImageUrl(element) {
+  return `./assets/${elementInfo(element).slug}_dog.png`;
+}
+
+function todayIso() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+function withTimeout(promise, ms) {
+  return Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(undefined), ms))]);
+}
+
+// 차트·폭죽은 처음 필요할 때만 불러와 첫 화면 로딩을 가볍게 유지
+let chartPromise = null;
+function loadChart() {
+  chartPromise ??= import('chart.js/auto').then((module) => module.default);
+  return chartPromise;
+}
+
+let confettiPromise = null;
+function loadConfetti() {
+  confettiPromise ??= import('canvas-confetti').then((module) => module.default);
+  return confettiPromise;
+}
+
+// ─── 사용자 키 & API ─────────────────────────────────────────────────────
+function getDevUserKey() {
+  const fromQuery = new URLSearchParams(window.location.search).get('devUserKey');
   try {
-    const result = await getAnonymousKey();
-    if (result && result.type === 'HASH') {
-      tossUserKey = result.hash;
+    const key = fromQuery || localStorage.getItem(DEV_USER_KEY_STORAGE) || `dev-${Math.random().toString(36).slice(2, 10)}`;
+    localStorage.setItem(DEV_USER_KEY_STORAGE, key);
+    return key;
+  } catch {
+    return fromQuery || 'dev-user';
+  }
+}
+
+async function resolveUserKey() {
+  try {
+    const result = await withTimeout(getAnonymousKey(), USER_KEY_TIMEOUT_MS);
+    if (result && result !== 'ERROR' && result.type === 'HASH' && result.hash) {
+      return result.hash;
     }
-  } catch (e) {
-    console.warn("Toss Bridge not available or failed to get user key", e);
+  } catch (error) {
+    console.warn('[UserKey] Toss bridge unavailable', error);
   }
+  // 토스 밖(로컬 개발)에서는 브라우저별 임시 키로 대신 테스트
+  return import.meta.env.DEV ? getDevUserKey() : '';
+}
 
-  function getUserKey() {
-    return typeof tossUserKey === 'string' ? tossUserKey.trim() : '';
+let userKey = '';
+const userKeyReady = resolveUserKey().then((key) => {
+  userKey = typeof key === 'string' ? key.trim() : '';
+  return userKey;
+});
+
+class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
   }
+}
 
-  function requireUserKey() {
-    const userKey = getUserKey();
-    if (userKey) return userKey;
-    alert('Toss user key is unavailable. Please reopen this app from Toss.');
-    return '';
-  }
+async function api(path, { method = 'GET', body } = {}) {
+  const headers = {};
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (userKey) headers['X-Toss-User-Key'] = userKey;
 
-  function buildHeaders(includeJson = false) {
-    const headers = {};
-    const userKey = getUserKey();
-
-    if (includeJson) {
-      headers['Content-Type'] = 'application/json';
-    }
-
-    if (userKey) {
-      headers['X-Toss-User-Key'] = userKey;
-    }
-
-    return headers;
-  }
-
-  // Screens
-  const mainScreen = document.getElementById('main-screen');
-  const inputScreen = document.getElementById('input-screen');
-  const loadingScreen = document.getElementById('loading-screen');
-  const resultScreen = document.getElementById('result-screen');
-
-  // Buttons
-  const btnGeneral = document.getElementById('btn-general');
-  const btnChemistry = document.getElementById('btn-chemistry');
-  const btnSubmit = document.getElementById('btn-submit');
-  const btnShare = document.getElementById('btn-share');
-  const imageModal = document.getElementById('image-modal');
-  const generatedImage = document.getElementById('generated-image');
-  const btnCloseImageModal = document.getElementById('close-modal');
-
-  function blobToBase64(blob) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = typeof reader.result === 'string' ? reader.result : '';
-        const base64 = result.includes(',') ? result.split(',')[1] : result;
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
     });
+  } catch {
+    throw new ApiError('', 0);
   }
 
-  function openImageSaveModal(imageUrl) {
-    if (!imageModal || !generatedImage) return;
-    generatedImage.src = imageUrl;
-    imageModal.style.display = 'flex';
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
   }
-
-  function closeImageSaveModal() {
-    if (!imageModal || !generatedImage) return;
-    imageModal.style.display = 'none';
-    generatedImage.removeAttribute('src');
+  if (!response.ok) {
+    throw new ApiError((data && (data.error || data.detail)) || '', response.status);
   }
+  return data;
+}
 
-  // Tab Logic
+function apiErrorMessage(error) {
+  if (!(error instanceof ApiError)) return '';
+  if (error.status === 0) return '인터넷 연결을 확인한 뒤\n다시 시도해주세요.';
+  if (error.status === 403) return '토스 사용자 정보를 확인할 수 없어요.\n토스 앱에서 댕사주를 다시 열어주세요.';
+  if (error.status >= 500) return '';
+  return error.message;
+}
+
+function readShareToken() {
+  let token = '';
+  try {
+    const schemeUri = getSchemeUri();
+    if (schemeUri) token = new URL(schemeUri).searchParams.get('share') || '';
+  } catch {
+    token = '';
+  }
+  token ||= new URLSearchParams(window.location.search).get('share') || '';
+  return /^[A-Za-z0-9_-]{8,64}$/.test(token) ? token : '';
+}
+
+// ─── 화면 ────────────────────────────────────────────────────────────────
+function init() {
+  const $ = (id) => document.getElementById(id);
+
+  const screens = {
+    main: $('main-screen'),
+    input: $('input-screen'),
+    loading: $('loading-screen'),
+    result: $('result-screen'),
+    share: $('share-screen'),
+  };
+
+  const btnSubmit = $('btn-submit');
+  const btnShare = $('btn-share');
+  const chemistrySection = $('chemistry-result-section');
+  const friendSection = $('friend-result-section');
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabContents = document.querySelectorAll('.tab-content');
 
-  tabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      // Remove active class from all tabs
-      tabBtns.forEach(b => b.classList.remove('active'));
-      tabContents.forEach(c => c.classList.remove('active'));
+  const state = {
+    mode: 'general', // 'general' | 'chemistry' | 'friend'
+    myDogs: [],
+    selectedDogId: null, // 강아지 id 또는 'new'(새 아이 입력)
+    prefilledDogId: null,
+    currentDog: null,
+    lastChemistry: null,
+    lastFriend: null,
+    attendance: null,
+    submitting: false,
+  };
 
-      // Add active to clicked tab
-      btn.classList.add('active');
-      const targetTab = document.getElementById(btn.dataset.tab);
-      targetTab.classList.add('active');
+  // ─── 토스트 & 에러 ───
+  let toastTimer = null;
+  function showToast(message, duration = 2600) {
+    const toast = $('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+  }
 
-      // Reset scroll position to top when switching tabs
-      const scrollContainer = document.querySelector('.result-scroll');
-      if (scrollContainer) {
-        scrollContainer.scrollTop = 0;
-      }
+  function showErrorModal(message) {
+    $('error-message').textContent = message || DEFAULT_ERROR_MESSAGE;
+    $('error-modal').style.display = 'flex';
+  }
 
-      // Re-trigger reveal for the new tab
-      revealCards();
+  function showApiError(error) {
+    showErrorModal(apiErrorMessage(error));
+  }
 
-      // Update Chart visually if changed to lifetime tab
-      if (btn.dataset.tab === 'tab-lifetime') {
-        animateBars();
-      }
+  async function requireUserKey() {
+    const key = await userKeyReady;
+    if (key) return key;
+    showErrorModal('토스 사용자 정보를 확인할 수 없어요.\n토스 앱에서 댕사주를 다시 열어주세요.');
+    return '';
+  }
+
+  $('btn-close-error').addEventListener('click', () => {
+    $('error-modal').style.display = 'none';
+  });
+
+  // ─── 탭 ───
+  function activateTab(tabId) {
+    tabBtns.forEach((b) => b.classList.toggle('active', b.dataset.tab === tabId));
+    tabContents.forEach((c) => c.classList.toggle('active', c.id === tabId));
+
+    const scrollContainer = document.querySelector('.result-scroll');
+    if (scrollContainer) scrollContainer.scrollTop = 0;
+
+    revealCards();
+    if (tabId === 'tab-lifetime') animateBars();
+  }
+
+  tabBtns.forEach((btn) => {
+    btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+  });
+
+  function revealCards() {
+    const cards = document.querySelectorAll('.tab-content.active .fade-in');
+    cards.forEach((c) => c.classList.remove('reveal'));
+    cards.forEach((card, index) => {
+      setTimeout(() => card.classList.add('reveal'), index * 150);
     });
-  });
+  }
 
-  // Input sections
-  const inputTitle = document.getElementById('input-title');
-  const ownerInputSection = document.getElementById('owner-input-section');
-  const chemistryResultSection = document.getElementById('chemistry-result-section');
-  const dogNameInput = document.getElementById('dog-name');
-  const dogDateInput = document.getElementById('dog-date');
-  const dogTimeInput = document.getElementById('dog-time');
-  const dogLunarCheck = document.getElementById('dog-lunar');
-
-  // State
-  let testType = 'general'; // 'general' or 'chemistry'
-  let radarChartInstance = null; // Store chart instance
-
-  // Initialize History state
-  // Don't inject #main-screen on the URL initially. Leave it empty so the native back stack
-  // knows this is the root of the app, and triggers the standard exit prompt when backed out.
-
+  // ─── 네비게이션 ───
+  // 메인은 해시 없이 두어야 토스 네이티브 뒤로가기가 앱 종료 확인을 띄움
   window.addEventListener('popstate', () => {
-    // If the hash is empty, it means we are at the root (main screen)
-    const hash = location.hash.replace('#', '') || 'main-screen';
-    const screen = document.getElementById(hash);
-    if (screen) {
-      showScreen(screen);
-    } else {
-      showScreen(mainScreen);
-    }
+    const hash = window.location.hash.replace('#', '') || 'main-screen';
+    showScreen($(hash) || screens.main);
   });
 
-  // Navigation logic
   function navigateTo(screenElement, pushHistory = true) {
     showScreen(screenElement);
 
     if (pushHistory) {
       const targetHash = screenElement.id === 'main-screen' ? '' : `#${screenElement.id}`;
-      // Use pushState to avoid auto-scrolling to the anchor ID
-      if (location.hash !== targetHash && (location.hash || targetHash !== '')) {
-        history.pushState(null, '', targetHash || window.location.pathname);
+      // pushState를 써서 앵커로 자동 스크롤되지 않게 함
+      if (window.location.hash !== targetHash && (window.location.hash || targetHash !== '')) {
+        history.pushState(null, '', targetHash || window.location.pathname + window.location.search);
       }
     }
   }
 
+  let activeScreen = null;
   function showScreen(screenElement) {
-    document.querySelectorAll('.screen').forEach(s => {
+    activeScreen = screenElement;
+    document.querySelectorAll('.screen').forEach((s) => {
+      if (s === screenElement) return;
       s.classList.remove('active');
+      // 페이드아웃이 끝난 뒤 레이아웃에서 빼서 메모리 절약.
+      // 첫 프레임이 늦게 그려져도 지금 보여줄 화면은 숨기지 않도록 클래스 대신 activeScreen으로 판단
       setTimeout(() => {
-        if (!s.classList.contains('active')) {
+        if (s !== activeScreen) {
           s.style.display = 'none';
         }
-      }, 350); // wait for fade out explicitly to release memory layout frame
+      }, 350);
     });
 
     screenElement.style.display = 'flex';
-    // requestAnimationFrame을 두 번 중첩하여 브라우저의 레이아웃 병목(렉)을 줄이고 부드럽게 페이드인
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        screenElement.classList.add('active');
 
-        // 메모리/렌더링 최적화: 결과 화면은 배경 불투명(bg-gray)이므로 무거운 배경 애니메이션 전체 숨김처리
-        const bgBlobs = document.querySelector('.bg-blobs');
-        if (bgBlobs) {
-          if (screenElement.id === 'result-screen') {
-            bgBlobs.style.display = 'none';
-          } else {
-            bgBlobs.style.display = 'block';
-          }
-        }
+    let activated = false;
+    const activate = () => {
+      // 이미 처리했거나 그 사이 다른 화면으로 전환됐다면 무시
+      if (activated || activeScreen !== screenElement) return;
+      activated = true;
+      screenElement.classList.add('active');
 
-        // 메인화면일 때만 배너 마운트 (active 추가 직후 실행 보장)
-        if (screenElement.id === 'main-screen') {
-          if (typeof mountTossBanner === 'function') mountTossBanner();
-        } else {
-          if (typeof unmountTossBanner === 'function') unmountTossBanner();
-        }
-      });
-    });
+      // 결과 화면은 배경이 불투명하므로 무거운 배경 애니메이션을 숨김
+      const bgBlobs = document.querySelector('.bg-blobs');
+      if (bgBlobs) bgBlobs.style.display = screenElement === screens.result ? 'none' : 'block';
 
-    // reset scroll to top
-    if (screenElement === resultScreen) {
+      // 배너는 메인화면에서만
+      if (screenElement === screens.main) {
+        mountTossBanner();
+      } else {
+        unmountTossBanner();
+      }
+    };
+    // requestAnimationFrame을 두 번 중첩해 레이아웃 병목을 줄이고 부드럽게 페이드인
+    requestAnimationFrame(() => requestAnimationFrame(activate));
+    // 웹뷰가 가려져 rAF가 멈춘 상태에서도 화면이 비지 않도록 타이머로 한 번 더 보장
+    setTimeout(activate, 150);
+  }
+
+  // 새 결과를 띄우기 직전에 모드별 레이아웃을 맞춤
+  function prepareResultScreen() {
+    const isGeneral = state.mode === 'general';
+    const tabNav = document.querySelector('.tab-nav');
+    if (tabNav) tabNav.style.display = isGeneral ? 'flex' : 'none';
+    $('tab-today').style.display = isGeneral ? '' : 'none';
+    $('tab-lifetime').style.display = isGeneral ? '' : 'none';
+    chemistrySection.style.display = state.mode === 'chemistry' ? 'block' : 'none';
+    friendSection.style.display = state.mode === 'friend' ? 'block' : 'none';
+    btnShare.textContent = MODE_COPY[state.mode].share;
+
+    lockChemReport();
+    if (isGeneral) {
+      activateTab('tab-today');
+    } else {
       const scrollContainer = document.querySelector('.result-scroll');
       if (scrollContainer) scrollContainer.scrollTop = 0;
-
-      const tabNav = document.querySelector('.tab-nav');
-      const tabToday = document.getElementById('tab-today');
-      const tabLifetime = document.getElementById('tab-lifetime');
-      const chemSection = document.getElementById('chemistry-result-section');
-
-      // Re-lock the report on every new result
-      lockChemReport();
-
-      if (testType === 'chemistry') {
-        // 댕궁합 단독 모드
-        if (tabNav) tabNav.style.display = 'none';
-        if (tabToday) tabToday.style.display = 'none';
-        if (tabLifetime) tabLifetime.style.display = 'none';
-        if (chemSection) chemSection.style.display = 'block';
-      } else {
-        // 일반 댕사주 모드: 탭 UI 복원
-        if (tabNav) tabNav.style.display = 'flex';
-        if (tabToday) tabToday.style.display = '';
-        if (tabLifetime) tabLifetime.style.display = '';
-        if (chemSection) chemSection.style.display = 'none';
-        // Default to first tab
-        if (tabBtns && tabBtns.length > 0) {
-          tabBtns[0].click();
-        }
-        // Staggered Reveal Cards
-        revealCards();
-      }
     }
   }
 
-  // Initial render
-  setTimeout(() => {
-    const initialHash = location.hash.replace('#', '') || 'main-screen';
-    const initialScreen = document.getElementById(initialHash);
-    if (initialScreen) {
-      showScreen(initialScreen);
-    }
-  }, 0);
+  function setDogNameDisplays(name) {
+    document.querySelectorAll('.dog-name-display').forEach((el) => {
+      el.textContent = name;
+    });
+  }
 
-  // Initialize TossAds Banner
+  // ─── 토스 배너 광고 ───
   let isTossAdsReady = false;
   let tossBannerInstance = null;
 
   function mountTossBanner() {
     if (!isTossAdsReady) return;
-    const adContainer = document.getElementById('toss-ad-container');
+    const adContainer = $('toss-ad-container');
     if (!adContainer) return;
 
     if (tossBannerInstance) {
       tossBannerInstance.destroy();
       tossBannerInstance = null;
     }
-    tossBannerInstance = TossAds.attachBanner('ait.v2.live.82786c3925d743b3', adContainer, {
+    tossBannerInstance = TossAds.attachBanner(BANNER_AD_ID, adContainer, {
       variant: 'expanded',
       theme: 'dark',
       callbacks: {
         onAdFailedToRender: (p) => console.error('[Banner] failed', p),
         onNoFill: (p) => console.warn('[Banner] no fill', p),
-      }
+      },
     });
   }
 
@@ -261,59 +400,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  const bannerSupported = TossAds && typeof TossAds.initialize === 'function'
-    ? (typeof TossAds.initialize.isSupported === 'function' ? TossAds.initialize.isSupported() : true)
-    : false;
-
-  console.log('[TossAds] banner supported:', bannerSupported);
+  let bannerSupported = false;
+  try {
+    bannerSupported = TossAds && typeof TossAds.initialize === 'function'
+      ? (typeof TossAds.initialize.isSupported === 'function' ? TossAds.initialize.isSupported() : true)
+      : false;
+  } catch (error) {
+    console.warn('[TossAds] isSupported check failed', error);
+  }
 
   if (bannerSupported) {
     TossAds.initialize({
       callbacks: {
         onInitialized: () => {
-          console.log('[TossAds] initialized OK');
           isTossAdsReady = true;
-          // 앱 시작 시 메인화면에 바로 배너 부착 (타이밍 문제 없이 항상 호출)
-          mountTossBanner();
+          if (screens.main.classList.contains('active')) mountTossBanner();
         },
-        onInitializationFailed: (err) => console.error('[TossAds] init failed', err)
-      }
+        onInitializationFailed: (err) => console.error('[TossAds] init failed', err),
+      },
     });
   }
 
-  // ─── Interstitial (전면) 광고 관리 ───────────────────────────────────────
-  const INTERSTITIAL_AD_ID = 'ait.v2.live.3c235f3d3a424553';
+  // ─── 전면 광고 (궁합 상세 해석 잠금 해제) ───
   let interstitialAdLoaded = false;
   let interstitialUnregister = null;
 
   function preloadInterstitialAd() {
-    // isSupported()는 Toss WebView 환경에서만 동작 - try-catch 필수
+    // isSupported()는 토스 웹뷰에서만 동작 - try-catch 필수
     try {
       if (typeof loadFullScreenAd.isSupported === 'function' && !loadFullScreenAd.isSupported()) {
-        console.warn('[Interstitial] loadFullScreenAd not supported');
         return;
       }
-    } catch (e) {
-      // WebView 외부(예: 일반 브라우저) 환경 - 지원 안 함
-      console.warn('[Interstitial] isSupported check failed:', e.message);
-      return;
+    } catch {
+      return; // 웹뷰 외부(일반 브라우저) 환경
     }
 
-    // 이전 콜백 등록 해제 (메모리 누수 방지)
     if (interstitialUnregister) {
       interstitialUnregister();
       interstitialUnregister = null;
     }
     interstitialAdLoaded = false;
 
-    console.log('[Interstitial] loading ad...');
     interstitialUnregister = loadFullScreenAd({
       options: { adGroupId: INTERSTITIAL_AD_ID },
       onEvent: (event) => {
-        console.log('[Interstitial] load event:', event.type);
-        if (event.type === 'loaded') {
-          interstitialAdLoaded = true;
-        }
+        if (event.type === 'loaded') interstitialAdLoaded = true;
       },
       onError: (err) => {
         console.error('[Interstitial] load error:', err);
@@ -322,27 +453,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 앱 시작 시 미리 광고를 로드 (버튼 누를 때 바로 보이도록)
   preloadInterstitialAd();
 
-  /**
-   * 전면 광고를 보여준 뒤 callback을 실행한다.
-   * 광고 미지원이거나 아직 로드가 안 됐으면 callback을 바로 실행한다.
-   */
+  /** 전면 광고를 보여준 뒤 callback 실행. 미지원이거나 아직 로드 전이면 바로 실행 */
   function showInterstitialThenDo(callback) {
-    // isSupported()는 Toss WebView 환경에서만 동작 - try-catch 필수
     let isSupported = false;
     try {
-      isSupported = typeof showFullScreenAd.isSupported === 'function'
-        ? showFullScreenAd.isSupported()
-        : true;
-    } catch (e) {
-      console.warn('[Interstitial] showFullScreenAd.isSupported check failed:', e.message);
+      isSupported = typeof showFullScreenAd.isSupported === 'function' ? showFullScreenAd.isSupported() : true;
+    } catch {
       callback();
       return;
     }
-
-    console.log('[Interstitial] show isSupported:', isSupported, 'adLoaded:', interstitialAdLoaded);
 
     if (!isSupported || !interstitialAdLoaded) {
       callback();
@@ -353,7 +474,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const unregisterShow = showFullScreenAd({
       options: { adGroupId: INTERSTITIAL_AD_ID },
       onEvent: (event) => {
-        console.log('[Interstitial] show event:', event.type);
         if (event.type === 'dismissed' || event.type === 'failedToShow') {
           if (typeof unregisterShow === 'function') unregisterShow();
           preloadInterstitialAd(); // load→show→load 순환
@@ -369,206 +489,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  function revealCards() {
-    const cards = document.querySelectorAll('.tab-content.active .fade-in, #chemistry-result-section.fade-in');
-    cards.forEach(c => c.classList.remove('reveal'));
-
-    cards.forEach((card, index) => {
-      setTimeout(() => {
-        card.classList.add('reveal');
-      }, index * 150);
-    });
-  }
-
-  // Event Listeners
-  btnGeneral.addEventListener('click', () => {
-    testType = 'general';
-    inputTitle.innerHTML = '우리아이의 타고난<br>기질을 알아볼까요?';
-    ownerInputSection.classList.add('hidden');
-    navigateTo(inputScreen);
-  });
-
-  btnChemistry.addEventListener('click', () => {
-    testType = 'chemistry';
-    inputTitle.innerHTML = '보호자와 댕댕이의<br>상생 궁합은?';
-    ownerInputSection.classList.remove('hidden');
-    navigateTo(inputScreen);
-  });
-
-
-  btnSubmit.addEventListener('click', (e) => {
-    e.preventDefault();
-    if (!dogNameInput.value || !dogDateInput.value) {
-      alert("강아지 이름과 생년월일을 정확히 입력해주세요!");
-      return;
-    }
-
-    const userKey = requireUserKey();
-    if (!userKey) {
-      return;
-    }
-
-    const dogName = dogNameInput.value.trim();
-    document.querySelectorAll('.dog-name-display').forEach(el => el.textContent = dogName);
-
-    if (testType === 'chemistry') {
-      const ownerDate = document.getElementById('owner-date').value;
-      if (!ownerDate) {
-        alert('보호자 생년월일을 입력해주세요!');
-        return;
-      }
-      chemistryResultSection.style.display = 'block';
-    } else {
-      chemistryResultSection.style.display = 'none';
-    }
-
-    // 1단계: 로딩 화면 먼저 표시
-    navigateTo(loadingScreen, false);
-
-    // 2단계: API 호출을 백그라운드에서 즉시 시작 (광고와 병렬 실행)
-    const dogGender = document.querySelector('input[name="dog-gender"]:checked').value;
-    const postData = {
-      social_id: userKey,
-      nickname: "Toss 사용자",
-      dog: {
-        name: dogName,
-        birth_date: dogDateInput.value,
-        birth_time: dogTimeInput.value || null,
-        is_lunar: dogLunarCheck.checked,
-        gender: dogGender === 'M' ? 'MALE' : 'FEMALE',
-        is_estimated_birth: false
-      }
-    };
-
-    const apiPromise = (async () => {
-      const regRes = await fetch(`${BASE_URL}/api/saju/dogs/`, {
-        method: 'POST',
-        headers: buildHeaders(true),
-        body: JSON.stringify(postData)
-      });
-      const regData = await regRes.json();
-      if (!regRes.ok) throw new Error("등록 실패: " + JSON.stringify(regData));
-      const dogId = regData.dog_id;
-
-      // /basics/ 먼저 호출 (백엔드 사주 계산 트리거)
-      const basicRes = await fetch(`${BASE_URL}/api/saju/dogs/${dogId}/basics/`, {
-        headers: buildHeaders()
-      });
-      const basicData = await basicRes.json();
-
-      // 결과 화면 진입 전 이미지 프리로딩을 통해 렌더링 렉 최소화
-      try {
-        const elementMap = { '목': 'wood', '화': 'fire', '토': 'earth', '금': 'metal', '수': 'water' };
-        const preloadImgName = elementMap[basicData.main_element] || 'fire';
-        const preloadImg = new Image();
-        preloadImg.src = `./assets/${preloadImgName}_dog.png`;
-      } catch (e) {
-        console.warn('Image preload failed', e);
-      }
-
-      // basics 완료 후 나머지 병렬 호출
-      const [perRes, luckRes] = await Promise.all([
-        fetch(`${BASE_URL}/api/saju/dogs/${dogId}/personality/`, {
-          headers: buildHeaders()
-        }),
-        fetch(`${BASE_URL}/api/saju/dogs/${dogId}/daily-luck/`, {
-          headers: buildHeaders()
-        }),
-      ]);
-      const perData = await perRes.json();
-      const luckData = await luckRes.json();
-
-      let chemData = null;
-      if (testType === 'chemistry') {
-        const ownerDate = document.getElementById('owner-date').value;
-        const ownerTime = document.getElementById('owner-time').value;
-        try {
-          const chemRes = await fetch(`${BASE_URL}/api/saju/dogs/${dogId}/compatibility/`, {
-            method: 'POST',
-            headers: buildHeaders(true),
-            body: JSON.stringify({ owner_birth_date: ownerDate, owner_birth_time: ownerTime })
-          });
-          if (chemRes.ok) chemData = await chemRes.json();
-        } catch (err) {
-          console.error("궁합 조회 실패:", err);
-        }
-      }
-      return { basicData, perData, luckData, chemData };
-    })();
-
-    // 3단계: API 완료 후 DOM 업데이트 → 바로 결과 화면으로 이동
-    // (전면광고는 이제 리포트 잠금 해제 버튼에서 호출됨)
-    apiPromise
-      .then(({ basicData, perData, luckData, chemData }) => {
-        // ── DOM 업데이트 ──
-        const elementMap = { '목': 'wood', '화': 'fire', '토': 'earth', '금': 'metal', '수': 'water' };
-        const elementColorMap = { '목': 'text-wood', '화': 'text-fire', '토': 'text-earth', '금': 'text-metal', '수': 'text-water' };
-        const elementHanjaMap = { '목': '木', '화': '火', '토': '土', '금': '金', '수': '水' };
-
-        const imgName = elementMap[basicData.main_element] || 'fire';
-        const colorClass = elementColorMap[basicData.main_element] || 'text-fire';
-        const hanjaEl = elementHanjaMap[basicData.main_element] || '火';
-
-        updateSajuTable(basicData);
-        document.querySelector('.result-img').src = `./assets/${imgName}_dog.png`;
-        document.getElementById('res-summary').innerHTML = `${formatText(perData.personality_summary)}<br><span class="${colorClass}">${basicData.main_element}(${hanjaEl})</span>의 기운을 타고난 <span class="dog-name-display">${dogName}</span>!`;
-        document.getElementById('res-food').innerHTML = formatText(perData.treat_luck);
-        document.getElementById('res-energy').innerHTML = formatText(perData.vitality_analysis);
-        document.getElementById('res-love').innerHTML = formatText(perData.care_tips);
-        document.getElementById('res-social').innerHTML = formatText(perData.social_analysis);
-        document.getElementById('res-luck-score').textContent = luckData.luck_score;
-        document.getElementById('res-luck-msg').innerHTML = formatText(luckData.message);
-        document.getElementById('res-luck-color').textContent = luckData.lucky_color;
-        document.getElementById('res-luck-dir').textContent = luckData.lucky_direction;
-
-        if (chemData) {
-          document.getElementById('res-chem-score').textContent = chemData.score || '--';
-          document.getElementById('res-chem-title').textContent = chemData.title || '';
-          document.getElementById('res-chem-owner-element').textContent = `(${chemData.owner_element})`;
-          document.getElementById('res-chem-dog-element').textContent = `(${chemData.dog_element})`;
-          document.getElementById('res-chem-rel').textContent = `✨ ${chemData.relationship_type} 관계 ✨`;
-          document.getElementById('res-chem-desc').innerHTML = formatText(chemData.description || '');
-          if (chemData.advice) {
-            document.getElementById('res-chem-advice').innerHTML = `<strong>💡 어드바이스:</strong><br>${formatText(chemData.advice)}`;
-            document.getElementById('res-chem-advice').style.display = 'block';
-          } else {
-            document.getElementById('res-chem-advice').style.display = 'none';
-          }
-          chemistryResultSection.style.display = 'block';
-        }
-
-        // ── 결과 화면으로 바로 이동 (광고 없음) ──
-        navigateTo(resultScreen, true);
-        // 화면 전환 애니메이션 완료 후 Chart.js 렌더링
-        requestAnimationFrame(() => setTimeout(() => updateGraphs(basicData.element_distribution), 400));
-      })
-      .catch(err => {
-        console.error(err);
-        // 에러 모달 표시
-        const errorModal = document.getElementById('error-modal');
-        if (errorModal) {
-          errorModal.style.display = 'flex';
-        } else {
-          alert("운세를 분석하는 중 오류가 발생했습니다. 확인 후 다시 시도해주세요.");
-        }
-        navigateTo(inputScreen, false);
-      });
-  }); // btnSubmit end
-
-  // ─── Locked Report: 잠금/해제 시스템 ────────────────────────────────────
-
-
   function lockChemReport() {
-    const container = document.getElementById('locked-chem-container');
-    const overlay = document.getElementById('unlock-chem-overlay');
+    const container = $('locked-chem-container');
+    const overlay = $('unlock-chem-overlay');
     if (!container) return;
     container.classList.remove('is-unlocked');
     container.classList.add('is-locked');
-
-    // 리셋
-    const texts = container.querySelectorAll('.lockable-text');
-    texts.forEach(t => t.style.filter = '');
-
+    container.querySelectorAll('.lockable-text').forEach((t) => { t.style.filter = ''; });
     if (overlay) {
       overlay.style.opacity = '';
       overlay.style.pointerEvents = '';
@@ -576,11 +503,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-
-
   function unlockChemReport() {
-    const container = document.getElementById('locked-chem-container');
-    const overlay = document.getElementById('unlock-chem-overlay');
+    const container = $('locked-chem-container');
+    const overlay = $('unlock-chem-overlay');
     if (!container) return;
     container.classList.remove('is-locked');
     container.classList.add('is-unlocked');
@@ -589,61 +514,370 @@ document.addEventListener('DOMContentLoaded', async () => {
       overlay.style.pointerEvents = 'none';
       setTimeout(() => {
         overlay.style.display = 'none';
-        // 트랜지션 완료 후 인라인 스타일로 필터 완전 제거 (GPU 메모리 절약)
-        const texts = container.querySelectorAll('.lockable-text');
-        texts.forEach(t => t.style.filter = 'none');
+        // 트랜지션이 끝나면 필터를 완전히 제거 (GPU 메모리 절약)
+        container.querySelectorAll('.lockable-text').forEach((t) => { t.style.filter = 'none'; });
       }, 500);
     }
   }
 
+  const btnUnlockChem = $('btn-unlock-chem');
+  btnUnlockChem.addEventListener('click', () => {
+    if (btnUnlockChem.classList.contains('is-loading')) return;
+    btnUnlockChem.classList.add('is-loading');
+    btnUnlockChem.textContent = '⏳ 광고 준비 중...';
 
-
-  const btnUnlockChem = document.getElementById('btn-unlock-chem');
-  if (btnUnlockChem) {
-    btnUnlockChem.addEventListener('click', () => {
-      if (btnUnlockChem.classList.contains('is-loading')) return;
-      btnUnlockChem.classList.add('is-loading');
-      btnUnlockChem.textContent = '⏳ 광고 준비 중...';
-
-      showInterstitialThenDo(() => {
-        btnUnlockChem.classList.remove('is-loading');
-        btnUnlockChem.innerHTML = '<span class="btn-unlock-icon">🎬</span> 전체 해석 보기';
-        unlockChemReport();
-      });
+    showInterstitialThenDo(() => {
+      btnUnlockChem.classList.remove('is-loading');
+      btnUnlockChem.innerHTML = '<span class="btn-unlock-icon">🎬</span> 전체 해석 보기';
+      unlockChemReport();
     });
+  });
+
+  // ─── 입력 폼 ───
+  const form = {
+    dogName: $('dog-name'),
+    dogDate: $('dog-date'),
+    dogDateLabel: $('dog-date-label'),
+    dogTime: $('dog-time'),
+    dogTimeGroup: $('dog-time-group'),
+    dogLunar: $('dog-lunar'),
+    dogLeap: $('dog-leap'),
+    dogEstimated: $('dog-estimated'),
+    ownerSection: $('owner-input-section'),
+    ownerDate: $('owner-date'),
+    ownerTime: $('owner-time'),
+    ownerLunar: $('owner-lunar'),
+    ownerLeap: $('owner-leap'),
+    friendSection: $('friend-input-section'),
+    friendName: $('friend-name'),
+    friendDate: $('friend-date'),
+    friendLunar: $('friend-lunar'),
+    friendLeap: $('friend-leap'),
+  };
+
+  [form.dogDate, form.ownerDate, form.friendDate].forEach((input) => {
+    input.max = todayIso();
+  });
+
+  // 윤달은 음력일 때만 선택 가능
+  function bindLeapToggle(lunarInput, leapInput) {
+    const sync = () => {
+      leapInput.disabled = !lunarInput.checked || lunarInput.disabled;
+      if (leapInput.disabled) leapInput.checked = false;
+    };
+    lunarInput.addEventListener('change', sync);
+    sync();
+    return sync;
+  }
+  const syncDogLeap = bindLeapToggle(form.dogLunar, form.dogLeap);
+  bindLeapToggle(form.ownerLunar, form.ownerLeap);
+  bindLeapToggle(form.friendLunar, form.friendLeap);
+
+  // 생일을 모르는 아이(입양견 등)는 입양일·추정일 기준으로, 시간·음력 입력은 숨김
+  function syncEstimated() {
+    const estimated = form.dogEstimated.checked;
+    form.dogDateLabel.textContent = estimated ? '입양일 또는 추정 생일' : '강아지 생년월일';
+    form.dogTimeGroup.classList.toggle('hidden', estimated);
+    form.dogLunar.disabled = estimated;
+    if (estimated) {
+      form.dogLunar.checked = false;
+      form.dogTime.value = '';
+    }
+    syncDogLeap();
+  }
+  form.dogEstimated.addEventListener('change', syncEstimated);
+
+  function readDogForm() {
+    const estimated = form.dogEstimated.checked;
+    const lunar = !estimated && form.dogLunar.checked;
+    const gender = document.querySelector('input[name="dog-gender"]:checked')?.value;
+    return {
+      name: form.dogName.value.trim(),
+      birth_date: form.dogDate.value,
+      birth_time: estimated ? null : (form.dogTime.value || null),
+      is_lunar: lunar,
+      is_leap_month: lunar && form.dogLeap.checked,
+      gender: gender === 'F' ? 'FEMALE' : 'MALE',
+      is_estimated_birth: estimated,
+    };
   }
 
-  btnShare.addEventListener('click', async () => {
-    const originalText = btnShare.textContent;
-    btnShare.textContent = "공유 링크 생성 중... 🐾";
-    btnShare.disabled = true;
+  function fillDogForm(dog) {
+    form.dogName.value = dog?.name || '';
+    form.dogDate.value = dog?.birth_date || '';
+    form.dogTime.value = dog?.birth_time ? dog.birth_time.slice(0, 5) : '';
+    form.dogEstimated.checked = Boolean(dog?.is_estimated_birth);
+    form.dogLunar.checked = Boolean(dog?.is_lunar);
+    syncEstimated();
+    form.dogLeap.checked = Boolean(dog?.is_leap_month) && form.dogLunar.checked;
+    $(dog?.gender === 'FEMALE' ? 'dog-f' : 'dog-m').checked = true;
+  }
+
+  function getSelectedDog() {
+    return state.myDogs.find((dog) => dog.id === state.selectedDogId) || null;
+  }
+
+  // 등록한 아이가 있으면 폼을 미리 채워 다시 입력하지 않게 함
+  function prepareDogForm() {
+    const dog = getSelectedDog();
+    if (dog) {
+      fillDogForm(dog);
+      state.prefilledDogId = dog.id;
+    } else if (state.prefilledDogId !== null) {
+      fillDogForm(null);
+      state.prefilledDogId = null;
+    }
+  }
+
+  function openInput(mode) {
+    state.mode = mode;
+    $('input-title').innerHTML = MODE_COPY[mode].title;
+    btnSubmit.textContent = MODE_COPY[mode].submit;
+    form.ownerSection.classList.toggle('hidden', mode !== 'chemistry');
+    form.friendSection.classList.toggle('hidden', mode !== 'friend');
+    prepareDogForm();
+    navigateTo(screens.input);
+  }
+
+  $('btn-general').addEventListener('click', () => openInput('general'));
+  $('btn-chemistry').addEventListener('click', () => openInput('chemistry'));
+  $('btn-friend').addEventListener('click', () => openInput('friend'));
+  $('btn-share-cta').addEventListener('click', () => openInput('general'));
+
+  function buildModeRequest() {
+    if (state.mode === 'chemistry') {
+      if (!form.ownerDate.value) return { error: '보호자 생년월일을 입력해주세요!' };
+      const lunar = form.ownerLunar.checked;
+      return {
+        path: 'compatibility',
+        body: {
+          owner_birth_date: form.ownerDate.value,
+          owner_birth_time: form.ownerTime.value || null,
+          owner_is_lunar: lunar,
+          owner_is_leap_month: lunar && form.ownerLeap.checked,
+        },
+      };
+    }
+    if (state.mode === 'friend') {
+      const friendName = form.friendName.value.trim();
+      if (!friendName || !form.friendDate.value) return { error: '친구 강아지 이름과 생년월일을 입력해주세요!' };
+      const lunar = form.friendLunar.checked;
+      return {
+        path: 'friend-compatibility',
+        body: {
+          friend_name: friendName,
+          friend_birth_date: form.friendDate.value,
+          friend_is_lunar: lunar,
+          friend_is_leap_month: lunar && form.friendLeap.checked,
+        },
+      };
+    }
+    return {};
+  }
+
+  btnSubmit.addEventListener('click', async (event) => {
+    event.preventDefault();
+    if (state.submitting) return;
+
+    const dog = readDogForm();
+    if (!dog.name || !dog.birth_date) {
+      showToast('강아지 이름과 생년월일을 입력해주세요!');
+      return;
+    }
+    const modeRequest = buildModeRequest();
+    if (modeRequest.error) {
+      showToast(modeRequest.error);
+      return;
+    }
+    if (!(await requireUserKey())) return;
+
+    state.submitting = true;
+    setDogNameDisplays(dog.name);
+    if (state.mode === 'general') loadChart().catch(() => {});
+    navigateTo(screens.loading, false);
 
     try {
-      const dogName = document.querySelector('.dog-name-display').textContent || '댕댕이';
-      const imgSrc = document.querySelector('.result-img').src;
-      const imgName = imgSrc.split('/').pop().split('_')[0] || 'fire';
+      const registration = await api('/api/saju/dogs/', {
+        method: 'POST',
+        body: { nickname: 'Toss 사용자', dog },
+      });
+      const dogRecord = { ...dog, id: registration.dog_id };
+      state.selectedDogId = dogRecord.id;
+      state.prefilledDogId = dogRecord.id;
 
-      const elementReverseMap = { 'wood': '목(木)', 'fire': '화(火)', 'earth': '토(土)', 'metal': '금(金)', 'water': '수(水)' };
-      const dogElementText = elementReverseMap[imgName] || '화(火)';
-
-      const shareText = `${attachNameJosa(dogName, '는')} ${dogElementText} 기운을 타고 났어요! 보호자님도 우리아이 사주를 한 번 알아보세요🐾`;
-      const shareImageUrl = `https://web-production-285b5.up.railway.app/assets/${imgName}_dog.png`;
-
-      const tossLink = await getTossShareLink(
-        'intoss://daengsaju',
-        shareImageUrl
-      );
-      await share({ message: `${shareText}\n\n${tossLink}` });
-    } catch (e) {
-      console.error(e);
-      alert('공유 중 오류가 발생했습니다.');
+      if (state.mode === 'general') {
+        showGeneralResult(dogRecord, await loadDogBundle(dogRecord.id));
+      } else {
+        const result = await api(`/api/saju/dogs/${dogRecord.id}/${modeRequest.path}/`, {
+          method: 'POST',
+          body: modeRequest.body,
+        });
+        if (state.mode === 'chemistry') {
+          showChemistryResult(dogRecord, result);
+        } else {
+          showFriendResult(dogRecord, result);
+        }
+      }
+      refreshMyDogs();
+    } catch (error) {
+      console.error(error);
+      showScreen(screens.input);
+      showApiError(error);
     } finally {
-      btnShare.textContent = originalText;
-      btnShare.disabled = false;
+      state.submitting = false;
     }
   });
 
-  // 사주 표 파싱 함수
+  // ─── 결과 렌더링 ───
+  async function loadDogBundle(dogId) {
+    // 각 API가 원국 계산을 스스로 보장하므로 병렬 호출해도 안전
+    const [basics, personality, luck] = await Promise.all([
+      api(`/api/saju/dogs/${dogId}/basics/`),
+      api(`/api/saju/dogs/${dogId}/personality/`),
+      api(`/api/saju/dogs/${dogId}/daily-luck/`),
+    ]);
+    return { basics, personality, luck };
+  }
+
+  function renderChips(container, items) {
+    container.replaceChildren(...items.map((text) => {
+      const chip = document.createElement('span');
+      chip.className = 'keyword-chip';
+      chip.textContent = text;
+      return chip;
+    }));
+  }
+
+  function renderIljuCard(profile, zodiac) {
+    const card = $('ilju-card');
+    if (!profile) {
+      card.classList.add('hidden');
+      return;
+    }
+    card.classList.remove('hidden');
+    $('res-ilju-nickname').textContent = `“${profile.nickname}”`;
+    $('res-ilju-pillar').textContent = `${profile.pillar}(${profile.pillar_hanja})일주`;
+    const zodiacBadge = $('res-zodiac');
+    zodiacBadge.textContent = zodiac ? `${zodiac.label} 댕댕이` : '';
+    zodiacBadge.classList.toggle('hidden', !zodiac);
+    $('res-ilju-desc').textContent = profile.description;
+    renderChips($('res-ilju-keywords'), (profile.keywords || []).map((k) => `#${k}`));
+  }
+
+  function renderLifetime(dog, basics, personality) {
+    updateSajuTable(basics);
+    const info = elementInfo(basics.main_element);
+    $('result-img').src = dogImageUrl(basics.main_element);
+    $('res-summary').innerHTML = `${formatText(personality.personality_summary)}<br><span class="${info.className}">${escapeHtml(elementLabel(basics.main_element))}</span>의 기운을 타고난 <span class="dog-name-display">${escapeHtml(dog.name)}</span>!`;
+    $('res-food').innerHTML = formatText(personality.treat_luck);
+    $('res-energy').innerHTML = formatText(personality.vitality_analysis);
+    $('res-love').innerHTML = formatText(personality.care_tips);
+    $('res-social').innerHTML = formatText(personality.social_analysis);
+    $('res-estimated-note').classList.toggle('hidden', !personality.is_estimated_birth);
+    renderIljuCard(personality.day_pillar_profile, personality.zodiac);
+  }
+
+  function renderToday(luck) {
+    $('res-luck-score').textContent = luck.luck_score;
+    $('res-luck-msg').innerHTML = formatText(luck.message);
+    $('res-luck-color').textContent = luck.lucky_color;
+    $('res-luck-dir').textContent = luck.lucky_direction;
+
+    const pillarLine = $('res-today-pillar');
+    if (luck.today_pillar) {
+      pillarLine.textContent = `오늘은 ${luck.today_pillar}(${luck.today_pillar_hanja})일 · ${elementLabel(luck.today_element)} 기운이 흐르는 날`;
+      pillarLine.classList.remove('hidden');
+    } else {
+      pillarLine.classList.add('hidden');
+    }
+  }
+
+  function showGeneralResult(dog, { basics, personality, luck }) {
+    state.mode = 'general';
+    state.currentDog = {
+      ...dog,
+      main_element: basics.main_element,
+      nickname: personality.day_pillar_profile?.nickname || null,
+    };
+    setDogNameDisplays(dog.name);
+    renderLifetime(dog, basics, personality);
+    renderToday(luck);
+    renderAttendanceStatus();
+    prepareResultScreen();
+    navigateTo(screens.result);
+    // 화면 전환 애니메이션이 끝난 뒤 차트 렌더링
+    requestAnimationFrame(() => setTimeout(() => updateGraphs(basics.element_distribution), 400));
+    stampAttendanceForToday();
+  }
+
+  function renderZodiacLine(element, zodiac, firstName, secondName) {
+    if (!zodiac) {
+      element.classList.add('hidden');
+      return;
+    }
+    const bonus = zodiac.bonus > 0 ? ` (+${zodiac.bonus}점)` : (zodiac.bonus < 0 ? ` (${zodiac.bonus}점)` : '');
+    element.replaceChildren(
+      document.createTextNode(`🐾 ${zodiac.first} ${firstName} × ${zodiac.second} ${secondName} · ${zodiac.type}${bonus}`),
+      document.createElement('br'),
+      document.createTextNode(zodiac.description),
+    );
+    element.classList.remove('hidden');
+  }
+
+  function showChemistryResult(dog, data) {
+    state.mode = 'chemistry';
+    state.lastChemistry = data;
+    state.currentDog = { ...dog, main_element: data.dog_element };
+    setDogNameDisplays(dog.name);
+
+    $('res-chem-score').textContent = data.score ?? '--';
+    $('res-chem-title').textContent = data.title || '궁합 결과';
+    $('res-chem-owner-element').textContent = elementLabel(data.owner_element);
+    $('res-chem-dog-element').textContent = elementLabel(data.dog_element);
+    $('res-chem-rel').textContent = `✨ ${data.relationship_type} 관계 ✨`;
+    $('res-chem-desc').innerHTML = formatText(data.description || '');
+    const advice = $('res-chem-advice');
+    if (data.advice) {
+      advice.innerHTML = `<strong>💡 어드바이스:</strong><br>${formatText(data.advice)}`;
+      advice.style.display = 'block';
+    } else {
+      advice.style.display = 'none';
+    }
+    renderZodiacLine($('res-chem-zodiac'), data.zodiac, dog.name, '보호자님');
+
+    prepareResultScreen();
+    navigateTo(screens.result);
+  }
+
+  function showFriendResult(dog, data) {
+    state.mode = 'friend';
+    state.lastFriend = data;
+    state.currentDog = { ...dog, main_element: data.my_element };
+    setDogNameDisplays(dog.name);
+
+    $('res-friend-title').textContent = data.title;
+    $('res-friend-my-element').textContent = elementLabel(data.my_element);
+    $('res-friend-name').textContent = data.friend_name;
+    $('res-friend-element').textContent = elementLabel(data.friend_element);
+    $('res-friend-rel').textContent = `✨ ${data.relationship_type} 관계 ✨`;
+    $('res-friend-score').textContent = data.score;
+    $('res-friend-desc').textContent = data.description;
+    $('res-friend-tip').textContent = `💡 ${data.tip}`;
+    renderZodiacLine($('res-friend-zodiac'), data.zodiac, dog.name, data.friend_name);
+
+    const profileLine = $('res-friend-profile');
+    if (data.friend_profile) {
+      profileLine.textContent = `참고로 ${withJosa(data.friend_name, '은/는')} “${data.friend_profile.nickname}”(${data.friend_profile.pillar}일주) 캐릭터래요!`;
+      profileLine.classList.remove('hidden');
+    } else {
+      profileLine.classList.add('hidden');
+    }
+
+    prepareResultScreen();
+    navigateTo(screens.result);
+  }
+
+  // 사주 표 파싱
   function updateSajuTable(data) {
     const splitChar = (str) => {
       if (!str || str === '알수없음') return ['-', '-'];
@@ -655,52 +889,57 @@ document.addEventListener('DOMContentLoaded', async () => {
     const d = splitChar(data.day_pillar);
     const h = splitChar(data.hour_pillar || '--');
 
-    document.getElementById('stem-year').innerHTML = `<span class="hanja">年</span><br>${y[0]}`;
-    document.getElementById('stem-month').innerHTML = `<span class="hanja">月</span><br>${m[0]}`;
-    document.getElementById('stem-day').innerHTML = `<span class="hanja">日</span><br>${d[0]}`;
-    document.getElementById('stem-hour').innerHTML = `<span class="hanja">時</span><br>${h[0]}`;
+    $('stem-year').innerHTML = `<span class="hanja">年</span><br>${escapeHtml(y[0])}`;
+    $('stem-month').innerHTML = `<span class="hanja">月</span><br>${escapeHtml(m[0])}`;
+    $('stem-day').innerHTML = `<span class="hanja">日</span><br>${escapeHtml(d[0])}`;
+    $('stem-hour').innerHTML = `<span class="hanja">時</span><br>${escapeHtml(h[0])}`;
 
-    document.getElementById('branch-year').innerHTML = `<span class="hanja">年</span><br>${y[1]}`;
-    document.getElementById('branch-month').innerHTML = `<span class="hanja">月</span><br>${m[1]}`;
-    document.getElementById('branch-day').innerHTML = `<span class="hanja">日</span><br>${d[1]}`;
-    document.getElementById('branch-hour').innerHTML = `<span class="hanja">時</span><br>${h[1]}`;
+    $('branch-year').innerHTML = `<span class="hanja">年</span><br>${escapeHtml(y[1])}`;
+    $('branch-month').innerHTML = `<span class="hanja">月</span><br>${escapeHtml(m[1])}`;
+    $('branch-day').innerHTML = `<span class="hanja">日</span><br>${escapeHtml(d[1])}`;
+    $('branch-hour').innerHTML = `<span class="hanja">時</span><br>${escapeHtml(h[1])}`;
   }
 
-  // Draw or Update Radar and set bar variables
-  function updateGraphs(dist) {
+  // 레이더 차트와 막대 그래프
+  let radarChartInstance = null;
+  async function updateGraphs(dist) {
     const woods = dist['목'] || 0;
     const fires = dist['화'] || 0;
     const earths = dist['토'] || 0;
     const metals = dist['금'] || 0;
     const waters = dist['수'] || 0;
 
-    document.getElementById('val-wood').textContent = woods + '%';
-    document.getElementById('val-fire').textContent = fires + '%';
-    document.getElementById('val-earth').textContent = earths + '%';
-    document.getElementById('val-metal').textContent = metals + '%';
-    document.getElementById('val-water').textContent = waters + '%';
+    $('val-wood').textContent = `${woods}%`;
+    $('val-fire').textContent = `${fires}%`;
+    $('val-earth').textContent = `${earths}%`;
+    $('val-metal').textContent = `${metals}%`;
+    $('val-water').textContent = `${waters}%`;
 
-    document.getElementById('bar-wood').dataset.targetWidth = woods + '%';
-    document.getElementById('bar-fire').dataset.targetWidth = fires + '%';
-    document.getElementById('bar-earth').dataset.targetWidth = earths + '%';
-    document.getElementById('bar-metal').dataset.targetWidth = metals + '%';
-    document.getElementById('bar-water').dataset.targetWidth = waters + '%';
+    $('bar-wood').dataset.targetWidth = `${woods}%`;
+    $('bar-fire').dataset.targetWidth = `${fires}%`;
+    $('bar-earth').dataset.targetWidth = `${earths}%`;
+    $('bar-metal').dataset.targetWidth = `${metals}%`;
+    $('bar-water').dataset.targetWidth = `${waters}%`;
 
-    // Chart.js Radar
-    const ctx = document.getElementById('radarChart').getContext('2d');
-    const dataValues = [woods, fires, earths, metals, waters];
-
-    if (radarChartInstance) {
-      radarChartInstance.destroy(); // Prevent canvas memory leak in WKWebView
+    let Chart;
+    try {
+      Chart = await loadChart();
+    } catch (error) {
+      console.warn('[Chart] load failed', error);
+      return;
     }
 
-    radarChartInstance = new Chart(ctx, {
+    if (radarChartInstance) {
+      radarChartInstance.destroy(); // WKWebView 캔버스 메모리 누수 방지
+    }
+
+    radarChartInstance = new Chart($('radarChart').getContext('2d'), {
       type: 'radar',
       data: {
         labels: ['목(木)', '화(火)', '토(土)', '금(金)', '수(水)'],
         datasets: [{
           label: '기질 밸런스',
-          data: dataValues,
+          data: [woods, fires, earths, metals, waters],
           backgroundColor: 'rgba(139, 92, 246, 0.15)',
           borderColor: 'rgba(139, 92, 246, 0.8)',
           pointBackgroundColor: '#fff',
@@ -708,8 +947,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           pointHoverBackgroundColor: 'rgba(139, 92, 246, 1)',
           borderWidth: 3,
           pointRadius: 5,
-          pointHoverRadius: 7
-        }]
+          pointHoverRadius: 7,
+        }],
       },
       options: {
         responsive: true,
@@ -720,178 +959,216 @@ document.addEventListener('DOMContentLoaded', async () => {
             grid: { color: 'rgba(148, 163, 184, 0.1)' },
             pointLabels: {
               font: { family: 'Pretendard', size: 13, weight: '700' },
-              color: '#94A3B8'
+              color: '#94A3B8',
             },
-            ticks: { display: false, min: 0 }
-          }
+            ticks: { display: false },
+            min: 0,
+          },
         },
         plugins: {
-          legend: { display: false }
-        }
-      }
+          legend: { display: false },
+        },
+      },
     });
   }
 
   function animateBars() {
     const bars = document.querySelectorAll('.bar-fill');
-    bars.forEach(bar => {
+    bars.forEach((bar) => {
       bar.style.transition = 'none';
       bar.style.width = '0%';
     });
     setTimeout(() => {
-      bars.forEach(bar => {
+      bars.forEach((bar) => {
         bar.style.transition = 'width 1.2s cubic-bezier(0.25, 1, 0.5, 1)';
         bar.style.width = bar.dataset.targetWidth || '0%';
       });
     }, 50);
   }
 
-  function formatText(text) {
-    if (!text) return '';
-    return text
-      .replace(/\*\*(.*?)\*\*/g, '<span class="highlight-text">$1</span>')
-      .replace(/\n/g, '<br>');
-  }
-
-  // Korean Josa Helper
-  function attachNameJosa(name, type) {
-    if (!name) return '';
-    const lastChar = name.charCodeAt(name.length - 1);
-    if (lastChar < 0xAC00 || lastChar > 0xD7A3) return name + type; // non-korean
-
-    // Check if the name ends with a batchim (consonant)
-    const hasJongseong = (lastChar - 0xAC00) % 28 > 0;
-    if (type === '는' || type === '은') {
-      return name + (hasJongseong ? '이는' : '는');
-    }
-    return name + type;
-  }
-
-  // Error Modal Close Event
-  const btnCloseError = document.getElementById('btn-close-error');
-  if (btnCloseError) {
-    btnCloseError.addEventListener('click', () => {
-      document.getElementById('error-modal').style.display = 'none';
-    });
-  }
-
-  // ─── Attendance & Streak Logic ───────────────────────────────────────────
-  const TALISMAN_REWARDS = {
-    1: { name: '시작의 코기 부적', desc: '첫 출석 완료! 오늘의 시작마다 산뜻한 행운이 따라붙을 거예요.' },
-    3: { name: '초심자의 뼈다귀 부적', desc: '3일 연속 출석! 멍멍이의 에너지가 솟아납니다.' },
-    7: { name: '행운의 댕댕 부적', desc: '럭키 7일! 이번 주 내내 기분 좋은 일이 가득할 거예요.' },
-    10: { name: '재물운 명탐정 부적', desc: '10일 달성! 생각지도 못한 간식이나 행운이 찾아옵니다.' },
-    15: { name: '대박 황금 부적', desc: '15일 달성! 주변에서 많은 복이 찾아오는 시기예요.' },
-    20: { name: '전설의 댕댕 부적', desc: '당신은 진정한 댕사주 마스터!' },
-  };
-  const MILESTONES = [1, 3, 5, 7, 10, 15, 20];
-
-  const btnOpenAttendance = document.getElementById('btn-open-attendance');
-  const btnAttendanceStamp = document.getElementById('btn-attendance-stamp');
-  const btnAttendanceReset = document.getElementById('btn-attendance-reset');
-  const attendanceModal = document.getElementById('attendance-modal');
-  const btnCloseAttendance = document.getElementById('btn-close-attendance');
-  const talismanModal = document.getElementById('talisman-modal');
-  const talismanContentWrapper = document.getElementById('talisman-content-wrapper');
-  const btnDownloadTalisman = document.getElementById('btn-download-talisman');
-  const btnCloseTalisman = document.getElementById('btn-close-talisman');
-
-  let attendanceRecord = [];
-  let currentStreak = 0;
-  let currentTalismanDay = null;
-  const ATTENDANCE_TEST_MODE = false;
-  const ATTENDANCE_TEST_STORAGE_KEY = 'daengsaju_test_attendance';
-
-  const todayDateObj = new Date();
-  const currentMonth = todayDateObj.getMonth() + 1;
-  const currentDaysInMonth = new Date(todayDateObj.getFullYear(), todayDateObj.getMonth() + 1, 0).getDate();
-  const todayDate = todayDateObj.getDate();
-
-  function updateAttendanceStampButton() {
-    if (!btnAttendanceStamp) return;
-    if (btnAttendanceReset) {
-      btnAttendanceReset.style.display = ATTENDANCE_TEST_MODE ? 'block' : 'none';
-    }
-    if (ATTENDANCE_TEST_MODE) {
-      btnAttendanceStamp.disabled = false;
-      btnAttendanceStamp.textContent = '테스트 도장 찍기';
+  // ─── 재방문: 내 강아지 ───
+  function renderMyDogs() {
+    const section = $('my-dog-section');
+    if (!state.myDogs.length) {
+      section.classList.add('hidden');
       return;
     }
+    section.classList.remove('hidden');
 
-    const alreadyStamped = attendanceRecord.includes(todayDate);
-    btnAttendanceStamp.disabled = alreadyStamped;
-    btnAttendanceStamp.textContent = alreadyStamped ? '오늘 출석 완료' : '오늘 출석하기';
+    const dog = getSelectedDog() || state.myDogs[0];
+    $('my-dog-today-img').src = dogImageUrl(dog.main_element);
+    $('my-dog-today-title').textContent = `${dog.name}의 오늘 운세 보기`;
+    $('my-dog-today-desc').textContent = dog.nickname
+      ? `“${dog.nickname}” ${dog.name}의 오늘 산책운을 확인해 보세요`
+      : '탭 한 번이면 출석 도장까지 쾅!';
+    renderTodayBadge();
+
+    const chips = state.myDogs.map((item) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = `dog-chip${item.id === dog.id ? ' active' : ''}`;
+      chip.textContent = item.name;
+      chip.setAttribute('role', 'listitem');
+      chip.addEventListener('click', () => {
+        state.selectedDogId = item.id;
+        renderMyDogs();
+      });
+      return chip;
+    });
+    const addChip = document.createElement('button');
+    addChip.type = 'button';
+    addChip.className = 'dog-chip';
+    addChip.textContent = '+ 새 아이';
+    addChip.setAttribute('role', 'listitem');
+    addChip.addEventListener('click', () => {
+      state.selectedDogId = 'new';
+      openInput('general');
+    });
+    $('my-dog-chips').replaceChildren(...chips, addChip);
   }
 
-  // ─── API 기반 출석 로드 ───────────────────────────────────────────
-  async function loadAttendance() {
-    if (ATTENDANCE_TEST_MODE) {
-      try {
-        const saved = localStorage.getItem(ATTENDANCE_TEST_STORAGE_KEY);
-        attendanceRecord = saved ? JSON.parse(saved) : [];
-        currentStreak = attendanceRecord.length;
-        updateAttendanceStampButton();
-        return {
-          attended_days: attendanceRecord,
-          streak_count: currentStreak
-        };
-      } catch (e) {
-        console.error('[Attendance] test load failed:', e);
-        attendanceRecord = [];
-        currentStreak = 0;
-        updateAttendanceStampButton();
-        return {
-          attended_days: [],
-          streak_count: 0
-        };
-      }
-    }
-    const userKey = requireUserKey();
-    if (!userKey) {
-      return null;
-    }
-
+  async function refreshMyDogs() {
+    const key = await userKeyReady;
+    if (!key) return;
     try {
-      const res = await fetch(`${BASE_URL}/api/saju/attendance/`, {
-        headers: buildHeaders()
-      });
-      if (!res.ok) throw new Error('출석 조회 실패');
-      const data = await res.json();
-      attendanceRecord = data.attended_days || [];
-      currentStreak = data.streak_count || 0;
-      updateAttendanceStampButton();
-      return data;
-    } catch (e) {
-      console.error('[Attendance] load failed:', e);
-      alert('출석 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
-      return null;
+      const data = await api('/api/saju/me/dogs/');
+      state.myDogs = data.dogs || [];
+      if (state.selectedDogId !== 'new' && !state.myDogs.some((dog) => dog.id === state.selectedDogId)) {
+        state.selectedDogId = state.myDogs[0]?.id ?? null;
+      }
+      renderMyDogs();
+      if (state.myDogs.length && !state.attendance) refreshAttendanceSummary();
+    } catch (error) {
+      console.warn('[MyDogs] load failed', error);
+    }
+  }
+
+  async function openDogToday() {
+    const dog = getSelectedDog() || state.myDogs[0];
+    if (!dog || !(await requireUserKey())) return;
+    state.mode = 'general';
+    setDogNameDisplays(dog.name);
+    loadChart().catch(() => {});
+    navigateTo(screens.loading, false);
+    try {
+      showGeneralResult(dog, await loadDogBundle(dog.id));
+    } catch (error) {
+      console.error(error);
+      showScreen(screens.main);
+      if (error instanceof ApiError && error.status === 404) refreshMyDogs();
+      showApiError(error);
+    }
+  }
+
+  $('btn-my-dog-today').addEventListener('click', openDogToday);
+
+  // ─── 출석 ───
+  function attendanceTotal(data) {
+    return data.total_days ?? data.streak_count ?? (data.attended_days || []).length;
+  }
+
+  function renderTodayBadge() {
+    const badge = $('my-dog-today-badge');
+    const data = state.attendance;
+    if (!data) {
+      badge.textContent = '오늘의 산책운 도착 🐾';
+      return;
+    }
+    const streak = data.streak_days || 0;
+    if (data.already_stamped_today) {
+      badge.textContent = streak > 1 ? `🔥 ${streak}일 연속 출석 중` : '✅ 오늘 출석 완료';
+    } else {
+      badge.textContent = streak > 0 ? `오늘 보면 ${streak + 1}일 연속 출석!` : '오늘의 산책운 도착 🐾';
+    }
+  }
+
+  function renderAttendanceStatus() {
+    const status = $('attendance-status');
+    const data = state.attendance;
+    if (!data) {
+      status.textContent = '오늘 운세를 보면 출석 도장이 자동으로 찍혀요 🐾';
+      return;
+    }
+    const streak = data.streak_days || 0;
+    status.textContent = data.already_stamped_today
+      ? `✅ 오늘 출석 완료 · 이번 달 ${attendanceTotal(data)}일${streak > 1 ? ` · 🔥 ${streak}일 연속` : ''}`
+      : `이번 달 ${attendanceTotal(data)}일 출석 · 오늘 도장은 아직이에요`;
+  }
+
+  function applyAttendance(data) {
+    state.attendance = data;
+    renderAttendanceStatus();
+    renderTodayBadge();
+    if (!$('attendance-modal').classList.contains('hidden')) renderCalendar();
+  }
+
+  async function refreshAttendanceSummary() {
+    try {
+      applyAttendance(await api('/api/saju/attendance/'));
+    } catch (error) {
+      console.warn('[Attendance] load failed', error);
+    }
+  }
+
+  async function celebrate() {
+    try {
+      const confetti = await loadConfetti();
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
+    } catch (error) {
+      console.warn('[Confetti] load failed', error);
+    }
+  }
+
+  async function stampAttendance({ quiet = false } = {}) {
+    const data = await api('/api/saju/attendance/', { method: 'POST', body: {} });
+    applyAttendance(data);
+    if (data.stamped) {
+      if (!quiet) showToast(`🐾 출석 도장 쾅! 이번 달 ${attendanceTotal(data)}번째 출석이에요`);
+      celebrate();
+      if (data.new_milestone) setTimeout(() => showTalisman(data.new_milestone), 1400);
+    }
+    return data;
+  }
+
+  // 오늘 운세를 보면 자동으로 출석 처리
+  async function stampAttendanceForToday() {
+    if (state.attendance?.already_stamped_today) return;
+    try {
+      await stampAttendance();
+    } catch (error) {
+      console.warn('[Attendance] auto stamp failed', error);
     }
   }
 
   function renderCalendar() {
-    const grid = document.getElementById('calendar-grid');
-    grid.innerHTML = '';
+    const data = state.attendance || { attended_days: [], streak_days: 0 };
+    const attendedDays = data.attended_days || [];
+    const total = attendanceTotal(data);
+    const now = new Date();
+    const year = data.year || now.getFullYear();
+    const month = data.month || now.getMonth() + 1;
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const todayDate = now.getDate();
 
-    // 단순 누적 출석 일수 표시
-    const totalAttended = attendanceRecord.length;
-    document.getElementById('calendar-streak').textContent = totalAttended + '일';
+    $('calendar-streak').textContent = `${total}일`;
+    const run = $('calendar-run');
+    const streak = data.streak_days || 0;
+    run.textContent = streak > 1 ? `🔥 ${streak}일 연속 출석 중이에요` : '';
+    run.classList.toggle('hidden', streak <= 1);
 
-    const nextRewardDay = MILESTONES.find(m => m > totalAttended) || 30;
-    const daysLeft = Math.max(0, nextRewardDay - totalAttended);
-    const progressPercent = Math.min((totalAttended / nextRewardDay) * 100, 100);
+    const nextReward = MILESTONES.find((m) => m > total);
+    $('calendar-progress-text').textContent = nextReward
+      ? `다음 스페셜 부적까지 ${nextReward - total}일 남았어요!`
+      : '이번 달 부적을 모두 모았어요! 🎉';
+    $('calendar-progress-fill').style.width = `${nextReward ? Math.min((total / nextReward) * 100, 100) : 100}%`;
 
-    document.getElementById('calendar-progress-text').textContent = `다음 스페셜 부적까지 단 ${daysLeft}일 남았어요!`;
-    document.getElementById('calendar-progress-fill').style.width = progressPercent + '%';
-
-    for (let day = 1; day <= currentDaysInMonth; day++) {
-      const isStamped = attendanceRecord.includes(day);
-      const isToday = day === todayDate;
-
+    const cells = [];
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const isStamped = attendedDays.includes(day);
       const cell = document.createElement('div');
       cell.className = 'calendar-cell';
       if (isStamped) cell.classList.add('stamped');
-      if (isToday && !isStamped) cell.classList.add('today-pending');
-      // streak-connected 제거 - 누적 방식
+      if (day === todayDate && !isStamped) cell.classList.add('today-pending');
 
       const span = document.createElement('span');
       span.className = 'day-number';
@@ -904,195 +1181,202 @@ document.addEventListener('DOMContentLoaded', async () => {
         stamp.textContent = '🐾';
         cell.appendChild(stamp);
       }
-
-      grid.appendChild(cell);
+      cells.push(cell);
     }
+    $('calendar-grid').replaceChildren(...cells);
 
-    updateAttendanceStampButton();
+    const stampButton = $('btn-attendance-stamp');
+    const alreadyStamped = Boolean(data.already_stamped_today);
+    stampButton.disabled = alreadyStamped;
+    stampButton.textContent = alreadyStamped ? '오늘 출석 완료' : '오늘 출석하기';
   }
 
-  async function handleStamp() {
-    if (ATTENDANCE_TEST_MODE) {
-      const nextDay = Array.from({ length: currentDaysInMonth }, (_, index) => index + 1)
-        .find(day => !attendanceRecord.includes(day));
-
-      if (!nextDay) {
-        alert('이번 달 테스트 도장을 모두 찍었어요.');
-        return;
-      }
-
-      attendanceRecord = [...attendanceRecord, nextDay];
-      currentStreak = attendanceRecord.length;
-      localStorage.setItem(ATTENDANCE_TEST_STORAGE_KEY, JSON.stringify(attendanceRecord));
-      renderCalendar();
-
-      if (typeof confetti === 'function') {
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
-      }
-
-      if (MILESTONES.includes(currentStreak)) {
-        setTimeout(() => { showTalisman(currentStreak); }, 300);
-      }
+  $('btn-open-attendance').addEventListener('click', async () => {
+    if (!(await requireUserKey())) return;
+    try {
+      applyAttendance(await api('/api/saju/attendance/'));
+    } catch (error) {
+      showApiError(error);
       return;
     }
-    const userKey = requireUserKey();
-    if (!userKey || attendanceRecord.includes(todayDate)) return;
+    renderCalendar();
+    $('attendance-modal').classList.remove('hidden');
+  });
 
+  $('btn-attendance-stamp').addEventListener('click', async () => {
+    if (state.attendance?.already_stamped_today) return;
     try {
-      const res = await fetch(`${BASE_URL}/api/saju/attendance/`, {
-        method: 'POST',
-        headers: buildHeaders(true),
-        body: JSON.stringify({ social_id: userKey })
-      });
-      if (!res.ok) throw new Error('출석 저장 실패');
-      const data = await res.json();
-
-      if (!data.stamped) {
-        // 이미 출석한 경우 서버 응답으로도 처리
-        attendanceRecord = data.attended_days || attendanceRecord;
-        currentStreak = data.streak_count || currentStreak;
-        renderCalendar();
-        return;
-      }
-
-      attendanceRecord = data.attended_days || [];
-      currentStreak = data.streak_count || 0;
-
-      renderCalendar();
-
-      if (typeof confetti === 'function') {
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
-      }
-
-      // 신규 마일스톤 달성 시 부적 모달 표시
-      if (data.new_milestone) {
-        setTimeout(() => { showTalisman(data.new_milestone); }, 1000);
-      }
-    } catch (e) {
-      console.error('[Attendance] stamp failed:', e);
-      alert('출석 처리에 실패했어요. 잠시 후 다시 시도해주세요.');
+      await stampAttendance({ quiet: true });
+    } catch (error) {
+      showApiError(error);
     }
-  }
+  });
 
-  function showTalisman(streak) {
-    currentTalismanDay = streak;
-    const reward = TALISMAN_REWARDS[streak] || (
-      streak === 5
-        ? { name: '복슬복슬 말티즈 부적', desc: '5일 연속 출석! 포근한 기운이 차곡차곡 쌓이며 기분 좋은 순간들이 더 자주 찾아올 거예요.' }
-        : null
-    );
+  $('btn-close-attendance').addEventListener('click', () => {
+    $('attendance-modal').classList.add('hidden');
+  });
+
+  // ─── 부적 ───
+  const talismanModal = $('talisman-modal');
+  let currentTalismanDay = null;
+
+  function showTalisman(milestone) {
+    const reward = TALISMAN_REWARDS[milestone];
     if (!reward) return;
-    document.getElementById('talisman-name').textContent = reward.name;
-    document.getElementById('talisman-desc').textContent = reward.desc;
-    const imgEl = document.getElementById('talisman-img');
-    imgEl.src = `/assets/talisman_${streak}.png`;
+    currentTalismanDay = milestone;
+    $('talisman-name').textContent = reward.name;
+    $('talisman-desc').textContent = reward.desc;
+    const imgEl = $('talisman-img');
     imgEl.onerror = () => { imgEl.style.display = 'none'; };
     imgEl.style.display = 'block';
-
+    imgEl.src = `/assets/talisman_${milestone}.png`;
     talismanModal.classList.remove('hidden');
   }
 
-  if (btnOpenAttendance) {
-    btnOpenAttendance.addEventListener('click', async () => {
-      const attendanceData = await loadAttendance();
-      if (!attendanceData) {
-        return;
-      }
-      renderCalendar();
-      attendanceModal.classList.remove('hidden');
+  talismanModal.addEventListener('click', () => talismanModal.classList.add('hidden'));
+  $('talisman-content-wrapper').addEventListener('click', (event) => event.stopPropagation());
+  $('btn-close-talisman').addEventListener('click', () => talismanModal.classList.add('hidden'));
+
+  const imageModal = $('image-modal');
+  const generatedImage = $('generated-image');
+
+  function openImageSaveModal(imageUrl) {
+    generatedImage.src = imageUrl;
+    imageModal.style.display = 'flex';
+  }
+
+  function closeImageSaveModal() {
+    imageModal.style.display = 'none';
+    generatedImage.removeAttribute('src');
+  }
+
+  $('close-modal').addEventListener('click', closeImageSaveModal);
+  imageModal.addEventListener('click', (event) => {
+    if (event.target === imageModal) closeImageSaveModal();
+  });
+
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = typeof reader.result === 'string' ? reader.result : '';
+        resolve(result.includes(',') ? result.split(',')[1] : result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
     });
   }
 
-  if (btnAttendanceStamp) {
-    btnAttendanceStamp.addEventListener('click', handleStamp);
-  }
+  const btnDownloadTalisman = $('btn-download-talisman');
+  btnDownloadTalisman.addEventListener('click', async () => {
+    const originalText = btnDownloadTalisman.textContent;
+    btnDownloadTalisman.textContent = '저장 중...';
+    try {
+      const imgEl = $('talisman-img');
+      const imageUrl = imgEl.currentSrc || imgEl.src;
+      if (!imageUrl) throw new Error('No talisman image source');
 
-  if (btnAttendanceReset) {
-    btnAttendanceReset.addEventListener('click', () => {
-      if (!ATTENDANCE_TEST_MODE) return;
-      localStorage.removeItem(ATTENDANCE_TEST_STORAGE_KEY);
-      attendanceRecord = [];
-      currentStreak = 0;
-      currentTalismanDay = null;
-      renderCalendar();
-    });
-  }
+      const response = await fetch(imageUrl, { cache: 'no-store' });
+      if (!response.ok) throw new Error('Failed to fetch talisman image');
+      const blob = await response.blob();
 
-  if (btnCloseAttendance) {
-    btnCloseAttendance.addEventListener('click', () => {
-      attendanceModal.classList.add('hidden');
-    });
-  }
-
-  if (talismanModal) {
-    talismanModal.addEventListener('click', () => {
-      talismanModal.classList.add('hidden');
-    });
-  }
-
-  if (talismanContentWrapper) {
-    talismanContentWrapper.addEventListener('click', (event) => {
-      event.stopPropagation();
-    });
-  }
-
-  if (btnCloseTalisman) {
-    btnCloseTalisman.addEventListener('click', () => {
-      talismanModal.classList.add('hidden');
-    });
-  }
-
-  if (btnCloseImageModal) {
-    btnCloseImageModal.addEventListener('click', closeImageSaveModal);
-  }
-
-  if (imageModal) {
-    imageModal.addEventListener('click', (event) => {
-      if (event.target === imageModal) {
-        closeImageSaveModal();
-      }
-    });
-  }
-
-  if (btnDownloadTalisman) {
-    btnDownloadTalisman.addEventListener('click', async () => {
-      const origText = btnDownloadTalisman.innerHTML;
-      btnDownloadTalisman.innerHTML = "저장 중...";
       try {
-        const imgEl = document.getElementById('talisman-img');
-        const imageUrl = imgEl?.currentSrc || imgEl?.src;
-        if (!imageUrl) {
-          throw new Error('No talisman image source');
-        }
-
-        const response = await fetch(imageUrl, { cache: 'no-store' });
-        if (!response.ok) {
-          throw new Error('Failed to fetch talisman image');
-        }
-
-        const blob = await response.blob();
-        const fileName = `daengsaju_talisman_${currentTalismanDay || currentStreak}.png`;
-
-        try {
-          const base64Data = await blobToBase64(blob);
-          await saveBase64Data({
-            data: base64Data,
-            fileName,
-            mimeType: 'image/png',
-          });
-          alert('부적 이미지를 저장했어요.');
-        } catch (bridgeError) {
-          console.warn('saveBase64Data failed, falling back to image modal', bridgeError);
-          const objectUrl = URL.createObjectURL(blob);
-          openImageSaveModal(objectUrl);
-          setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
-        }
-      } catch (e) {
-        console.error(e);
-        alert('이미지 저장에 실패했습니다.');
+        await saveBase64Data({
+          data: await blobToBase64(blob),
+          fileName: `daengsaju_talisman_${currentTalismanDay || 1}.png`,
+          mimeType: 'image/png',
+        });
+        showToast('부적 이미지를 저장했어요 🧧');
+      } catch (bridgeError) {
+        console.warn('saveBase64Data failed, falling back to image modal', bridgeError);
+        const objectUrl = URL.createObjectURL(blob);
+        openImageSaveModal(objectUrl);
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
       }
-      btnDownloadTalisman.innerHTML = origText;
-    });
+    } catch (error) {
+      console.error(error);
+      showToast('이미지 저장에 실패했어요. 잠시 후 다시 시도해주세요.');
+    } finally {
+      btnDownloadTalisman.textContent = originalText;
+    }
+  });
+
+  // ─── 공유 ───
+  function buildShareMessage() {
+    const dog = state.currentDog;
+    if (state.mode === 'chemistry' && state.lastChemistry) {
+      return `${withJosa(dog.name, '와/과')} 보호자의 궁합은 ${state.lastChemistry.score}점! “${state.lastChemistry.title}” 💑\n우리 집 댕댕이와 나의 궁합도 확인해 보세요🐾`;
+    }
+    if (state.mode === 'friend' && state.lastFriend) {
+      return `${withJosa(dog.name, '와/과')} ${state.lastFriend.friend_name}의 댕친 궁합은 ${state.lastFriend.score}점! “${state.lastFriend.title}” 🐶\n우리 아이와 친구 강아지의 케미도 확인해 보세요🐾`;
+    }
+    const intro = dog.nickname
+      ? `“${dog.nickname}” 일주 캐릭터래요!`
+      : `${elementLabel(dog.main_element)} 기운을 타고났어요!`;
+    return `${withJosa(dog.name, '은/는')} ${intro}\n보호자님도 우리 아이 사주를 한 번 알아보세요🐾`;
   }
 
-});
+  btnShare.addEventListener('click', async () => {
+    const dog = state.currentDog;
+    if (!dog || btnShare.disabled) return;
+    const originalText = btnShare.textContent;
+    btnShare.textContent = '공유 링크 만드는 중... 🐾';
+    btnShare.disabled = true;
+
+    try {
+      const { token } = await api(`/api/saju/dogs/${dog.id}/share/`, { method: 'POST', body: {} });
+      // 링크 미리보기 썸네일: 백엔드가 고정 URL로 제공하는 오행 강아지 이미지
+      const ogImageUrl = `${API_BASE_URL}/static/assets/${elementInfo(dog.main_element).slug}_dog.png`;
+      const tossLink = await getTossShareLink(`${APP_SCHEME}?share=${encodeURIComponent(token)}`, ogImageUrl);
+      await share({ message: `${buildShareMessage()}\n\n${tossLink}` });
+    } catch (error) {
+      console.error(error);
+      showToast(error instanceof ApiError
+        ? (apiErrorMessage(error) || '공유 링크를 만들지 못했어요. 잠시 후 다시 시도해주세요.')
+        : '공유하기는 토스 앱에서 사용할 수 있어요.');
+    } finally {
+      btnShare.textContent = originalText;
+      btnShare.disabled = false;
+    }
+  });
+
+  // 공유 링크로 들어온 경우: 친구의 공개 카드
+  function renderSharedCard(card) {
+    $('share-img').src = dogImageUrl(card.main_element);
+    $('share-dog-name').textContent = card.dog_name;
+    $('share-nickname').textContent = card.profile
+      ? `“${card.profile.nickname}”`
+      : `${elementLabel(card.main_element)} 기운의 댕댕이`;
+    $('share-pillar').textContent = [
+      card.profile && `${card.profile.pillar}(${card.profile.pillar_hanja})일주`,
+      `${elementLabel(card.main_element)} 기운`,
+      card.zodiac?.label,
+    ].filter(Boolean).join(' · ');
+    $('share-summary').innerHTML = formatText(card.personality_summary || card.profile?.description || '');
+    renderChips($('share-keywords'), (card.profile?.keywords || []).map((k) => `#${k}`));
+  }
+
+  async function openSharedCard(token) {
+    try {
+      renderSharedCard(await api(`/api/saju/share/${encodeURIComponent(token)}/`));
+      navigateTo(screens.share);
+    } catch (error) {
+      console.warn('[Share] card load failed', error);
+      showToast('공유된 카드를 찾을 수 없어요. 우리 아이 사주를 직접 확인해 보세요!');
+    }
+  }
+
+  // ─── 시작 ───
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+  showScreen(screens.main);
+
+  const shareToken = readShareToken();
+  if (shareToken) openSharedCard(shareToken);
+  refreshMyDogs();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
