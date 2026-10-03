@@ -50,7 +50,7 @@
 | DB | SQLite(dev) / PostgreSQL(prod, `dj-database-url`) |
 | 사주 계산 | `sajupy` (만세력·음력 변환), 커스텀 오행·십성·일주·띠 로직 |
 | AI | Google Gemini (`gemini-2.5-flash`) — 콘텐츠 사전 생성용 |
-| 프론트엔드 | 앱인토스 Granite(Vite) + Vanilla JS, Chart.js·canvas-confetti(지연 로딩) |
+| 프론트엔드 | 앱인토스 Granite(Vite) + Vanilla JS, SVG 레이더 차트, canvas-confetti(지연 로딩) |
 | 배포 | Railway (Nixpacks + Gunicorn, Whitenoise), 앱인토스 콘솔(`ait deploy`) |
 | 플랫폼 | 앱인토스(App in Toss) 미니앱 |
 
@@ -66,6 +66,22 @@
 - `saju/services/profiles.py` — 일주 캐릭터, 띠·띠 궁합, 댕친 궁합 문구
 - `saju/services/gemini_ai.py` — Gemini 프롬프트 및 사전 생성 로직
 - `saju/management/commands/pregenerate_*.py` — 사주/궁합/일일운세 아키타입을 배치로 채우는 관리 명령어
+
+## ⚡ 저사양 기기 성능
+
+헤드리스 Chrome에 CPU 6배 감속·GPU 끔(저가형 안드로이드 가정)을 걸고 시나리오별로 측정해 버벅임 원인을 찾아 고쳤습니다.
+
+| 항목 | 개선 전 | 개선 후 |
+|---|---|---|
+| 메인 화면 대기 중 메인 스레드 사용 (3초당) | 857ms | 53ms |
+| 결과 화면 진입 롱태스크 | 242ms | 87ms |
+| 평생 사주 탭 전환 롱태스크 / 최대 멈춤 | 194ms / 183ms | 75ms / 100ms |
+| 첫 화면 이미지 다운로드 | 1.9MB | 40KB |
+
+- 별 배경을 `background-position` 대신 `transform` 애니메이션으로, 블롭의 `blur()` 필터를 방사형 그라데이션으로 바꿔 GPU 합성만 사용
+- 스크롤 탭바·모달의 `backdrop-filter`, 상시 `will-change` 레이어 제거
+- 레이더 차트를 Chart.js 대신 SVG로 직접 그림, 막대 그래프는 레이아웃 대신 `transform`으로 애니메이션
+- 이미지를 표시 크기 WebP로 축소하고 숨은 화면의 이미지는 필요할 때 로드, 부적 저장은 원본 PNG 유지
 
 ---
 

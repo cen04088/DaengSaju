@@ -87,7 +87,7 @@ function elementLabel(element) {
 }
 
 function dogImageUrl(element) {
-  return `./assets/${elementInfo(element).slug}_dog.png`;
+  return `./assets/${elementInfo(element).slug}_dog.webp`;
 }
 
 function todayIso() {
@@ -100,13 +100,7 @@ function withTimeout(promise, ms) {
   return Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(undefined), ms))]);
 }
 
-// 차트·폭죽은 처음 필요할 때만 불러와 첫 화면 로딩을 가볍게 유지
-let chartPromise = null;
-function loadChart() {
-  chartPromise ??= import('chart.js/auto').then((module) => module.default);
-  return chartPromise;
-}
-
+// 폭죽 효과는 처음 필요할 때만 불러와 첫 화면 로딩을 가볍게 유지
 let confettiPromise = null;
 function loadConfetti() {
   confettiPromise ??= import('canvas-confetti').then((module) => module.default);
@@ -693,7 +687,6 @@ function init() {
 
     state.submitting = true;
     setDogNameDisplays(dog.name);
-    if (state.mode === 'general') loadChart().catch(() => {});
     navigateTo(screens.loading, false);
 
     try {
@@ -803,10 +796,10 @@ function init() {
     renderLifetime(dog, basics, personality);
     renderToday(luck);
     renderAttendanceStatus();
+    setElementBars(basics.element_distribution);
+    renderRadarChart(basics.element_distribution);
     prepareResultScreen();
     navigateTo(screens.result);
-    // 화면 전환 애니메이션이 끝난 뒤 차트 렌더링
-    requestAnimationFrame(() => setTimeout(() => updateGraphs(basics.element_distribution), 400));
     stampAttendanceForToday();
   }
 
@@ -900,88 +893,83 @@ function init() {
     $('branch-hour').innerHTML = `<span class="hanja">時</span><br>${escapeHtml(h[1])}`;
   }
 
-  // 레이더 차트와 막대 그래프
-  let radarChartInstance = null;
-  async function updateGraphs(dist) {
-    const woods = dist['목'] || 0;
-    const fires = dist['화'] || 0;
-    const earths = dist['토'] || 0;
-    const metals = dist['금'] || 0;
-    const waters = dist['수'] || 0;
-
-    $('val-wood').textContent = `${woods}%`;
-    $('val-fire').textContent = `${fires}%`;
-    $('val-earth').textContent = `${earths}%`;
-    $('val-metal').textContent = `${metals}%`;
-    $('val-water').textContent = `${waters}%`;
-
-    $('bar-wood').dataset.targetWidth = `${woods}%`;
-    $('bar-fire').dataset.targetWidth = `${fires}%`;
-    $('bar-earth').dataset.targetWidth = `${earths}%`;
-    $('bar-metal').dataset.targetWidth = `${metals}%`;
-    $('bar-water').dataset.targetWidth = `${waters}%`;
-
-    let Chart;
-    try {
-      Chart = await loadChart();
-    } catch (error) {
-      console.warn('[Chart] load failed', error);
-      return;
-    }
-
-    if (radarChartInstance) {
-      radarChartInstance.destroy(); // WKWebView 캔버스 메모리 누수 방지
-    }
-
-    radarChartInstance = new Chart($('radarChart').getContext('2d'), {
-      type: 'radar',
-      data: {
-        labels: ['목(木)', '화(火)', '토(土)', '금(金)', '수(水)'],
-        datasets: [{
-          label: '기질 밸런스',
-          data: [woods, fires, earths, metals, waters],
-          backgroundColor: 'rgba(139, 92, 246, 0.15)',
-          borderColor: 'rgba(139, 92, 246, 0.8)',
-          pointBackgroundColor: '#fff',
-          pointBorderColor: 'rgba(139, 92, 246, 1)',
-          pointHoverBackgroundColor: 'rgba(139, 92, 246, 1)',
-          borderWidth: 3,
-          pointRadius: 5,
-          pointHoverRadius: 7,
-        }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          r: {
-            angleLines: { color: 'rgba(148, 163, 184, 0.1)' },
-            grid: { color: 'rgba(148, 163, 184, 0.1)' },
-            pointLabels: {
-              font: { family: 'Pretendard', size: 13, weight: '700' },
-              color: '#94A3B8',
-            },
-            ticks: { display: false },
-            min: 0,
-          },
-        },
-        plugins: {
-          legend: { display: false },
-        },
-      },
+  // 오행 막대 그래프: 너비는 바로 정하고, 채워지는 효과는 animateBars()가 transform으로 처리
+  function setElementBars(dist) {
+    const values = { wood: dist['목'] || 0, fire: dist['화'] || 0, earth: dist['토'] || 0, metal: dist['금'] || 0, water: dist['수'] || 0 };
+    Object.entries(values).forEach(([slug, value]) => {
+      $(`val-${slug}`).textContent = `${value}%`;
+      $(`bar-${slug}`).style.width = `${value}%`;
     });
+  }
+
+  // 레이더 차트: 축이 5개뿐이라 라이브러리 없이 SVG로 그림 (Chart.js 다운로드·렌더 비용 제거)
+  // 커지며 나타나는 효과는 CSS 애니메이션이라, 평생 사주 탭이 보일 때마다 자동으로 재생됨
+  const RADAR_AXES = [['목', '목(木)'], ['화', '화(火)'], ['토', '토(土)'], ['금', '금(金)'], ['수', '수(水)']];
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  function svgEl(name, attrs) {
+    const el = document.createElementNS(SVG_NS, name);
+    Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+    return el;
+  }
+
+  function renderRadarChart(dist) {
+    const values = RADAR_AXES.map(([key]) => Number(dist[key]) || 0);
+    // Chart.js 기본 눈금과 같게: 50% 이하는 5 단위, 그 이상은 10 단위로 고리를 그림
+    const peak = Math.max(...values);
+    const step = peak > 50 ? 10 : 5;
+    const max = Math.max(step, Math.ceil(peak / step) * step);
+    const rings = max / step;
+    const cx = 150;
+    const cy = 125;
+    const radius = 98;
+    const pointAt = (index, r) => {
+      const angle = -Math.PI / 2 + (index * 2 * Math.PI) / RADAR_AXES.length;
+      return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
+    };
+    const toPoints = (radii) => radii.map((r, i) => pointAt(i, r).map((n) => n.toFixed(1)).join(',')).join(' ');
+
+    const nodes = [];
+    for (let level = 1; level <= rings; level += 1) {
+      nodes.push(svgEl('polygon', { points: toPoints(RADAR_AXES.map(() => (radius * level) / rings)), class: 'radar-grid' }));
+    }
+    RADAR_AXES.forEach((_, i) => {
+      const [x, y] = pointAt(i, radius);
+      nodes.push(svgEl('line', { x1: cx, y1: cy, x2: x.toFixed(1), y2: y.toFixed(1), class: 'radar-grid' }));
+    });
+
+    const data = svgEl('g', { class: 'radar-data' });
+    const dataRadii = values.map((v) => (radius * v) / max);
+    data.appendChild(svgEl('polygon', { points: toPoints(dataRadii), class: 'radar-area' }));
+    dataRadii.forEach((r, i) => {
+      const [x, y] = pointAt(i, r);
+      data.appendChild(svgEl('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: 5, class: 'radar-point' }));
+    });
+    nodes.push(data);
+
+    RADAR_AXES.forEach(([, label], i) => {
+      const [x, y] = pointAt(i, radius + 18);
+      const anchor = Math.abs(x - cx) < 1 ? 'middle' : (x > cx ? 'start' : 'end');
+      const text = svgEl('text', { x: x.toFixed(1), y: (y + (y > cy ? 6 : 0)).toFixed(1), 'text-anchor': anchor, class: 'radar-label' });
+      text.textContent = label;
+      nodes.push(text);
+    });
+
+    const svg = $('radar-chart');
+    svg.replaceChildren(...nodes);
+    svg.setAttribute('aria-label', `오행 밸런스: ${RADAR_AXES.map(([key], i) => `${key} ${values[i]}%`).join(', ')}`);
   }
 
   function animateBars() {
     const bars = document.querySelectorAll('.bar-fill');
     bars.forEach((bar) => {
       bar.style.transition = 'none';
-      bar.style.width = '0%';
+      bar.style.transform = 'translateX(-101%)';
     });
     setTimeout(() => {
       bars.forEach((bar) => {
-        bar.style.transition = 'width 1.2s cubic-bezier(0.25, 1, 0.5, 1)';
-        bar.style.width = bar.dataset.targetWidth || '0%';
+        bar.style.transition = 'transform 1.2s cubic-bezier(0.25, 1, 0.5, 1)';
+        bar.style.transform = 'translateX(0)';
       });
     }, 50);
   }
@@ -1048,7 +1036,6 @@ function init() {
     if (!dog || !(await requireUserKey())) return;
     state.mode = 'general';
     setDogNameDisplays(dog.name);
-    loadChart().catch(() => {});
     navigateTo(screens.loading, false);
     try {
       showGeneralResult(dog, await loadDogBundle(dog.id));
@@ -1220,7 +1207,11 @@ function init() {
   const talismanModal = $('talisman-modal');
   let currentTalismanDay = null;
 
-  function showTalisman(milestone) {
+  // 모달에는 화면 크기에 맞춘 가벼운 이미지, '부적 저장하기'는 고화질 원본(PNG)
+  const talismanDisplayUrl = (milestone) => `/assets/talisman_${milestone}.webp`;
+  const talismanOriginalUrl = (milestone) => `/assets/talisman_${milestone}.png`;
+
+  async function showTalisman(milestone) {
     const reward = TALISMAN_REWARDS[milestone];
     if (!reward) return;
     currentTalismanDay = milestone;
@@ -1229,7 +1220,13 @@ function init() {
     const imgEl = $('talisman-img');
     imgEl.onerror = () => { imgEl.style.display = 'none'; };
     imgEl.style.display = 'block';
-    imgEl.src = `/assets/talisman_${milestone}.png`;
+    imgEl.src = talismanDisplayUrl(milestone);
+    // 모달이 뜨는 순간 이미지 디코딩으로 멈추지 않도록 미리 디코딩
+    try {
+      await imgEl.decode();
+    } catch {
+      // 디코딩에 실패해도 모달은 띄움 (onerror에서 이미지 숨김)
+    }
     talismanModal.classList.remove('hidden');
   }
 
@@ -1272,11 +1269,7 @@ function init() {
     const originalText = btnDownloadTalisman.textContent;
     btnDownloadTalisman.textContent = '저장 중...';
     try {
-      const imgEl = $('talisman-img');
-      const imageUrl = imgEl.currentSrc || imgEl.src;
-      if (!imageUrl) throw new Error('No talisman image source');
-
-      const response = await fetch(imageUrl, { cache: 'no-store' });
+      const response = await fetch(talismanOriginalUrl(currentTalismanDay || 1), { cache: 'no-store' });
       if (!response.ok) throw new Error('Failed to fetch talisman image');
       const blob = await response.blob();
 

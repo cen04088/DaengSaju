@@ -44,7 +44,7 @@
             <!-- 재방문: 등록한 강아지의 오늘 운세 바로가기 -->
             <div id="my-dog-section" class="my-dog-section hidden">
               <button type="button" id="btn-my-dog-today" class="today-card">
-                <img id="my-dog-today-img" class="today-card-img" src="./assets/fire_dog.png" alt="">
+                <img id="my-dog-today-img" class="today-card-img" alt="" decoding="async">
                 <span class="today-card-text">
                   <span id="my-dog-today-badge" class="today-card-badge">오늘의 산책운 도착 🐾</span>
                   <span id="my-dog-today-title" class="today-card-title">댕댕이의 오늘 운세 보기</span>
@@ -225,7 +225,7 @@
             <!-- Summary Section -->
             <div class="card result-card summary-card fade-in">
               <div class="result-image-wrapper">
-                <img id="result-img" src="./assets/fire_dog.png" alt="성향 일러스트" class="result-img">
+                <img id="result-img" alt="성향 일러스트" class="result-img" decoding="async">
               </div>
               <h2 class="result-title" id="res-summary">활동량이 넘치는 에너자이저,<br><span class="text-fire">불(火)</span>의 기운을 타고난
                 <span class="dog-name-display">댕댕이</span>!
@@ -274,7 +274,7 @@
 
               <div class="radar-chart-container"
                 style="position: relative; width: 100%; height: 240px; margin-bottom: 30px;">
-                <canvas id="radarChart"></canvas>
+                <svg id="radar-chart" class="radar-svg" viewBox="0 0 300 240" role="img" aria-label="오행 밸런스"></svg>
               </div>
 
               <div class="bar-chart">
@@ -431,7 +431,7 @@
           <p class="share-eyebrow">친구가 보낸 댕사주 카드 💌</p>
           <div class="card result-card summary-card share-card">
             <div class="result-image-wrapper">
-              <img id="share-img" src="./assets/fire_dog.png" alt="공유된 강아지의 오행 일러스트" class="result-img">
+              <img id="share-img" alt="공유된 강아지의 오행 일러스트" class="result-img" decoding="async">
             </div>
             <p class="share-dog-name"><span id="share-dog-name">댕댕이</span></p>
             <h2 class="result-title share-nickname" id="share-nickname">-</h2>
@@ -473,9 +473,8 @@
         <div class="talisman-content">
           <h2>🎉 스페셜 댕댕 부적 획득 🎉</h2>
           <div class="talisman-image-placeholder">
-            <img id="talisman-img" src="/assets/talisman_3.png" alt="부적"
-              style="width:100%; height:100%; object-fit:contain; border-radius:15px;"
-              onerror="this.style.display='none'" />
+            <img id="talisman-img" alt="부적" decoding="async"
+              style="width:100%; height:100%; object-fit:contain; border-radius:15px;" />
           </div>
           <h3 id="talisman-name" class="talisman-name">부적 이름</h3>
           <p id="talisman-desc" class="talisman-desc">부적 설명</p>
@@ -489,7 +488,7 @@
 
     <!-- Image Save Modal (Mobile Fallback) -->
     <div id="image-modal"
-      style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
+      style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; align-items: center; justify-content: center;">
       <p style="color: white; margin-bottom: 20px; font-weight: 700; font-size: 16px;">이미지를 길게 눌러서 저장하세요 🐾</p>
       <img id="generated-image" alt="저장할 부적 이미지"
         style="max-width: 85%; max-height: 70vh; border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.5);" />
@@ -498,7 +497,7 @@
 
     <!-- Custom Error Modal -->
     <div id="error-modal"
-      style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);">
+      style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 2000; flex-direction: column; align-items: center; justify-content: center;">
       <div
         style="background: var(--color-surface); padding: 32px 24px; border-radius: 20px; width: 80%; max-width: 320px; text-align: center; box-shadow: 0 16px 40px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
         <div style="font-size: 48px; margin-bottom: 16px;">🐕💨</div>

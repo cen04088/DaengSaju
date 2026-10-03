@@ -77,27 +77,43 @@ body {
   overflow: hidden;
 }
 
+/* 매 프레임 blur(100px) 필터를 계산하던 방식 대신, 같은 모양의 퍼짐을 방사형 그라데이션으로 미리 그려 둠.
+   (400px 원 + blur(100px)과 같은 중심·퍼짐이 되도록 800px 박스에 감쇠 단계를 맞춤) */
 .blob {
   position: absolute;
-  width: 400px;
-  height: 400px;
-  filter: blur(100px);
+  width: 800px;
+  height: 800px;
   opacity: 0.25; /* More subtle for premium feel */
-  border-radius: 50%;
   animation: float 25s infinite alternate ease-in-out;
 }
 
-.blob-1 { background: #4C1D95; top: -150px; right: -150px; }
-.blob-2 { background: #1E3A8A; bottom: 5%; left: -150px; animation-delay: -7s; }
-.blob-3 { background: #115E59; top: 35%; right: -100px; animation-delay: -12s; }
+.blob-1 {
+  background: radial-gradient(circle closest-side, rgba(76, 29, 149, 0.86) 0%, rgba(76, 29, 149, 0.8) 25%, rgba(76, 29, 149, 0.5) 50%, rgba(76, 29, 149, 0.18) 75%, rgba(76, 29, 149, 0) 100%);
+  top: -350px;
+  right: -350px;
+}
+.blob-2 {
+  background: radial-gradient(circle closest-side, rgba(30, 58, 138, 0.86) 0%, rgba(30, 58, 138, 0.8) 25%, rgba(30, 58, 138, 0.5) 50%, rgba(30, 58, 138, 0.18) 75%, rgba(30, 58, 138, 0) 100%);
+  bottom: calc(5% - 200px);
+  left: -350px;
+  animation-delay: -7s;
+}
+.blob-3 {
+  background: radial-gradient(circle closest-side, rgba(17, 94, 89, 0.86) 0%, rgba(17, 94, 89, 0.8) 25%, rgba(17, 94, 89, 0.5) 50%, rgba(17, 94, 89, 0.18) 75%, rgba(17, 94, 89, 0) 100%);
+  top: calc(35% - 200px);
+  right: -300px;
+  animation-delay: -12s;
+}
 
-/* Premium Stars & Ring */
+/* Premium Stars & Ring
+   background-position 애니메이션은 매 프레임 메인 스레드에서 다시 그려야 해서,
+   한 타일(550px)만큼 큰 레이어를 transform으로 옮기는 방식으로 바꿈 (GPU 합성만 사용) */
 .stars {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: calc(100% + 550px);
+  height: calc(100% + 550px);
   background-image: 
     radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
     radial-gradient(1.5px 1.5px at 100px 150px, #fff, rgba(0,0,0,0)),
@@ -185,8 +201,8 @@ body {
 }
 
 @keyframes starFloat {
-  from { background-position: 0 0; }
-  to { background-position: -550px -550px; }
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-550px, -550px, 0); }
 }
 
 @keyframes ringGlide {
@@ -214,9 +230,7 @@ body {
   z-index: 1;
   transition: opacity 0.25s ease-in-out;
   visibility: hidden;
-  will-change: opacity;
-  /* GPU 합성 레이어 힌트 */
-  transform: translateZ(0);
+  /* 화면마다 상시 GPU 레이어를 잡아두면 메모리를 크게 차지하므로, 전환 중에만 브라우저가 자동 승격하도록 둠 */
 }
 
 .screen.active {
@@ -281,9 +295,8 @@ body {
 /* Tabs */
 .tab-nav {
   display: flex;
-  background: rgba(15, 23, 42, 0.92);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  /* 스크롤할 때마다 뒤 내용을 다시 흐리게 계산하는 backdrop-filter 대신 거의 불투명한 배경 */
+  background: rgba(15, 23, 42, 0.97);
   z-index: 19;
   padding: 8px 20px;
   gap: 8px;
@@ -303,7 +316,7 @@ body {
   padding: 10px 0;
   cursor: pointer;
   border-radius: 12px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .tab-btn.active {
   background: rgba(255, 255, 255, 0.1);
@@ -416,7 +429,7 @@ body {
   border-radius: var(--border-radius-lg);
   padding: 24px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: var(--shadow-md);
 }
 
@@ -535,7 +548,7 @@ input[type="time"]:focus {
   color: #F1F5F9;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .segment-control input:checked + label {
@@ -570,7 +583,7 @@ input[type="time"]:focus {
   font-weight: 800;
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 10px 20px rgba(49, 130, 246, 0.2);
   display: flex;
   align-items: center;
@@ -620,7 +633,6 @@ input[type="time"]:focus {
   opacity: 0;
   transform: translateY(30px);
   transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: opacity, transform;
 }
 
 .fade-in.reveal {
@@ -775,10 +787,11 @@ input[type="time"]:focus {
   overflow: hidden;
 }
 
+/* 너비(width) 애니메이션은 매 프레임 레이아웃을 다시 하므로, 최종 너비로 둔 채 왼쪽에서 밀려 나오게(transform) 함 */
 .bar-fill {
   height: 100%;
   border-radius: 10px;
-  transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateX(-101%);
 }
 
 .bg-wood { background-color: var(--elem-wood); }
@@ -1010,7 +1023,7 @@ input[type="time"]:focus {
   font-family: inherit;
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(239, 68, 68, 0.35);
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s;
   margin-top: 8px;
 }
 
@@ -1108,7 +1121,7 @@ input[type="time"]:focus {
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  position: relative; transition: all 0.2s;
+  position: relative; transition: background-color 0.2s, border-color 0.2s;
 }
 
 /* streak-connected 제거됨 - 누적 출석 방식으로 변경 */
@@ -1172,9 +1185,8 @@ input[type="time"]:focus {
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; width: 100vw; height: 100vh;
-  background: rgba(10, 10, 18, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  /* 뒤에서 폭죽 효과가 움직이는 동안 매 프레임 블러를 다시 계산하지 않도록 불투명 오버레이만 사용 */
+  background: rgba(10, 10, 18, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1535,4 +1547,83 @@ input[type="time"]:focus {
 .toast.show {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+/* ========================================= */
+/* 오행 레이더 차트 (SVG)                       */
+/* ========================================= */
+.radar-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.radar-grid {
+  fill: none;
+  stroke: rgba(148, 163, 184, 0.1);
+  stroke-width: 1;
+}
+
+.radar-area {
+  fill: rgba(139, 92, 246, 0.15);
+  stroke: rgba(139, 92, 246, 0.8);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.radar-point {
+  fill: #fff;
+  stroke: rgb(139, 92, 246);
+  stroke-width: 1.5;
+}
+
+.radar-label {
+  fill: #94A3B8;
+  font-size: 13px;
+  font-weight: 700;
+  dominant-baseline: middle;
+}
+
+/* 탭이 보일 때마다(재표시 시 애니메이션 재시작) 중심에서 커지며 나타남 */
+.radar-data {
+  transform-origin: 150px 125px;
+  animation: radarGrow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes radarGrow {
+  from { transform: scale(0.2); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* ========================================= */
+/* 성능: 화면 밖 카드 렌더링 생략 · 동작 줄이기   */
+/* ========================================= */
+/* 평생 사주 탭의 긴 분석 카드는 스크롤로 다가올 때까지 레이아웃·페인트를 건너뜀 (탭 전환 비용 절감) */
+#locked-cards-content .detail-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
+}
+
+/* 기기 설정에서 '동작 줄이기'를 켠 사용자에게는 장식 애니메이션을 끔 */
+@media (prefers-reduced-motion: reduce) {
+  .stars,
+  .blob,
+  .radar-data,
+  .shooting-stars span,
+  .jumping-dog,
+  .unlock-lock-icon,
+  .calendar-cell.today-pending {
+    animation: none !important;
+  }
+
+  .shooting-stars {
+    display: none;
+  }
+
+  .fade-in {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
