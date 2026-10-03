@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import logging
 import os
 from pathlib import Path
 import dj_database_url
@@ -25,11 +26,14 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECRET_KEY = 'django-insecure-by!w_p7%*uv+6^4($a8o4p)$0jf$xsvma(_=p(xwr@(5yh__hn'
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-for-dev')
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
+
+SECRET_KEY = os.getenv('SECRET_KEY', '')
+if not SECRET_KEY:
+    SECRET_KEY = 'django-insecure-dev-only-key'
+    if not DEBUG:
+        logging.getLogger(__name__).warning('SECRET_KEY 환경변수가 없어 개발용 키로 실행 중입니다. 운영 환경에서는 반드시 설정하세요.')
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
@@ -40,12 +44,22 @@ CSRF_TRUSTED_ORIGINS = [
     'https://daengsaju.private-apps.tossmini.com',
 ]
 
+# 토스 미니앱 도메인만 허용. 추가 도메인은 CORS_EXTRA_ORIGINS(쉼표 구분) 환경변수로 넣습니다.
 CORS_ALLOWED_ORIGINS = [
     'https://daengsaju.apps.tossmini.com',
     'https://daengsaju.private-apps.tossmini.com',
+] + [origin.strip() for origin in os.getenv('CORS_EXTRA_ORIGINS', '').split(',') if origin.strip()]
+# 로컬·사내망 개발 서버(granite dev 등)에서 붙는 경우
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^http://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$',
 ]
-CORS_ALLOW_ALL_ORIGINS = True  # Added for debugging and robust connection
-CORS_ALLOW_CREDENTIALS = True
+# 비상용 스위치: 연결 문제가 생기면 Railway 환경변수 CORS_ALLOW_ALL_ORIGINS=True 로 임시 전체 허용
+CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True'
+CORS_ALLOW_CREDENTIALS = False  # 쿠키를 쓰지 않음 (사용자 식별은 X-Toss-User-Key 헤더)
+
+# 관리자(admin) 로그인 쿠키는 운영(HTTPS)에서만 전송
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -70,7 +84,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'django_apscheduler',
     'corsheaders',
     'saju',
 ]
@@ -92,7 +105,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -154,7 +167,6 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-import os
 os.makedirs(STATIC_ROOT, exist_ok=True)
 
 # WhiteNoise settings for static file compression and caching
@@ -167,28 +179,21 @@ STORAGES = {
     },
 }
 
-# Add root directory to static files search path
+# 공개해도 되는 이미지(공유 썸네일 등)만 /static/assets/ 로 수집합니다.
+# BASE_DIR 전체를 넣으면 settings.py 등 소스 코드까지 공개 정적 파일이 되므로 금지.
 STATICFILES_DIRS = [
-    BASE_DIR  # Allows finding files in the root like app.js, style.css, etc.
+    ('assets', BASE_DIR / 'assets'),
 ]
 
-WHITENOISE_KEEP_ONLY_HASHED_FILES = True
+# 공유 썸네일처럼 앱 밖에서 고정 URL(/static/assets/fire_dog.png)로 참조하는 파일이 있어 원본 파일명도 유지
+WHITENOISE_KEEP_ONLY_HASHED_FILES = False
 WHITENOISE_AUTOREFRESH = DEBUG
 WHITENOISE_USE_FINDERS = DEBUG
-WHITENOISE_IGNORE_PATTERNS = [
-    '*.py',
-    '*.pyc',
-    '*.sqlite3',
-    '*.json',
-    '.env*',
-    '.git/*',
-    'venv/*',
-    'scratch/*',
-    '__pycache__/*',
-]
 
-# Specifically exclude some files from being served as static
-# (Optional, but good for security)
-# WHITENOISE_IGNORE_PATTERNS = ['*.py', '*.sqlite3', '.env*']
+REST_FRAMEWORK = {
+    # 운영에서는 브라우저용 API 화면 없이 JSON만 응답
+    'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer']
+    + (['rest_framework.renderers.BrowsableAPIRenderer'] if DEBUG else []),
+}
 
 AUTH_USER_MODEL = 'saju.User'

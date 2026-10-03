@@ -29,3 +29,6 @@ frontend/dist/
 .vscode/
 .idea/
 .DS_Store
+
+# Collected static files (python manage.py collectstatic)
+staticfiles/

@@ -1,34 +1,19 @@
 """
 URL configuration for config project.
 
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+실제 화면은 앱인토스에 배포되는 frontend/(Granite) 번들이고, 이 서버는 API와 공유 썸네일 이미지만 제공합니다.
 """
 from django.contrib import admin
-from django.shortcuts import render
+from django.http import JsonResponse
 from django.urls import path, include
-import mimetypes
 
-# Windows 레지스트리 버그로 인해 JS 파일이 text/plain으로 서빙되는 문제 해결
-mimetypes.add_type('application/javascript', '.js')
 
-def home(request):
-    toss_user_key = request.headers.get('X-Toss-User-Key', '')
-    return render(request, 'index.html', {'toss_user_key': toss_user_key})
+def health(request):
+    return JsonResponse({'service': 'daengsaju-api', 'status': 'ok'})
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/saju/', include('saju.urls')),
-    path('', home, name='home'),
+    path('', health, name='health'),
 ]

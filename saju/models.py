@@ -36,8 +36,13 @@ class Dog(TimeStampedModel):
     birth_date = models.DateField(null=True, blank=True, verbose_name="생년월일")
     birth_time = models.TimeField(null=True, blank=True, verbose_name="태어난 시간")
     is_lunar = models.BooleanField(default=False, verbose_name="음력 여부")
+    is_leap_month = models.BooleanField(default=False, verbose_name="윤달 여부")
     gender = models.CharField(max_length=10, choices=GenderChoices.choices, verbose_name="성별")
     is_estimated_birth = models.BooleanField(default=False, verbose_name="생일 추정 여부(유기견 등)")
+    share_token = models.CharField(
+        max_length=32, unique=True, null=True, blank=True, verbose_name="공유 카드 토큰",
+        help_text="공유 링크로 열람 가능한 공개 카드 식별자 (생일 등 민감 정보는 노출하지 않음)",
+    )
 
     def __str__(self):
         return f"{self.name} ({self.user.nickname}님의 반려견)"

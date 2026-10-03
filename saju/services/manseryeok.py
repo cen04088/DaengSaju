@@ -1,5 +1,15 @@
-import sajupy
+import logging
 import re
+from datetime import date
+from functools import lru_cache
+
+import sajupy
+
+logger = logging.getLogger(__name__)
+
+
+class InvalidBirthDateError(ValueError):
+    """음력 변환이 불가능한 날짜(존재하지 않는 윤달 등)일 때 발생합니다."""
 
 # 오행 맵핑
 ELEMENT_MAP = {
@@ -140,19 +150,48 @@ def analyze_elements(pillars: dict):
 
     return elements
 
-def get_saju_for_dog(birth_date, birth_time=None):
-    """강아지의 생년월일시를 기반으로 사주 정보를 반환합니다."""
-    year = birth_date.year
-    month = birth_date.month
-    day = birth_date.day
-    
+def to_solar_date(birth_date, is_lunar=False, is_leap_month=False):
+    """음력 생일이면 양력 날짜로 변환합니다. 양력이면 그대로 반환합니다."""
+    if not is_lunar:
+        return birth_date
+    try:
+        converted = sajupy.lunar_to_solar(birth_date.year, birth_date.month, birth_date.day, bool(is_leap_month))
+    except Exception as exc:
+        raise InvalidBirthDateError(str(exc)) from exc
+    return date(converted['solar_year'], converted['solar_month'], converted['solar_day'])
+
+
+@lru_cache(maxsize=16)
+def get_daily_pillar(target_date):
+    """특정 날짜의 일진(日辰)과 그 날의 오행을 반환합니다."""
+    try:
+        result = sajupy.calculate_saju(target_date.year, target_date.month, target_date.day, 12, 0)
+    except Exception:
+        logger.exception("일진 계산 실패: %s", target_date)
+        return {'pillar': '', 'element': '토'}
+    return {
+        'pillar': result.get('day_pillar', ''),
+        'element': ELEMENT_MAP.get(result.get('day_stem', ''), '토'),
+    }
+
+
+def get_saju_for_dog(birth_date, birth_time=None, is_lunar=False, is_leap_month=False):
+    """강아지의 생년월일시를 기반으로 사주 정보를 반환합니다.
+
+    음력 생일은 먼저 양력으로 변환합니다. 변환이 불가능하면 InvalidBirthDateError가 발생합니다.
+    """
+    solar_date = to_solar_date(birth_date, is_lunar, is_leap_month)
+    year = solar_date.year
+    month = solar_date.month
+    day = solar_date.day
+
     hour = birth_time.hour if birth_time else 12
     minute = birth_time.minute if birth_time else 0
 
     try:
         result = sajupy.calculate_saju(year, month, day, hour, minute)
     except Exception as e:
-        print("Saju calculate error:", e)
+        logger.warning("Saju calculate error: %s", e)
         result = {
             'year_pillar': '알수없음', 'month_pillar': '알수없음', 
             'day_pillar': '알수없음', 'hour_pillar': '알수없음',
