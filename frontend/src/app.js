@@ -77,6 +77,13 @@ function withJosa(name, josa) {
   return name + (hasBatchim(name) ? withBatchim : withoutBatchim);
 }
 
+// 보호자 궁합 관계(십성)를 쉬운 말로: 명리 용어만 보여주면 뜻을 알기 어려움
+const RELATION_PLAIN_LABELS = { 비겁: '닮은꼴형', 인성: '보살핌형', 식상: '활력형', 재성: '변화형', 관성: '리더형' };
+
+function relationPlainLabel(relationshipType) {
+  return RELATION_PLAIN_LABELS[String(relationshipType || '').slice(0, 2)] || '궁합';
+}
+
 function elementInfo(element) {
   return ELEMENTS[element] || ELEMENTS[DEFAULT_ELEMENT];
 }
@@ -522,7 +529,7 @@ function init() {
 
     showInterstitialThenDo(() => {
       btnUnlockChem.classList.remove('is-loading');
-      btnUnlockChem.innerHTML = '<span class="btn-unlock-icon">🎬</span> 전체 해석 보기';
+      btnUnlockChem.innerHTML = '<span class="btn-unlock-icon">🎬</span> 광고 보고 전체 풀이 보기';
       unlockChemReport();
     });
   });
@@ -810,7 +817,7 @@ function init() {
     }
     const bonus = zodiac.bonus > 0 ? ` (+${zodiac.bonus}점)` : (zodiac.bonus < 0 ? ` (${zodiac.bonus}점)` : '');
     element.replaceChildren(
-      document.createTextNode(`🐾 ${zodiac.first} ${firstName} × ${zodiac.second} ${secondName} · ${zodiac.type}${bonus}`),
+      document.createTextNode(`🐾 ${zodiac.first} ${firstName} × ${zodiac.second} ${secondName} · ${zodiac.label || zodiac.type}${bonus}`),
       document.createElement('br'),
       document.createTextNode(zodiac.description),
     );
@@ -827,11 +834,18 @@ function init() {
     $('res-chem-title').textContent = data.title || '궁합 결과';
     $('res-chem-owner-element').textContent = elementLabel(data.owner_element);
     $('res-chem-dog-element').textContent = elementLabel(data.dog_element);
-    $('res-chem-rel').textContent = `✨ ${data.relationship_type} 관계 ✨`;
+    // 쉬운 말(닮은꼴형 등)을 위에, 명리 용어는 아래 작게: 한 줄로 두면 칩이 길어져 양옆 이름이 줄바꿈됨
+    const relationChip = $('res-chem-rel');
+    const plainLabel = document.createElement('strong');
+    plainLabel.textContent = relationPlainLabel(data.relationship_type);
+    const termLabel = document.createElement('small');
+    termLabel.textContent = data.relationship_type;
+    relationChip.replaceChildren(plainLabel, termLabel);
+    relationChip.classList.add('two-line');
     $('res-chem-desc').innerHTML = formatText(data.description || '');
     const advice = $('res-chem-advice');
     if (data.advice) {
-      advice.innerHTML = `<strong>💡 어드바이스:</strong><br>${formatText(data.advice)}`;
+      advice.innerHTML = `<strong>💡 이렇게 해보세요</strong><br>${formatText(data.advice)}`;
       advice.style.display = 'block';
     } else {
       advice.style.display = 'none';
@@ -1298,7 +1312,7 @@ function init() {
   function buildShareMessage() {
     const dog = state.currentDog;
     if (state.mode === 'chemistry' && state.lastChemistry) {
-      return `${withJosa(dog.name, '와/과')} 보호자의 궁합은 ${state.lastChemistry.score}점! “${state.lastChemistry.title}” 💑\n우리 집 댕댕이와 나의 궁합도 확인해 보세요🐾`;
+      return `나와 ${dog.name}의 궁합은 ${state.lastChemistry.score}점이래요! 💑\n보호자님도 우리 아이와의 궁합을 확인해 보세요🐾`;
     }
     if (state.mode === 'friend' && state.lastFriend) {
       return `${withJosa(dog.name, '와/과')} ${state.lastFriend.friend_name}의 댕친 궁합은 ${state.lastFriend.score}점! “${state.lastFriend.title}” 🐶\n우리 아이와 친구 강아지의 케미도 확인해 보세요🐾`;

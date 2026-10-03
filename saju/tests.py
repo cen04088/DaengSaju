@@ -1,8 +1,11 @@
+import io
 import os
+import re
 from datetime import date, timedelta
 from unittest.mock import patch
 
 from django.contrib.staticfiles import finders
+from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient, APIRequestFactory
@@ -18,6 +21,7 @@ from .models import (
     SajuBasics,
     User,
 )
+from .compatibility_copy import COMPATIBILITY_COPY
 from .services.manseryeok import get_saju_for_dog
 from .services.profiles import (
     BRANCHES,
@@ -408,12 +412,44 @@ class CompatibilityViewTests(TestCase):
         self.assertEqual(response.data['base_score'], 81)
         self.assertEqual(response.data['score'], 88)
         self.assertEqual(response.data['zodiac']['type'], '육합(六合)')
+        self.assertEqual(response.data['zodiac']['label'], '찰떡 띠 궁합(육합)')
+
+    @patch('saju.views.add_hanja_to_terms', side_effect=lambda text: text)
+    @patch('saju.views.get_relationship_type', return_value='owner-rel-1')
+    @patch('saju.views.get_saju_for_dog', return_value={'main_element': 'OWNER1'})
+    def test_bare_owner_placeholder_does_not_get_subject_particle(self, *_mocks):
+        CompatibilityArchetype.objects.filter(dog_element='DOG', relationship_type='owner-rel-1').update(
+            title='[강아지이름]의 든든한 리더, [보호자이름]',
+        )
+
+        response = self.post({'owner_birth_date': '1990-01-01'})
+
+        self.assertEqual(response.data['title'], 'Mung의 든든한 리더, 보호자님')
 
     def test_requires_owner_birth_date(self):
         response = self.post({})
 
         self.assertEqual(response.status_code, 400)
         self.assertTrue(response.data['error'])
+
+
+class CompatibilityCopyTests(TestCase):
+    def test_copy_uses_haeyo_tone_and_consistent_owner_address(self):
+        for key, template in COMPATIBILITY_COPY.items():
+            for field in ('description', 'advice'):
+                text = template[field]
+                sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+|\n+', text) if s.strip()]
+                formal = [s for s in sentences if re.search(r'니다[.!]?$', s)]
+                self.assertEqual(formal, [], f'{key} {field}: 습니다체 문장')
+                self.assertIsNone(re.search(r'보호자(?!님)', text), f"{key} {field}: '보호자님' 대신 '보호자'")
+
+    def test_refresh_command_syncs_all_archetypes(self):
+        call_command('refresh_compatibility_copy', stdout=io.StringIO())
+
+        self.assertEqual(CompatibilityArchetype.objects.count(), 50)
+        sample = CompatibilityArchetype.objects.get(dog_element='목', relationship_type='관성', version='A')
+        self.assertIn('목(木) 기운을 타고났어요', sample.description)
+        self.assertNotIn('[보호자', sample.title)
 
 
 class FriendCompatibilityTests(TestCase):

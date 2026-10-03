@@ -521,9 +521,11 @@ class CompatibilityResultView(TossUserAPIView):
             )
 
         def normalize(text):
+            # 보호자 자리표시자는 smart_replace에 맡기지 않음: 조사 없이 끝나는 '[보호자이름]'에
+            # 강아지 이름처럼 '이'를 붙여 "…리더, 보호자님이"가 되는 문제가 있어 정규화 함수가 처리
             return normalize_owner_honorific_text(
                 normalize_compatibility_owner_text(
-                    smart_replace(text, dog.name, display_owner_name),
+                    smart_replace(text, dog.name),
                     owner_name,
                 ),
                 display_owner_name,

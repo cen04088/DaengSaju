@@ -153,16 +153,17 @@ def get_zodiac_relation(branch_a, branch_b):
     """두 띠(한글 지지) 사이의 관계와 점수 보정치를 반환합니다."""
     if not branch_a or not branch_b:
         return None
+    # type은 명리 용어(식별용), label은 화면에 보여줄 쉬운 말
     pair = frozenset((branch_a, branch_b))
     if branch_a == branch_b:
-        return {'type': '같은 띠', 'bonus': 3, 'description': '같은 띠라 생활 리듬과 취향이 닮았어요.'}
+        return {'type': '같은 띠', 'label': '같은 띠', 'bonus': 3, 'description': '같은 띠라 생활 리듬과 취향이 닮았어요.'}
     if pair in SIX_HARMONY:
-        return {'type': '육합(六合)', 'bonus': 7, 'description': '띠끼리 서로 끌어당기는 찰떡 조합이에요.'}
+        return {'type': '육합(六合)', 'label': '찰떡 띠 궁합(육합)', 'bonus': 7, 'description': '띠끼리 서로 끌어당기는 찰떡 조합이에요.'}
     if any(pair <= group for group in THREE_HARMONY_GROUPS):
-        return {'type': '삼합(三合)', 'bonus': 5, 'description': '띠끼리 한 팀처럼 힘을 모으는 조합이에요.'}
+        return {'type': '삼합(三合)', 'label': '한 팀 띠 궁합(삼합)', 'bonus': 5, 'description': '띠끼리 한 팀처럼 힘을 모으는 조합이에요.'}
     if pair in CLASH:
-        return {'type': '충(沖)', 'bonus': -5, 'description': '띠끼리 부딪히는 기운이 있지만, 서로 속도를 맞추면 더 단단해져요.'}
-    return {'type': '평(平)', 'bonus': 0, 'description': '띠끼리 무난하고 편안하게 어울리는 조합이에요.'}
+        return {'type': '충(沖)', 'label': '티격태격 띠 궁합(충)', 'bonus': -5, 'description': '띠끼리 부딪히는 기운이 있지만, 서로 속도를 맞추면 더 단단해져요.'}
+    return {'type': '평(平)', 'label': '무난한 띠 궁합', 'bonus': 0, 'description': '띠끼리 무난하고 편안하게 어울리는 조합이에요.'}
 
 
 def build_zodiac_match(first_year_pillar, second_year_pillar):
@@ -176,6 +177,7 @@ def build_zodiac_match(first_year_pillar, second_year_pillar):
         'first': first['label'],
         'second': second['label'],
         'type': relation['type'],
+        'label': relation['label'],
         'bonus': relation['bonus'],
         'description': relation['description'],
     }
