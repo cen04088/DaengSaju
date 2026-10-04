@@ -190,6 +190,42 @@ def build_daily_luck(dog, dog_element, target_date):
     }
 
 
+def build_interpretation(dog, saju):
+    """사전 생성 프로필(아키타입)로 강아지의 평생 풀이 필드를 만듭니다. 프로필이 없으면 None."""
+    primary = saju.main_element
+    relationship_type = saju.relationship_type or '비겁'
+    secondary_element = saju.secondary_element or primary
+
+    archetype = ArchetypeSaju.objects.filter(
+        primary_element=primary,
+        relationship_type=relationship_type,
+        version=ARCHETYPE_VERSIONS[dog.id % len(ARCHETYPE_VERSIONS)],
+    ).first() or ArchetypeSaju.objects.filter(
+        primary_element=primary,
+        relationship_type=relationship_type,
+    ).first()
+    if not archetype:
+        return None
+
+    def replace_name(text):
+        return smart_replace(text, dog.name)
+
+    keywords = [replace_name(k) for k in archetype.personality_keywords] if isinstance(archetype.personality_keywords, list) else []
+    secondary_text = get_secondary_influence_text(primary, secondary_element)
+    care_tips = replace_name(archetype.care_tips)
+    if secondary_text:
+        care_tips += f"\n\n\U0001f4a1 [추가 사주 분석] {secondary_text}"
+
+    return {
+        'personality_summary': add_hanja_to_terms(replace_name(archetype.personality_summary)),
+        'personality_keywords': [add_hanja_to_terms(k) for k in keywords],
+        'vitality_analysis': add_hanja_to_terms(replace_name(archetype.vitality_analysis)),
+        'social_analysis': add_hanja_to_terms(replace_name(archetype.social_analysis)),
+        'treat_luck': add_hanja_to_terms(replace_name(archetype.treat_luck)),
+        'care_tips': add_hanja_to_terms(care_tips),
+    }
+
+
 def build_today_context(dog_element, target_date):
     daily = get_daily_pillar(target_date)
     profile = get_day_pillar_profile(daily['pillar'])
@@ -413,43 +449,10 @@ class AIInterpretationView(TossUserAPIView):
         if hasattr(dog, 'ai_interpretation'):
             interpretation = dog.ai_interpretation
         else:
-            primary = saju.main_element
-            relationship_type = saju.relationship_type or '비겁'
-            secondary_element = saju.secondary_element or primary
-
-            selected_version = ARCHETYPE_VERSIONS[dog.id % 3]
-            archetype = ArchetypeSaju.objects.filter(
-                primary_element=primary,
-                relationship_type=relationship_type,
-                version=selected_version,
-            ).first() or ArchetypeSaju.objects.filter(
-                primary_element=primary,
-                relationship_type=relationship_type,
-            ).first()
-
-            if not archetype:
-                return Response({"error": "사전 생성된 사주 프로필을 찾을 수 없습니다. (pregenerate_saju 명령어 실행 필요)"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            def replace_name(text):
-                return smart_replace(text, dog.name)
-
-            keywords = [replace_name(k) for k in archetype.personality_keywords] if isinstance(archetype.personality_keywords, list) else []
-            secondary_text = get_secondary_influence_text(primary, secondary_element)
-            care_tips_with_secondary = replace_name(archetype.care_tips)
-            if secondary_text:
-                care_tips_with_secondary += f"\n\n\U0001f4a1 [추가 사주 분석] {secondary_text}"
-
-            interpretation, created = AIInterpretation.objects.get_or_create(
-                dog=dog,
-                defaults={
-                    'personality_summary': add_hanja_to_terms(replace_name(archetype.personality_summary)),
-                    'personality_keywords': [add_hanja_to_terms(k) for k in keywords],
-                    'vitality_analysis': add_hanja_to_terms(replace_name(archetype.vitality_analysis)),
-                    'social_analysis': add_hanja_to_terms(replace_name(archetype.social_analysis)),
-                    'treat_luck': add_hanja_to_terms(replace_name(archetype.treat_luck)),
-                    'care_tips': add_hanja_to_terms(care_tips_with_secondary),
-                },
-            )
+            fields = build_interpretation(dog, saju)
+            if fields is None:
+                return Response({"error": "사전 생성된 사주 프로필을 찾을 수 없어요. (pregenerate_saju 명령어 실행 필요)"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            interpretation, created = AIInterpretation.objects.get_or_create(dog=dog, defaults=fields)
 
         data = AIInterpretationSerializer(interpretation).data
         data.update(build_profile_payload(dog, saju))
@@ -516,7 +519,7 @@ class CompatibilityResultView(TossUserAPIView):
 
         if not archetype:
             return Response(
-                {"error": "사전 생성된 궁합 프로필을 찾을 수 없습니다. (pregenerate_compatibility 명령어 실행 필요)"},
+                {"error": "사전 생성된 궁합 프로필을 찾을 수 없어요. (pregenerate_compatibility 명령어 실행 필요)"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -715,7 +718,7 @@ class AttendanceView(TossUserAPIView):
         payload = self._build_payload(user, attendance, today)
         payload.update({
             'stamped': stamped,
-            'message': '출석 완료!' if stamped else '오늘 이미 출석하셨습니다.',
+            'message': '출석 완료!' if stamped else '오늘은 이미 출석했어요.',
             'new_milestone': new_milestone,
         })
         return Response(payload, status=status.HTTP_200_OK)

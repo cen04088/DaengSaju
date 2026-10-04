@@ -22,7 +22,8 @@ from .models import (
     User,
 )
 from .compatibility_copy import COMPATIBILITY_COPY
-from .services.manseryeok import get_saju_for_dog
+from .services.manseryeok import get_saju_for_dog, smart_replace
+from .services.tone import normalize_copy, to_haeyo
 from .services.profiles import (
     BRANCHES,
     ILJU_NICKNAMES,
@@ -32,6 +33,7 @@ from .services.profiles import (
     get_zodiac_relation,
 )
 from .views import (
+    ARCHETYPE_VERSIONS,
     AttendanceView,
     CompatibilityResultView,
     DogRegisterView,
@@ -635,3 +637,105 @@ class HonorificNormalizationTests(TestCase):
             '보호자님은 웃고, 보호자님과 걷고, 보호자님을 바라보고, '
             '보호자님의 마음을 읽고, 보호자님은 다정해요.',
         )
+
+
+class ToneNormalizationTests(TestCase):
+    def test_formal_endings_become_haeyo(self):
+        cases = {
+            '탐험을 즐기는 경향이 있답니다.': '탐험을 즐기는 경향이 있어요.',
+            '먹을 복이 많은 아이랍니다!': '먹을 복이 많은 아이예요!',
+            '사랑스러운 댕댕이랍니다!': '사랑스러운 댕댕이예요!',
+            '기운이 가득한 날이랍니다!': '기운이 가득한 날이에요!',
+            '마음을 키워줄 것입니다.': '마음을 키워줄 거예요.',
+            '일관된 환경이 중요합니다!': '일관된 환경이 중요해요!',
+            '큰 도움이 됩니다.': '큰 도움이 돼요.',
+            '미식가 타입에 가깝습니다!': '미식가 타입에 가까워요!',
+            '피아식별이 빠르답니다.': '피아식별이 빨라요.',
+            '시늉을 할지도 모른답니다.': '시늉을 할지도 몰라요.',
+            '열정적으로 달려든답니다.': '열정적으로 달려들어요.',
+            '영리함을 보입니다.': '영리함을 보여요.',
+            '보호자님을 돕는답니다.': '보호자님을 도와요.',
+            '그냥 간식이 아니랍니다.': '그냥 간식이 아니에요.',
+            '사랑 그 자체이십니다.': '사랑 그 자체이세요.',
+            '추억 많이 만드시길 바랍니다!': '추억 많이 만드시길 바라요!',
+            '포근한 기운이 감도는 하루입니다.': '포근한 기운이 감도는 하루예요.',
+        }
+        for before, after in cases.items():
+            with self.subTest(before=before):
+                self.assertEqual(to_haeyo(before), after)
+
+    def test_keeps_plain_forms_and_is_idempotent(self):
+        self.assertEqual(to_haeyo('다정하게 대하지만, 아니다 싶은 상대에게는'), '다정하게 대하지만, 아니다 싶은 상대에게는')
+        once = normalize_copy('경향이 깊답니다 . 정말 특별하답니다!')
+        self.assertEqual(once, '경향이 깊어요. 정말 특별해요!')
+        self.assertEqual(normalize_copy(once), once)
+
+
+class SmartReplaceParticleTests(TestCase):
+    def test_nickname_i_before_other_particles(self):
+        cases = [
+            ('[강아지이름]이의 꼬리', '은빛이의 꼬리', '단비의 꼬리'),
+            ('[강아지이름]이에게 산책은', '은빛이에게 산책은', '단비에게 산책은'),
+            ('[강아지이름]이은 영리해요', '은빛이는 영리해요', '단비는 영리해요'),
+            ('[강아지이름]이지만', '은빛이지만', '단비지만'),
+            ('[강아지이름]아, 오늘도', '은빛아, 오늘도', '단비야, 오늘도'),
+            ("'[강아지이름]'이와 꼭 닮은", "'은빛'이와 꼭 닮은", "'단비'와 꼭 닮은"),
+            ('[강아지이름]이 신났어요', '은빛이 신났어요', '단비가 신났어요'),
+        ]
+        for text, with_batchim, without_batchim in cases:
+            with self.subTest(text=text):
+                self.assertEqual(smart_replace(text, '은빛'), with_batchim)
+                self.assertEqual(smart_replace(text, '단비'), without_batchim)
+
+
+class NormalizeCopyToneCommandTests(TestCase):
+    def setUp(self):
+        from .models import ArchetypeSaju
+
+        self.dog = Dog.objects.create(user=make_user(), name='단비', birth_date='2020-01-01', gender='FEMALE')
+        SajuBasics.objects.create(
+            dog=self.dog, year_pillar='己亥', month_pillar='丙子', day_pillar='甲子', hour_pillar=None,
+            main_element='목', element_distribution={'목': 100}, relationship_type='비겁', secondary_element='목',
+        )
+        self.archetype = ArchetypeSaju.objects.create(
+            primary_element='목', relationship_type='비겁', version=ARCHETYPE_VERSIONS[self.dog.id % 3],
+            personality_summary='[강아지이름]는 자유로운 영혼이랍니다!', personality_keywords=['#자유'],
+            vitality_analysis='[강아지이름]이의 에너지는 정말 대단하답니다.', social_analysis='친구를 좋아한답니다.',
+            treat_luck='간식운이 좋습니다.', care_tips='산책이 중요합니다.',
+        )
+        for relationship in ['비겁', '인성', '식상', '재성', '관성']:
+            for version in ARCHETYPE_VERSIONS:
+                DailyLuckArchetype.objects.create(
+                    dog_element='목', relationship_type=relationship, version=version,
+                    message='오늘은 [강아지이름]이에게 정말 좋은 날입니다.', lucky_color='초록', lucky_direction='동쪽',
+                )
+        # 예전 코드가 저장해 둔 강아지별 문구: 합니다체 + 받침 없는 이름의 조사 오류('단비가의')
+        self.interpretation = AIInterpretation.objects.create(
+            dog=self.dog, personality_summary='단비는 자유로운 영혼이랍니다!', personality_keywords=['#자유'],
+            vitality_analysis='단비가의 에너지는 정말 대단하답니다.', social_analysis='친구를 좋아한답니다.',
+            treat_luck='간식운이 좋습니다.', care_tips='예전에 따로 써 둔 팁이에요. 간식을 아껴 먹는답니다.',
+        )
+        self.luck = DailyWalkingLuck.objects.create(
+            dog=self.dog, date=timezone.localdate(), luck_score=80, lucky_color='초록', lucky_direction='동쪽',
+            message='오늘은 단비가에게 정말 좋은 날입니다.',
+        )
+
+    def test_rewrites_archetypes_and_saved_copy(self):
+        call_command('normalize_copy_tone', stdout=io.StringIO())
+
+        self.archetype.refresh_from_db()
+        self.interpretation.refresh_from_db()
+        self.luck.refresh_from_db()
+        self.assertEqual(self.archetype.personality_summary, '[강아지이름]는 자유로운 영혼이에요!')
+        # 같은 원본에서 나온 글은 새로 만들어 어미와 이름 조사가 함께 고쳐짐
+        self.assertEqual(self.interpretation.vitality_analysis, '단비의 에너지는 정말 대단해요.')
+        self.assertEqual(self.luck.message, '오늘은 단비에게 정말 좋은 날이에요.')
+        # 원본과 다른 글은 내용을 지키고 어미만 정리
+        self.assertEqual(self.interpretation.care_tips, '예전에 따로 써 둔 팁이에요. 간식을 아껴 먹어요.')
+
+    def test_second_run_changes_nothing(self):
+        call_command('normalize_copy_tone', stdout=io.StringIO())
+        out = io.StringIO()
+        call_command('normalize_copy_tone', stdout=out)
+
+        self.assertIn('이미 정리돼 있어요', out.getvalue())
