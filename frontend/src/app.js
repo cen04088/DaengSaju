@@ -14,10 +14,11 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://web-producti
 const APP_SCHEME = 'intoss://daengsaju';
 const USER_KEY_TIMEOUT_MS = 4000;
 const DEV_USER_KEY_STORAGE = 'daengsaju_dev_user_key';
-// QR 테스트(private-apps)·로컬 개발에서는 테스트 광고 ID를 써야 실제 광고 노출로 집계되지 않음
-const USE_TEST_ADS = import.meta.env.DEV || /\.private-(apps|web)\.tossmini\.com$/.test(window.location.hostname);
+// 테스트 광고 ID는 로컬 개발 서버에서만. 앱인토스 검수도 QR 테스트와 같은 도메인에서 열리므로
+// 배포 번들에는 항상 실제 광고가 나와야 함(테스트 광고는 반려 사유). 테스트 광고 번들이 필요하면 VITE_USE_TEST_ADS=true 로 빌드
+const USE_TEST_ADS = import.meta.env.DEV || import.meta.env.VITE_USE_TEST_ADS === 'true';
 const BANNER_AD_ID = USE_TEST_ADS ? 'ait-ad-test-banner-id' : 'ait.v2.live.82786c3925d743b3';
-const REWARDED_AD_ID = USE_TEST_ADS ? 'ait-ad-test-rewarded-id' : 'ait.v2.live.3c235f3d3a424553';
+const FULLSCREEN_AD_ID = USE_TEST_ADS ? 'ait-ad-test-interstitial-id' : 'ait.v2.live.3c235f3d3a424553'; // 전면형
 const DEFAULT_ERROR_MESSAGE = '서버 댕댕이가 간식을 먹으러 가서\n잠시 지연되고 있어요 🐾\n잠시 후 다시 시도해주세요.';
 
 const ELEMENTS = {
@@ -479,11 +480,10 @@ function init() {
     });
   }
 
-  // ─── 보상형 광고 (궁합 상세 풀이 잠금 해제) ───
-  // 보상(잠금 해제)은 userEarnedReward를 받았을 때만 준다.
-  // 광고를 쓸 수 없는 환경(토스 밖·미지원 버전·광고 없음)이면 사용자를 막지 않고 그냥 연다.
+  // ─── 전면형 광고 (궁합 상세 풀이 잠금 해제) ───
+  // 광고가 닫히면 풀이를 연다. 광고를 쓸 수 없는 환경(토스 밖·미지원 버전·광고 없음)이면 사용자를 막지 않고 그냥 연다.
   const AD_LOAD_STALE_MS = 15000;
-  const rewardedAd = { loaded: false, loadingSince: 0, unregister: null, waiters: [] };
+  const fullScreenAd = { loaded: false, loadingSince: 0, unregister: null, waiters: [] };
 
   function isFullScreenAdSupported() {
     // isSupported()는 토스 웹뷰에서만 동작 - try-catch 필수
@@ -494,30 +494,30 @@ function init() {
     }
   }
 
-  function settleRewardedWaiters(ready) {
-    rewardedAd.waiters.splice(0).forEach((resolve) => resolve(ready));
+  function settleAdWaiters(ready) {
+    fullScreenAd.waiters.splice(0).forEach((resolve) => resolve(ready));
   }
 
-  function preloadRewardedAd() {
-    if (rewardedAd.loaded || !isFullScreenAdSupported()) return;
+  function preloadFullScreenAd() {
+    if (fullScreenAd.loaded || !isFullScreenAdSupported()) return;
     // 로드 이벤트가 유실돼도(배너와 동시 로드 등) 다음 시도에서 다시 불러오도록 오래된 로드는 버림
-    if (rewardedAd.loadingSince && Date.now() - rewardedAd.loadingSince < AD_LOAD_STALE_MS) return;
+    if (fullScreenAd.loadingSince && Date.now() - fullScreenAd.loadingSince < AD_LOAD_STALE_MS) return;
 
-    if (rewardedAd.unregister) rewardedAd.unregister();
-    rewardedAd.loadingSince = Date.now();
+    if (fullScreenAd.unregister) fullScreenAd.unregister();
+    fullScreenAd.loadingSince = Date.now();
     const onFailed = (err) => {
-      console.error('[RewardedAd] load error:', err);
-      rewardedAd.loadingSince = 0;
-      settleRewardedWaiters(false);
+      console.error('[FullScreenAd] load error:', err);
+      fullScreenAd.loadingSince = 0;
+      settleAdWaiters(false);
     };
     try {
-      rewardedAd.unregister = loadFullScreenAd({
-        options: { adGroupId: REWARDED_AD_ID },
+      fullScreenAd.unregister = loadFullScreenAd({
+        options: { adGroupId: FULLSCREEN_AD_ID },
         onEvent: (event) => {
           if (event.type !== 'loaded') return;
-          rewardedAd.loaded = true;
-          rewardedAd.loadingSince = 0;
-          settleRewardedWaiters(true);
+          fullScreenAd.loaded = true;
+          fullScreenAd.loadingSince = 0;
+          settleAdWaiters(true);
         },
         onError: onFailed,
       });
@@ -527,56 +527,53 @@ function init() {
   }
 
   /** 광고가 준비되면 true, 시간 안에 못 불러오면 false */
-  function waitForRewardedAd(timeoutMs) {
-    preloadRewardedAd();
-    if (rewardedAd.loaded) return Promise.resolve(true);
-    if (!rewardedAd.loadingSince) return Promise.resolve(false);
+  function waitForFullScreenAd(timeoutMs) {
+    preloadFullScreenAd();
+    if (fullScreenAd.loaded) return Promise.resolve(true);
+    if (!fullScreenAd.loadingSince) return Promise.resolve(false);
     return new Promise((resolve) => {
-      rewardedAd.waiters.push(resolve);
+      fullScreenAd.waiters.push(resolve);
       setTimeout(() => resolve(false), timeoutMs);
     });
   }
 
-  /** 보상형 광고를 보여주고 'rewarded' | 'skipped' | 'unavailable' 중 하나로 끝남 */
-  function showRewardedAd() {
+  /** 전면형 광고를 보여주고, 광고가 닫히거나 띄우지 못하면 끝남 */
+  function showFullScreenAdOnce() {
     return new Promise((resolve) => {
-      let earned = false;
       let settled = false;
       let unregisterShow = null;
       let timer = null;
-      const finish = (result) => {
+      const finish = () => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
         if (typeof unregisterShow === 'function') unregisterShow();
-        preloadRewardedAd(); // load→show→load 순환
-        resolve(result);
+        preloadFullScreenAd(); // load→show→load 순환
+        resolve();
       };
-      // 이벤트가 오지 않으면 버튼이 '불러오는 중'에 갇히지 않게: 시작 신호 10초, 시청 중 3분
+      // 이벤트가 오지 않으면 버튼이 '불러오는 중'에 갇히지 않게: 시작 신호 10초, 광고 표시 중 3분
       const armTimer = (ms) => {
         clearTimeout(timer);
-        timer = setTimeout(() => finish(earned ? 'rewarded' : 'unavailable'), ms);
+        timer = setTimeout(finish, ms);
       };
 
-      rewardedAd.loaded = false; // 한 번 보여준 광고는 다시 쓰지 않음
+      fullScreenAd.loaded = false; // 한 번 보여준 광고는 다시 쓰지 않음
       armTimer(10000);
       try {
         unregisterShow = showFullScreenAd({
-          options: { adGroupId: REWARDED_AD_ID },
+          options: { adGroupId: FULLSCREEN_AD_ID },
           onEvent: (event) => {
-            if (event.type === 'userEarnedReward') earned = true;
-            if (event.type === 'dismissed') finish(earned ? 'rewarded' : 'skipped');
-            else if (event.type === 'failedToShow') finish(earned ? 'rewarded' : 'unavailable');
+            if (event.type === 'dismissed' || event.type === 'failedToShow') finish();
             else armTimer(180000);
           },
           onError: (err) => {
-            console.error('[RewardedAd] show error:', err);
-            finish(earned ? 'rewarded' : 'unavailable');
+            console.error('[FullScreenAd] show error:', err);
+            finish();
           },
         });
       } catch (err) {
-        console.error('[RewardedAd] show error:', err);
-        finish('unavailable');
+        console.error('[FullScreenAd] show error:', err);
+        finish();
       }
     });
   }
@@ -620,13 +617,8 @@ function init() {
     btnUnlockChem.textContent = '⏳ 광고 불러오는 중...';
 
     try {
-      const ready = await waitForRewardedAd(8000);
-      const result = ready ? await showRewardedAd() : 'unavailable';
-      if (result === 'skipped') {
-        showToast('광고를 끝까지 보면 전체 풀이가 열려요');
-      } else {
-        unlockChemReport();
-      }
+      if (await waitForFullScreenAd(8000)) await showFullScreenAdOnce();
+      unlockChemReport();
     } finally {
       btnUnlockChem.classList.remove('is-loading');
       btnUnlockChem.innerHTML = unlockButtonHtml;
@@ -963,7 +955,7 @@ function init() {
     navigateTo(screens.result);
     // 풀이 잠금 해제용 광고는 결과를 띄운 뒤에 미리 불러둠
     // (메인 배너가 내려간 다음이라야 안드로이드에서 두 광고의 이벤트가 섞여 유실되지 않음)
-    setTimeout(preloadRewardedAd, 400);
+    setTimeout(preloadFullScreenAd, 400);
   }
 
   function showFriendResult(dog, data) {
