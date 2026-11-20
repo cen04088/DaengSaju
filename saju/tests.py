@@ -216,6 +216,41 @@ class OwnershipTests(TestCase):
         self.assertEqual(stranger_response.status_code, 404)
         self.assertTrue(Dog.objects.filter(pk=self.dog.id).exists())
 
+    def test_owner_can_rename_existing_dog_without_replacing_share_link(self):
+        dog_id = self.dog.pk
+        self.dog.breed = 'poodle'
+        self.dog.share_token = 'test-share-token'
+        self.dog.save(update_fields=['breed', 'share_token'])
+        self.client.get(f'/api/saju/dogs/{dog_id}/basics/', HTTP_X_TOSS_USER_KEY=OWNER_KEY)
+        self.assertTrue(SajuBasics.objects.filter(dog_id=dog_id).exists())
+
+        result = self.client.put(
+            f'/api/saju/dogs/{dog_id}/',
+            dog_payload(name='Bori')['dog'],
+            format='json',
+            HTTP_X_TOSS_USER_KEY=OWNER_KEY,
+        )
+
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.data['id'], dog_id)
+        self.assertEqual(self.owner.dogs.count(), 1)
+        self.dog.refresh_from_db()
+        self.assertEqual(self.dog.breed, 'poodle')
+        self.assertFalse(SajuBasics.objects.filter(dog_id=dog_id).exists())
+        share = self.client.get('/api/saju/share/test-share-token/')
+        self.assertEqual(share.status_code, 200)
+        self.assertEqual(share.data['dog_name'], 'Bori')
+
+    def test_dog_edit_rejects_other_owners_and_names_already_in_use(self):
+        Dog.objects.create(user=self.owner, name='Bori', birth_date='2021-05-05', gender='FEMALE')
+        url = f'/api/saju/dogs/{self.dog.id}/'
+        payload = dog_payload(name='Bori')['dog']
+
+        self.assertEqual(self.client.put(url, payload, format='json', HTTP_X_TOSS_USER_KEY='stranger').status_code, 404)
+        self.assertEqual(self.client.put(url, payload, format='json', HTTP_X_TOSS_USER_KEY=OWNER_KEY).status_code, 409)
+        self.dog.refresh_from_db()
+        self.assertEqual(self.dog.name, 'Mung')
+
     def test_dog_deletion_removes_results_and_share_but_keeps_owner_data(self):
         remaining = Dog.objects.create(user=self.owner, name='Bori', birth_date='2021-05-05', gender='FEMALE')
         attendance = Attendance.objects.create(user=self.owner, year=2026, month=11, attended_days=[21])

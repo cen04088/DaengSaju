@@ -684,120 +684,6 @@ input[type="time"]:focus {
 /* Utils */
 .font-bold { font-weight: 700 !important; }
 
-/* =============================================
-   Ad Unlock (Locked Report) System
-   ============================================= */
-
-.unlock-overlay {
-  display: none;
-}
-
-#locked-chem-container.is-locked {
-  display: grid;
-  isolation: isolate;
-}
-
-#locked-chem-container.is-locked > * {
-  grid-area: 1 / 1;
-  min-width: 0;
-}
-
-#locked-chem-container.is-locked #locked-chem-content {
-  max-height: 115px;
-  overflow: hidden;
-  filter: blur(6px);
-}
-
-#locked-chem-container.is-locked .unlock-overlay {
-  z-index: 1;
-  display: block;
-  padding: 48px 12px 8px;
-  background: linear-gradient(transparent, var(--fortune-solid) 100px);
-}
-
-.unlock-overlay-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  text-align: center;
-}
-
-.unlock-lock-icon {
-  font-size: 36px;
-  margin-bottom: 4px;
-  animation: lockPulse 2s infinite ease-in-out;
-}
-
-@keyframes lockPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-}
-
-.unlock-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-text-title);
-  letter-spacing: -0.3px;
-}
-
-.unlock-desc {
-  font-size: 15px;
-  color: var(--fortune-muted);
-  line-height: 1.6;
-  margin-bottom: 4px;
-}
-
-/* The CTA button */
-.btn-unlock {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  max-width: 280px;
-  min-height: 52px;
-  padding: 8px 12px;
-  background: var(--fortune-accent);
-  color: var(--color-on-primary);
-  border: 1px solid var(--fortune-pressed);
-  border-radius: 10px;
-  box-shadow: var(--seal-edge);
-  font-size: 16px;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s;
-  margin-top: 8px;
-}
-
-.btn-unlock:active {
-  transform: scale(0.95);
-}
-
-.btn-unlock-icon {
-  flex-shrink: 0;
-  font-size: 18px;
-}
-
-/* Watching ad state */
-.btn-unlock.is-loading {
-  background: var(--fortune-pressed);
-  box-shadow: none;
-  cursor: not-allowed;
-}
-
-@keyframes unlock-card-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 /* ========================================= */
 /* Monthly Attendance Calendar               */
 /* ========================================= */
@@ -1237,8 +1123,7 @@ input[type="time"]:focus {
 /* ========================================= */
 /* 기기 설정에서 '동작 줄이기'를 켠 사용자에게는 장식 애니메이션을 끔 */
 @media (prefers-reduced-motion: reduce) {
-  .radar-data,
-  .unlock-lock-icon {
+  .radar-data {
     animation: none !important;
   }
 
@@ -1396,7 +1281,9 @@ input[type="time"]:focus {
   gap: 8px;
 }
 
-#btn-edit-dog {
+#btn-edit-dog,
+#btn-delete-mode {
+  min-width: 44px;
   min-height: 44px;
   padding: 0 4px;
   border: 0;
@@ -1451,6 +1338,48 @@ input[type="time"]:focus {
   border-color: #c2947d;
   background: var(--fortune-sheet);
   color: var(--fortune-ink);
+}
+
+.dog-chip-item {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.my-dog-chips.is-deleting .dog-chip-item {
+  border: 1px solid var(--fortune-line);
+  border-radius: 999px;
+  background: var(--fortune-solid);
+}
+
+.my-dog-chips.is-deleting .dog-chip-item .dog-chip {
+  border-color: transparent;
+}
+
+.dog-chip-remove {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fortune-accent);
+  cursor: pointer;
+}
+
+.dog-chip-remove .btn-icon {
+  width: 24px;
+  height: 24px;
+  padding: 4px;
+  border-radius: 50%;
+  background: var(--fortune-sheet);
+}
+
+.my-dog-chips:not(.is-deleting) .dog-chip-remove,
+.my-dog-chips.is-deleting .dog-chip-add {
+  display: none;
 }
 
 .fortune-links {
@@ -1558,6 +1487,11 @@ input[type="time"]:focus {
 
 .input-back .btn-icon {
   transform: rotate(180deg);
+}
+
+.preview-result-back {
+  align-self: flex-start;
+  margin-inline-start: 20px;
 }
 
 #input-screen input[type="text"],
@@ -2073,22 +2007,6 @@ input[type="time"]:focus {
 .error-sheet p {
   white-space: pre-line;
   margin-bottom: 17px;
-}
-
-.delete-dog-link {
-  display: block;
-  min-height: 44px;
-  margin: 12px 0 0 auto;
-  padding: 0 4px;
-  border: 0;
-  background: none;
-  color: var(--fortune-accent);
-  font: inherit;
-  font-size: 0.875rem;
-  font-weight: 650;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
 }
 
 #delete-dog-dialog {

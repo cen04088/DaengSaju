@@ -31,6 +31,7 @@
               <div class="home-dog-label">
                 <p>내 강아지</p>
                 <button type="button" id="btn-edit-dog">정보 수정</button>
+                <button type="button" id="btn-delete-mode" aria-controls="my-dog-chips" aria-expanded="false">삭제</button>
               </div>
               <span id="my-dog-today-badge" class="hidden" role="img" aria-label="출석 완료" title="출석 완료">
                 출석
@@ -75,7 +76,7 @@
       <section id="input-screen" class="screen">
 
         <div class="body-content">
-          <button type="button" id="btn-input-back" class="input-back">
+          <button type="button" id="btn-input-back" class="input-back hidden">
             <svg aria-hidden="true" class="btn-icon"><use href="./assets/icons/sprite.svg#chevron-right"></use></svg>
             뒤로
           </button>
@@ -159,7 +160,6 @@
                 </div>
               </div>
             </div>
-            <button id="btn-delete-dog" class="delete-dog-link hidden" type="button">강아지 삭제</button>
           </form>
         </div>
         <div class="fab-wrapper">
@@ -178,6 +178,10 @@
       <!-- 4. 결과 화면 -->
       <section id="result-screen" class="screen bg-gray">
 
+        <button type="button" id="btn-result-back" class="input-back preview-result-back hidden">
+          <svg aria-hidden="true" class="btn-icon"><use href="./assets/icons/sprite.svg#chevron-right"></use></svg>
+          뒤로
+        </button>
 
         <!-- Tab Navigation -->
         <div class="tab-nav sticky-tab">
@@ -387,28 +391,8 @@
             <div class="score-line">궁합 점수 <span id="res-chem-score">--</span>점</div>
             <p id="res-chem-zodiac" class="zodiac-line hidden"></p>
 
-            <!-- Locked Chemistry Reports Container -->
-            <div id="locked-chem-container" class="locked-container">
-              <!-- Blurred content -->
-              <div id="locked-chem-content">
-                <p id="res-chem-desc" class="chem-desc lockable-text" style="margin-bottom: 16px;">궁합 풀이를 불러오는 중이에요...
-                </p>
-                <p id="res-chem-advice" class="lockable-text tip-box" style="display: none;"></p>
-              </div>
-
-              <!-- Unlock Overlay -->
-              <div class="unlock-overlay">
-                <div class="unlock-overlay-content">
-                  <div class="unlock-lock-icon">🔒</div>
-                  <p class="unlock-title">자세한 궁합 풀이</p>
-                  <p class="unlock-desc">짧은 광고를 보면 전체 풀이와 함께 지내는 팁을 볼 수 있어요</p>
-                  <button type="button" id="btn-unlock-chem" class="btn-unlock">
-                    <span class="btn-unlock-icon" aria-hidden="true">🎬</span>
-                    광고 보고 전체 풀이 보기
-                  </button>
-                </div>
-              </div>
-            </div><!-- end locked-chem-container -->
+            <p id="res-chem-desc" class="chem-desc" style="margin-bottom: 16px;"></p>
+            <p id="res-chem-advice" class="tip-box" style="display: none;"></p>
 
           </div>
 

@@ -2,10 +2,8 @@ import {
   getAnonymousKey,
   getSchemeUri,
   getTossShareLink,
-  loadFullScreenAd,
   saveBase64Data,
   share,
-  showFullScreenAd,
   TossAds,
 } from '@apps-in-toss/web-framework';
 import { DOG_BREEDS, dogBreedImage } from './dog-breeds.js';
@@ -19,7 +17,6 @@ const DEV_USER_KEY_STORAGE = 'daengsaju_dev_user_key';
 // 배포 번들에는 항상 실제 광고가 나와야 함(테스트 광고는 반려 사유). 테스트 광고 번들이 필요하면 VITE_USE_TEST_ADS=true 로 빌드
 const USE_TEST_ADS = import.meta.env.DEV || import.meta.env.VITE_USE_TEST_ADS === 'true';
 const BANNER_AD_ID = USE_TEST_ADS ? 'ait-ad-test-banner-id' : 'ait.v2.live.82786c3925d743b3';
-const FULLSCREEN_AD_ID = USE_TEST_ADS ? 'ait-ad-test-interstitial-id' : 'ait.v2.live.3c235f3d3a424553'; // 전면형
 const DEFAULT_ERROR_MESSAGE = '잠시 후 다시 시도해 주세요.';
 
 const ELEMENTS = {
@@ -424,6 +421,7 @@ function init() {
       renderTodayBadge();
       mountTossBanner();
     } else {
+      setDogDeleteMode(false);
       unmountTossBanner();
     }
   }
@@ -441,7 +439,6 @@ function init() {
     if (!isGeneral) screens.result.classList.remove('daily-view');
     updateShareButton();
 
-    lockChemReport();
     if (isGeneral) {
       activateTab(firstTab);
     } else {
@@ -506,130 +503,6 @@ function init() {
       },
     });
   }
-
-  // ─── 전면형 광고 (궁합 상세 풀이 잠금 해제) ───
-  // 광고가 닫히면 풀이를 연다. 광고를 쓸 수 없는 환경(토스 밖·미지원 버전·광고 없음)이면 사용자를 막지 않고 그냥 연다.
-  const AD_LOAD_STALE_MS = 15000;
-  const fullScreenAd = { loaded: false, loadingSince: 0, unregister: null, waiters: [] };
-
-  function isFullScreenAdSupported() {
-    // isSupported()는 토스 웹뷰에서만 동작 - try-catch 필수
-    try {
-      return typeof loadFullScreenAd.isSupported !== 'function' || loadFullScreenAd.isSupported();
-    } catch {
-      return false; // 웹뷰 외부(일반 브라우저) 환경
-    }
-  }
-
-  function settleAdWaiters(ready) {
-    fullScreenAd.waiters.splice(0).forEach((resolve) => resolve(ready));
-  }
-
-  function preloadFullScreenAd() {
-    if (fullScreenAd.loaded || !isFullScreenAdSupported()) return;
-    // 로드 이벤트가 유실돼도(배너와 동시 로드 등) 다음 시도에서 다시 불러오도록 오래된 로드는 버림
-    if (fullScreenAd.loadingSince && Date.now() - fullScreenAd.loadingSince < AD_LOAD_STALE_MS) return;
-
-    if (fullScreenAd.unregister) fullScreenAd.unregister();
-    fullScreenAd.loadingSince = Date.now();
-    const onFailed = (err) => {
-      console.error('[FullScreenAd] load error:', err);
-      fullScreenAd.loadingSince = 0;
-      settleAdWaiters(false);
-    };
-    try {
-      fullScreenAd.unregister = loadFullScreenAd({
-        options: { adGroupId: FULLSCREEN_AD_ID },
-        onEvent: (event) => {
-          if (event.type !== 'loaded') return;
-          fullScreenAd.loaded = true;
-          fullScreenAd.loadingSince = 0;
-          settleAdWaiters(true);
-        },
-        onError: onFailed,
-      });
-    } catch (err) {
-      onFailed(err);
-    }
-  }
-
-  /** 광고가 준비되면 true, 시간 안에 못 불러오면 false */
-  function waitForFullScreenAd(timeoutMs) {
-    preloadFullScreenAd();
-    if (fullScreenAd.loaded) return Promise.resolve(true);
-    if (!fullScreenAd.loadingSince) return Promise.resolve(false);
-    return new Promise((resolve) => {
-      fullScreenAd.waiters.push(resolve);
-      setTimeout(() => resolve(false), timeoutMs);
-    });
-  }
-
-  /** 전면형 광고를 보여주고, 광고가 닫히거나 띄우지 못하면 끝남 */
-  function showFullScreenAdOnce() {
-    return new Promise((resolve) => {
-      let settled = false;
-      let unregisterShow = null;
-      let timer = null;
-      const finish = () => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        if (typeof unregisterShow === 'function') unregisterShow();
-        preloadFullScreenAd(); // load→show→load 순환
-        resolve();
-      };
-      // 이벤트가 오지 않으면 버튼이 '불러오는 중'에 갇히지 않게: 시작 신호 10초, 광고 표시 중 3분
-      const armTimer = (ms) => {
-        clearTimeout(timer);
-        timer = setTimeout(finish, ms);
-      };
-
-      fullScreenAd.loaded = false; // 한 번 보여준 광고는 다시 쓰지 않음
-      armTimer(10000);
-      try {
-        unregisterShow = showFullScreenAd({
-          options: { adGroupId: FULLSCREEN_AD_ID },
-          onEvent: (event) => {
-            if (event.type === 'dismissed' || event.type === 'failedToShow') finish();
-            else armTimer(180000);
-          },
-          onError: (err) => {
-            console.error('[FullScreenAd] show error:', err);
-            finish();
-          },
-        });
-      } catch (err) {
-        console.error('[FullScreenAd] show error:', err);
-        finish();
-      }
-    });
-  }
-
-  function lockChemReport() {
-    $('locked-chem-container').classList.add('is-locked');
-    $('locked-chem-content').inert = true;
-  }
-
-  function unlockChemReport() {
-    $('locked-chem-container').classList.remove('is-locked');
-    $('locked-chem-content').inert = false;
-  }
-
-  const btnUnlockChem = $('btn-unlock-chem');
-  const unlockButtonHtml = btnUnlockChem.innerHTML;
-  btnUnlockChem.addEventListener('click', async () => {
-    if (btnUnlockChem.classList.contains('is-loading')) return;
-    btnUnlockChem.classList.add('is-loading');
-    btnUnlockChem.textContent = '⏳ 광고 불러오는 중...';
-
-    try {
-      if (await waitForFullScreenAd(8000)) await showFullScreenAdOnce();
-      unlockChemReport();
-    } finally {
-      btnUnlockChem.classList.remove('is-loading');
-      btnUnlockChem.innerHTML = unlockButtonHtml;
-    }
-  });
 
   // ─── 입력 폼 ───
   const form = {
@@ -742,19 +615,19 @@ function init() {
     }
   }
 
-  function openInput(mode, firstTab = 'tab-today', editing = false) {
+  function openInput(mode, firstTab = 'tab-today', editingDogId = null) {
     state.mode = mode;
     state.firstResultTab = firstTab;
-    $('input-title').textContent = MODE_COPY[mode].title;
+    state.editingDogId = editingDogId;
+    $('input-title').textContent = editingDogId ? '강아지 정보 수정' : MODE_COPY[mode].title;
     const portrait = firstTab === 'tab-lifetime' ? 'lifetime' : MODE_COPY[mode].portrait;
     $('input-portrait').src = `./assets/minhwa/${portrait}.webp`;
-    btnSubmit.textContent = firstTab === 'tab-lifetime' ? '평생 사주 보기' : MODE_COPY[mode].submit;
+    btnSubmit.textContent = editingDogId ? '저장하기'
+      : firstTab === 'tab-lifetime' ? '평생 사주 보기' : MODE_COPY[mode].submit;
     form.ownerSection.classList.toggle('hidden', mode !== 'chemistry');
     form.friendSection.classList.toggle('hidden', mode !== 'friend');
     clearDogFormError();
     prepareDogForm();
-    state.editingDogId = editing ? getSelectedDog()?.id ?? null : null;
-    $('btn-delete-dog').classList.toggle('hidden', state.editingDogId === null);
     navigateTo(screens.input);
   }
 
@@ -765,8 +638,19 @@ function init() {
     });
   }
 
-  $('btn-input-back').addEventListener('click', () => history.back());
-  $('btn-edit-dog').addEventListener('click', () => openInput('general', 'tab-today', true));
+  if (import.meta.env.DEV) {
+    for (const id of ['btn-input-back', 'btn-result-back']) {
+      const button = $(id);
+      button.classList.remove('hidden');
+      button.addEventListener('click', () => history.back());
+    }
+  }
+  $('btn-edit-dog').addEventListener('click', () => {
+    const dog = getSelectedDog() || state.myDogs[0];
+    if (!dog) return;
+    state.selectedDogId = dog.id;
+    openInput('general', 'tab-today', dog.id);
+  });
   [form.dogName, form.dogDate].forEach((field) => field.addEventListener('input', clearDogFormError));
   form.dogEstimated.addEventListener('change', clearDogFormError);
 
@@ -779,21 +663,34 @@ function init() {
   const confirmDelete = $('btn-confirm-delete-dog');
   const cancelDelete = $('btn-cancel-delete-dog');
   const deleteError = $('delete-dog-error');
+  const deleteModeButton = $('btn-delete-mode');
+  let pendingDogId = null;
 
-  $('btn-delete-dog').addEventListener('click', () => {
-    const dog = state.myDogs.find(({ id }) => id === state.editingDogId);
-    if (!dog || state.submitting) return;
+  function setDogDeleteMode(open) {
+    $('my-dog-chips').classList.toggle('is-deleting', open);
+    deleteModeButton.setAttribute('aria-expanded', String(open));
+    deleteModeButton.textContent = open ? '완료' : '삭제';
+  }
+
+  deleteModeButton.addEventListener('click', () => {
+    setDogDeleteMode(deleteModeButton.getAttribute('aria-expanded') !== 'true');
+  });
+
+  function confirmDogRemoval(dog) {
+    if (state.submitting) return;
+    pendingDogId = dog.id;
     $('delete-dog-title').textContent = `${dog.name}의 정보를 삭제할까요?`;
     deleteError.classList.add('hidden');
     deleteDialog.showModal();
-  });
+  }
   cancelDelete.addEventListener('click', () => deleteDialog.close());
+  deleteDialog.addEventListener('close', () => { pendingDogId = null; });
   deleteDialog.addEventListener('cancel', (event) => {
     if (confirmDelete.disabled) event.preventDefault();
   });
 
   confirmDelete.addEventListener('click', async () => {
-    const dogId = state.editingDogId;
+    const dogId = pendingDogId;
     if (dogId === null || confirmDelete.disabled) return;
     confirmDelete.disabled = true;
     cancelDelete.disabled = true;
@@ -818,19 +715,21 @@ function init() {
 
     state.myDogs = state.myDogs.filter(({ id }) => id !== dogId);
     if (state.selectedDogId === dogId) state.selectedDogId = state.myDogs[0]?.id ?? null;
-    state.editingDogId = null;
-    state.prefilledDogId = null;
+    if (state.prefilledDogId === dogId) {
+      state.prefilledDogId = null;
+      fillDogForm(null);
+    }
     if (state.currentDog?.id === dogId) {
       state.currentDog = null;
       state.dailyLuck = null;
       state.lifetime = null;
     }
-    fillDogForm(null);
-    $('btn-delete-dog').classList.add('hidden');
+    deleteDialog.close();
     renderMyDogs();
     refreshMyDogs();
-    deleteDialog.close();
-    if (activeScreen === screens.input) history.back();
+    if (activeScreen === screens.main) {
+      (state.myDogs.length ? deleteModeButton : $('btn-my-dog-today')).focus({ preventScroll: true });
+    }
     showToast('강아지 정보를 삭제했어요.');
   });
 
@@ -886,11 +785,24 @@ function init() {
     }
     const mode = state.mode;
     const firstTab = state.firstResultTab;
+    const editingDogId = state.editingDogId;
     state.submitting = true;
     btnSubmit.disabled = true;
 
     try {
       if (!(await requireUserKey()) || activeScreen !== screens.input) return;
+      if (editingDogId) {
+        const saved = await api(`/api/saju/dogs/${editingDogId}/`, { method: 'PUT', body: dog });
+        state.myDogs = state.myDogs.map((item) => item.id === saved.id ? { ...item, ...saved } : item);
+        renderMyDogs();
+        refreshMyDogs();
+        if (activeScreen === screens.input) {
+          fillDogForm(saved);
+          history.back();
+          showToast('강아지 정보를 저장했어요.');
+        }
+        return;
+      }
       setDogNameDisplays(dog.name);
       showResultLoading(mode, firstTab);
       const registration = await api('/api/saju/dogs/', {
@@ -919,7 +831,16 @@ function init() {
       refreshMyDogs();
     } catch (error) {
       console.error(error);
-      if (activeScreen === screens.loading) {
+      if (editingDogId && activeScreen === screens.input) {
+        if (error instanceof ApiError && error.status === 409) {
+          form.dogName.setAttribute('aria-invalid', 'true');
+          $('dog-name-error').textContent = error.message;
+          $('dog-name-error').classList.remove('hidden');
+          form.dogName.focus();
+        } else {
+          showApiError(error);
+        }
+      } else if (activeScreen === screens.loading) {
         showScreen(screens.input);
         showApiError(error);
       }
@@ -1110,9 +1031,6 @@ function init() {
 
     prepareResultScreen();
     navigateTo(screens.result);
-    // 풀이 잠금 해제용 광고는 결과를 띄운 뒤에 미리 불러둠
-    // (메인 배너가 내려간 다음이라야 안드로이드에서 두 광고의 이벤트가 섞여 유실되지 않음)
-    setTimeout(preloadFullScreenAd, 400);
   }
 
   function showFriendResult(dog, data) {
@@ -1251,6 +1169,7 @@ function init() {
   function renderMyDogs() {
     const chipList = $('my-dog-chips');
     chipList.classList.toggle('hidden', !state.myDogs.length);
+    if (!state.myDogs.length) setDogDeleteMode(false);
 
     function updateSelectedDog() {
       const dog = getSelectedDog() || state.myDogs[0];
@@ -1274,11 +1193,21 @@ function init() {
         state.selectedDogId = item.id;
         updateSelectedDog();
       });
-      return chip;
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'dog-chip-remove';
+      remove.setAttribute('aria-label', `${item.name} 삭제`);
+      remove.append(svgIcon('close', 'btn-icon'));
+      remove.addEventListener('click', () => confirmDogRemoval(item));
+
+      const group = document.createElement('div');
+      group.className = 'dog-chip-item';
+      group.append(chip, remove);
+      return group;
     });
     const addChip = document.createElement('button');
     addChip.type = 'button';
-    addChip.className = 'dog-chip';
+    addChip.className = 'dog-chip dog-chip-add';
     addChip.textContent = '+ 강아지 추가';
     addChip.addEventListener('click', () => {
       state.selectedDogId = 'new';

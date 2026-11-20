@@ -145,6 +145,16 @@ def clear_dog_results(dog):
     Compatibility.objects.filter(dog=dog).delete()
 
 
+def update_registered_dog(dog, values):
+    changes = {field: value for field, value in values.items() if getattr(dog, field) != value}
+    for field, value in changes.items():
+        setattr(dog, field, value)
+    dog.save(update_fields=[*changes, 'updated_at'])
+    if changes.keys() - {'breed'}:
+        clear_dog_results(dog)
+    return bool(changes)
+
+
 def build_profile_payload(dog, basics):
     """일주 캐릭터·띠처럼 저장하지 않고 원국에서 바로 계산하는 정보."""
     return {
@@ -371,6 +381,7 @@ class TossUserAPIView(APIView):
 
 
 class DogRegisterView(TossUserAPIView):
+    @transaction.atomic
     def post(self, request):
         dog_data = request.data.get('dog')
         if not isinstance(dog_data, dict):
@@ -381,6 +392,7 @@ class DogRegisterView(TossUserAPIView):
             return validation_error_response(serializer.errors)
 
         user = get_or_create_user(self.user_key, request.data.get('nickname'))
+        User.objects.select_for_update().get(pk=user.pk)
         values = serializer.validated_data
 
         # 같은 이름의 강아지는 한 마리로 관리: 생일 정보가 바뀌면 고쳐 쓰고 결과를 다시 계산
@@ -392,24 +404,33 @@ class DogRegisterView(TossUserAPIView):
                 status=status.HTTP_201_CREATED,
             )
 
-        changes = {field: value for field, value in values.items() if getattr(dog, field) != value}
-        if changes:
-            for field, value in changes.items():
-                setattr(dog, field, value)
-            dog.save(update_fields=[*changes, 'updated_at'])
-            if changes.keys() - {'breed'}:
-                clear_dog_results(dog)
-        else:
-            dog.save(update_fields=['updated_at'])  # 최근에 본 강아지가 목록 맨 앞에 오도록
+        updated = update_registered_dog(dog, values)
 
         return Response(
-            {"message": "등록 완료", "user_nickname": user.nickname, "dog_id": dog.id, "updated": bool(changes)},
+            {"message": "등록 완료", "user_nickname": user.nickname, "dog_id": dog.id, "updated": updated},
             status=status.HTTP_200_OK,
         )
 
 
 class DogDetailView(TossUserAPIView):
+    @transaction.atomic
+    def put(self, request, dog_id):
+        owner = User.objects.select_for_update().filter(social_id=self.user_key).first()
+        if owner is None:
+            raise NotFound('강아지 정보를 찾을 수 없어요.')
+        dog = self.get_owned_dog(dog_id)
+        serializer = DogSerializer(dog, data=request.data)
+        if not serializer.is_valid():
+            return validation_error_response(serializer.errors)
+        values = serializer.validated_data
+        if values['name'] != dog.name and owner.dogs.filter(name=values['name']).exclude(pk=dog_id).exists():
+            return Response({'error': '이미 등록한 강아지 이름이에요.'}, status=status.HTTP_409_CONFLICT)
+        update_registered_dog(dog, values)
+        return Response(DogSerializer(dog).data)
+
+    @transaction.atomic
     def delete(self, request, dog_id):
+        User.objects.select_for_update().filter(social_id=self.user_key).first()
         self.get_owned_dog(dog_id).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
