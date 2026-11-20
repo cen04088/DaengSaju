@@ -159,6 +159,7 @@
                 </div>
               </div>
             </div>
+            <button id="btn-delete-dog" class="delete-dog-link hidden" type="button">강아지 삭제</button>
           </form>
         </div>
         <div class="fab-wrapper">
@@ -515,6 +516,16 @@
         <button id="btn-close-error" class="btn-primary">확인</button>
       </div>
     </div>
+
+    <dialog id="delete-dog-dialog" class="error-sheet" aria-labelledby="delete-dog-title" aria-describedby="delete-dog-description">
+      <h3 id="delete-dog-title">강아지 정보를 삭제할까요?</h3>
+      <p id="delete-dog-description">이 강아지의 등록 정보, 풀이 기록과 공유 카드가 삭제돼요. 삭제한 정보는 복구할 수 없어요.</p>
+      <p id="delete-dog-error" class="form-error hidden" role="alert"></p>
+      <div class="delete-dog-actions">
+        <button id="btn-cancel-delete-dog" type="button" autofocus>취소</button>
+        <button id="btn-confirm-delete-dog" type="button">삭제하기</button>
+      </div>
+    </dialog>
 
     <!-- Toast -->
     <div id="toast" class="toast" role="status" aria-live="polite"></div>

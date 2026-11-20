@@ -315,6 +315,7 @@ function init() {
     myDogs: [],
     selectedDogId: null, // 강아지 id 또는 'new'(새 아이 입력)
     prefilledDogId: null,
+    editingDogId: null,
     currentDog: null,
     lastChemistry: null,
     lastFriend: null,
@@ -741,7 +742,7 @@ function init() {
     }
   }
 
-  function openInput(mode, firstTab = 'tab-today') {
+  function openInput(mode, firstTab = 'tab-today', editing = false) {
     state.mode = mode;
     state.firstResultTab = firstTab;
     $('input-title').textContent = MODE_COPY[mode].title;
@@ -752,6 +753,8 @@ function init() {
     form.friendSection.classList.toggle('hidden', mode !== 'friend');
     clearDogFormError();
     prepareDogForm();
+    state.editingDogId = editing ? getSelectedDog()?.id ?? null : null;
+    $('btn-delete-dog').classList.toggle('hidden', state.editingDogId === null);
     navigateTo(screens.input);
   }
 
@@ -763,7 +766,7 @@ function init() {
   }
 
   $('btn-input-back').addEventListener('click', () => history.back());
-  $('btn-edit-dog').addEventListener('click', () => openInput('general'));
+  $('btn-edit-dog').addEventListener('click', () => openInput('general', 'tab-today', true));
   [form.dogName, form.dogDate].forEach((field) => field.addEventListener('input', clearDogFormError));
   form.dogEstimated.addEventListener('change', clearDogFormError);
 
@@ -771,6 +774,65 @@ function init() {
   $('btn-chemistry').addEventListener('click', () => openInput('chemistry'));
   $('btn-friend').addEventListener('click', () => openInput('friend'));
   $('btn-share-cta').addEventListener('click', () => openMyFortune());
+
+  const deleteDialog = $('delete-dog-dialog');
+  const confirmDelete = $('btn-confirm-delete-dog');
+  const cancelDelete = $('btn-cancel-delete-dog');
+  const deleteError = $('delete-dog-error');
+
+  $('btn-delete-dog').addEventListener('click', () => {
+    const dog = state.myDogs.find(({ id }) => id === state.editingDogId);
+    if (!dog || state.submitting) return;
+    $('delete-dog-title').textContent = `${dog.name}의 정보를 삭제할까요?`;
+    deleteError.classList.add('hidden');
+    deleteDialog.showModal();
+  });
+  cancelDelete.addEventListener('click', () => deleteDialog.close());
+  deleteDialog.addEventListener('cancel', (event) => {
+    if (confirmDelete.disabled) event.preventDefault();
+  });
+
+  confirmDelete.addEventListener('click', async () => {
+    const dogId = state.editingDogId;
+    if (dogId === null || confirmDelete.disabled) return;
+    confirmDelete.disabled = true;
+    cancelDelete.disabled = true;
+    confirmDelete.textContent = '삭제 중…';
+    deleteError.classList.add('hidden');
+
+    try {
+      if (!(await userKeyReady)) throw new ApiError('', 403);
+      await api(`/api/saju/dogs/${dogId}/`, { method: 'DELETE' });
+    } catch (error) {
+      // 삭제 응답이 끊겨 재시도한 경우 서버에 이미 없는 강아지도 목록에서 정리한다.
+      if (!(error instanceof ApiError && error.status === 404)) {
+        deleteError.textContent = apiErrorMessage(error) || '삭제하지 못했어요. 잠시 후 다시 시도해 주세요.';
+        deleteError.classList.remove('hidden');
+        return;
+      }
+    } finally {
+      confirmDelete.disabled = false;
+      cancelDelete.disabled = false;
+      confirmDelete.textContent = '삭제하기';
+    }
+
+    state.myDogs = state.myDogs.filter(({ id }) => id !== dogId);
+    if (state.selectedDogId === dogId) state.selectedDogId = state.myDogs[0]?.id ?? null;
+    state.editingDogId = null;
+    state.prefilledDogId = null;
+    if (state.currentDog?.id === dogId) {
+      state.currentDog = null;
+      state.dailyLuck = null;
+      state.lifetime = null;
+    }
+    fillDogForm(null);
+    $('btn-delete-dog').classList.add('hidden');
+    renderMyDogs();
+    refreshMyDogs();
+    deleteDialog.close();
+    if (activeScreen === screens.input) history.back();
+    showToast('강아지 정보를 삭제했어요.');
+  });
 
   function buildModeRequest() {
     if (state.mode === 'chemistry') {
@@ -1226,11 +1288,14 @@ function init() {
     updateSelectedDog();
   }
 
+  let dogListRequest = 0;
   async function refreshMyDogs() {
+    const request = ++dogListRequest;
     const key = await userKeyReady;
     if (!key) return;
     try {
       const data = await api('/api/saju/me/dogs/');
+      if (request !== dogListRequest) return;
       state.myDogs = data.dogs || [];
       if (state.selectedDogId !== 'new' && !state.myDogs.some((dog) => dog.id === state.selectedDogId)) {
         state.selectedDogId = state.myDogs[0]?.id ?? null;

@@ -2075,6 +2075,60 @@ input[type="time"]:focus {
   margin-bottom: 17px;
 }
 
+.delete-dog-link {
+  display: block;
+  min-height: 44px;
+  margin: 12px 0 0 auto;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--fortune-accent);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+#delete-dog-dialog {
+  margin: auto;
+  color: var(--fortune-ink);
+}
+
+#delete-dog-dialog::backdrop {
+  background: #32251e66;
+}
+
+.delete-dog-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.delete-dog-actions button {
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid var(--fortune-line);
+  border-radius: 10px;
+  background: var(--fortune-solid);
+  color: var(--fortune-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#btn-confirm-delete-dog {
+  border-color: var(--fortune-accent);
+  background: var(--fortune-accent);
+  color: var(--color-on-primary);
+}
+
+.delete-dog-actions button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
 .image-save-content img {
   display: block;
   max-width: 100%;
@@ -2086,6 +2140,7 @@ input[type="time"]:focus {
 
 .screen :focus-visible,
 .modal-overlay :focus-visible,
+#delete-dog-dialog :focus-visible,
 #input-screen .segment-control input:focus-visible + label {
   outline: 2px solid var(--fortune-accent);
   outline-offset: 2px;

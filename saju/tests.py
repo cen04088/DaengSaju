@@ -208,6 +208,31 @@ class OwnershipTests(TestCase):
         self.assertEqual([d['id'] for d in response.data['dogs']], [newer.id, self.dog.id])
         self.assertNotIn('share_token', response.data['dogs'][0])
 
+    def test_dog_deletion_requires_owner(self):
+        url = f'/api/saju/dogs/{self.dog.id}/'
+
+        self.assertEqual(self.client.delete(url).status_code, 403)
+        stranger_response = self.client.delete(url, HTTP_X_TOSS_USER_KEY='someone-else')
+        self.assertEqual(stranger_response.status_code, 404)
+        self.assertTrue(Dog.objects.filter(pk=self.dog.id).exists())
+
+    def test_dog_deletion_removes_results_and_share_but_keeps_owner_data(self):
+        remaining = Dog.objects.create(user=self.owner, name='Bori', birth_date='2021-05-05', gender='FEMALE')
+        attendance = Attendance.objects.create(user=self.owner, year=2026, month=11, attended_days=[21])
+        share = self.client.post(f'/api/saju/dogs/{self.dog.id}/share/', HTTP_X_TOSS_USER_KEY=OWNER_KEY)
+        self.assertEqual(share.status_code, 200)
+        self.client.get(f'/api/saju/dogs/{self.dog.id}/basics/', HTTP_X_TOSS_USER_KEY=OWNER_KEY)
+        self.assertTrue(SajuBasics.objects.filter(dog=self.dog).exists())
+
+        url = f'/api/saju/dogs/{self.dog.id}/'
+        self.assertEqual(self.client.delete(url, HTTP_X_TOSS_USER_KEY=OWNER_KEY).status_code, 204)
+        self.assertEqual(self.client.delete(url, HTTP_X_TOSS_USER_KEY=OWNER_KEY).status_code, 404)
+        self.assertFalse(SajuBasics.objects.filter(dog_id=self.dog.id).exists())
+        self.assertTrue(Attendance.objects.filter(pk=attendance.pk).exists())
+        self.assertEqual(self.client.get(f"/api/saju/share/{share.data['token']}/").status_code, 404)
+        dogs = self.client.get('/api/saju/me/dogs/', HTTP_X_TOSS_USER_KEY=OWNER_KEY).data['dogs']
+        self.assertEqual([dog['id'] for dog in dogs], [remaining.id])
+
 
 class DailyLuckTests(TestCase):
     def setUp(self):

@@ -4,6 +4,7 @@ from .views import (
     AttendanceView,
     CompatibilityResultView,
     DailyWalkingLuckView,
+    DogDetailView,
     DogRegisterView,
     DogShareView,
     FriendCompatibilityView,
@@ -15,6 +16,7 @@ from .views import (
 urlpatterns = [
     path('dogs/', DogRegisterView.as_view(), name='dog-register'),
     path('me/dogs/', MyDogsView.as_view(), name='my-dogs'),
+    path('dogs/<int:dog_id>/', DogDetailView.as_view(), name='dog-detail'),
     path('dogs/<int:dog_id>/basics/', SajuBasicsView.as_view(), name='dog-basics'),
     path('dogs/<int:dog_id>/personality/', AIInterpretationView.as_view(), name='dog-personality'),
     path('dogs/<int:dog_id>/daily-luck/', DailyWalkingLuckView.as_view(), name='dog-daily-luck'),

@@ -408,6 +408,12 @@ class DogRegisterView(TossUserAPIView):
         )
 
 
+class DogDetailView(TossUserAPIView):
+    def delete(self, request, dog_id):
+        self.get_owned_dog(dog_id).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class MyDogsView(TossUserAPIView):
     """재방문 시 다시 입력하지 않도록, 내가 등록한 강아지 목록을 최근 순으로 돌려줍니다."""
 
