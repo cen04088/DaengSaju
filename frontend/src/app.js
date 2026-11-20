@@ -8,6 +8,7 @@ import {
   showFullScreenAd,
   TossAds,
 } from '@apps-in-toss/web-framework';
+import { DOG_BREEDS, dogBreedImage } from './dog-breeds.js';
 
 // 로컬 개발 시 VITE_API_BASE_URL 로 로컬 백엔드를 가리킬 수 있음
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://web-production-285b5.up.railway.app').replace(/\/+$/, '');
@@ -19,7 +20,7 @@ const DEV_USER_KEY_STORAGE = 'daengsaju_dev_user_key';
 const USE_TEST_ADS = import.meta.env.DEV || import.meta.env.VITE_USE_TEST_ADS === 'true';
 const BANNER_AD_ID = USE_TEST_ADS ? 'ait-ad-test-banner-id' : 'ait.v2.live.82786c3925d743b3';
 const FULLSCREEN_AD_ID = USE_TEST_ADS ? 'ait-ad-test-interstitial-id' : 'ait.v2.live.3c235f3d3a424553'; // 전면형
-const DEFAULT_ERROR_MESSAGE = '서버 댕댕이가 간식을 먹으러 가서\n잠시 지연되고 있어요 🐾\n잠시 후 다시 시도해주세요.';
+const DEFAULT_ERROR_MESSAGE = '잠시 후 다시 시도해 주세요.';
 
 const ELEMENTS = {
   '목': { slug: 'wood', hanja: '木', className: 'text-wood' },
@@ -31,10 +32,20 @@ const ELEMENTS = {
 const DEFAULT_ELEMENT = '화';
 
 const MODE_COPY = {
-  general: { title: '우리아이의 타고난<br>기질을 알아볼까요?', submit: '운세 보기', share: '운세 공유하기' },
-  chemistry: { title: '보호자와 댕댕이의<br>상생 궁합은?', submit: '궁합 보기', share: '궁합 결과 공유하기' },
-  friend: { title: '우리 아이와 친구 강아지의<br>댕친 궁합은?', submit: '댕친 궁합 보기', share: '댕친 궁합 공유하기' },
+  general: { title: '우리 강아지 정보', submit: '오늘 운세 뽑기', share: '사주 카드 공유하기', portrait: 'hanji-dog' },
+  chemistry: { title: '보호자 궁합', submit: '궁합 보기', share: '궁합 결과 공유하기', portrait: 'guardian' },
+  friend: { title: '친구 강아지 궁합', submit: '궁합 보기', share: '댕친 궁합 공유하기', portrait: 'friends' },
 };
+
+const DAILY_MISSIONS = [
+  '산책하다 좋아하는 냄새를 만나면, 잠깐 멈춰 기다려 주세요.',
+  '평소 좋아하는 장난감을 골라 같이 놀아 주세요.',
+  '오늘 가장 웃겼던 강아지 표정을 사진으로 남겨 보세요.',
+  '산책이 끝나면 좋아하는 자리에 함께 앉아 쉬어 보세요.',
+  '좋아하는 장난감을 눈에 잘 띄는 곳에 숨기고 같이 찾아보세요.',
+  '오늘은 산책을 마치고 이름을 불러 다정하게 인사해 주세요.',
+  '편안히 쉬고 있다면 옆에 앉아 느긋한 시간을 보내 보세요.',
+];
 
 // 출석 부적: 이번 달 누적 출석 일수 기준
 const MILESTONES = [1, 3, 5, 7, 10, 15, 20];
@@ -63,6 +74,14 @@ function formatText(text) {
     .replace(/\n/g, '<br>');
 }
 
+function formatLetterParagraphs(text) {
+  return (text || '').trim()
+    .split(/\r?\n\s*\r?\n/)
+    .filter(Boolean)
+    .map((paragraph) => `<p>${formatText(paragraph)}</p>`)
+    .join('');
+}
+
 function hasBatchim(name) {
   if (!name) return false;
   const code = name.charCodeAt(name.length - 1);
@@ -87,6 +106,14 @@ function relationPlainLabel(relationshipType) {
   return RELATION_PLAIN_LABELS[String(relationshipType || '').slice(0, 2)] || '궁합';
 }
 
+function renderCompatibilityRelation(chip, relationshipType) {
+  const plainLabel = document.createElement('strong');
+  plainLabel.textContent = relationPlainLabel(relationshipType);
+  const termLabel = document.createElement('small');
+  termLabel.textContent = relationshipType;
+  chip.replaceChildren(plainLabel, termLabel);
+}
+
 function elementInfo(element) {
   return ELEMENTS[element] || ELEMENTS[DEFAULT_ELEMENT];
 }
@@ -96,8 +123,9 @@ function elementLabel(element) {
   return info ? `${element}(${info.hanja})` : (element || '-');
 }
 
-function dogImageUrl(element) {
-  return `./assets/${elementInfo(element).slug}_dog.webp`;
+function setMinhwaPortrait(img, breed, element) {
+  img.parentElement.dataset.element = ELEMENTS[element]?.slug || '';
+  img.src = dogBreedImage(breed);
 }
 
 // ─── 아이콘 (public/assets/icons/sprite.svg) ─────────────────────────────
@@ -153,10 +181,17 @@ function streakMedal(days) {
   return svgIcon('streak', `streak-medal streak-tier-${tier}`);
 }
 
+const SEOUL_DATE = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul', dateStyle: 'short' });
+const KOREAN_DATE = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul', month: 'long', day: 'numeric', weekday: 'long',
+});
+
 function todayIso() {
-  const now = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  return SEOUL_DATE.format(new Date());
+}
+
+function fortuneDate(date) {
+  return KOREAN_DATE.format(new Date(`${date}T00:00:00+09:00`));
 }
 
 function withTimeout(promise, ms) {
@@ -284,7 +319,12 @@ function init() {
     lastChemistry: null,
     lastFriend: null,
     attendance: null,
+    attendanceDate: null,
+    dailyLuck: null,
+    lifetime: null,
+    firstResultTab: 'tab-today',
     submitting: false,
+    sharing: false,
   };
 
   // ─── 토스트 & 에러 ───
@@ -318,15 +358,33 @@ function init() {
   });
 
   // ─── 탭 ───
+  function updateShareButton() {
+    const isDaily = state.mode === 'general' && $('tab-today').classList.contains('active');
+    btnShare.textContent = state.sharing ? '공유 링크 만드는 중…'
+      : isDaily ? '오늘 운세 공유하기' : MODE_COPY[state.mode].share;
+    btnShare.disabled = state.sharing || (state.mode === 'general' && !isDaily && !state.lifetime?.loaded);
+  }
+
   function activateTab(tabId) {
-    tabBtns.forEach((b) => b.classList.toggle('active', b.dataset.tab === tabId));
+    screens.result.classList.toggle('daily-view', tabId === 'tab-today');
+    tabBtns.forEach((b) => {
+      const selected = b.dataset.tab === tabId;
+      b.classList.toggle('active', selected);
+      b.setAttribute('aria-pressed', String(selected));
+    });
     tabContents.forEach((c) => c.classList.toggle('active', c.id === tabId));
 
     const scrollContainer = document.querySelector('.result-scroll');
     if (scrollContainer) scrollContainer.scrollTop = 0;
 
     revealCards();
-    if (tabId === 'tab-lifetime') animateBars();
+    if (state.mode === 'general') {
+      updateShareButton();
+      if (tabId === 'tab-lifetime') {
+        if (state.lifetime?.loaded) animateBars();
+        else loadLifetime();
+      }
+    }
   }
 
   tabBtns.forEach((btn) => {
@@ -335,17 +393,14 @@ function init() {
 
   function revealCards() {
     const cards = document.querySelectorAll('.tab-content.active .fade-in');
-    cards.forEach((c) => c.classList.remove('reveal'));
-    cards.forEach((card, index) => {
-      setTimeout(() => card.classList.add('reveal'), index * 150);
-    });
+    cards.forEach((card) => card.classList.add('reveal'));
   }
 
   // ─── 네비게이션 ───
   // 메인은 해시 없이 두어야 토스 네이티브 뒤로가기가 앱 종료 확인을 띄움
   window.addEventListener('popstate', () => {
     const hash = window.location.hash.replace('#', '') || 'main-screen';
-    showScreen($(hash) || screens.main);
+    showScreen(Object.values(screens).find((screen) => screen.id === hash) || screens.main);
   });
 
   function navigateTo(screenElement, pushHistory = true) {
@@ -363,48 +418,17 @@ function init() {
   let activeScreen = null;
   function showScreen(screenElement) {
     activeScreen = screenElement;
-    document.querySelectorAll('.screen').forEach((s) => {
-      if (s === screenElement) return;
-      // 비활성 화면은 CSS에서 display:none이라, 나가는 화면은 페이드아웃 동안 인라인으로 붙잡아 둠
-      if (s.classList.contains('active')) s.style.display = 'flex';
-      s.classList.remove('active');
-      // 페이드아웃이 끝난 뒤 레이아웃에서 빼서 메모리 절약.
-      // 첫 프레임이 늦게 그려져도 지금 보여줄 화면은 숨기지 않도록 클래스 대신 activeScreen으로 판단
-      setTimeout(() => {
-        if (s !== activeScreen) {
-          s.style.display = 'none';
-        }
-      }, 350);
-    });
-
-    screenElement.style.display = 'flex';
-
-    let activated = false;
-    const activate = () => {
-      // 이미 처리했거나 그 사이 다른 화면으로 전환됐다면 무시
-      if (activated || activeScreen !== screenElement) return;
-      activated = true;
-      screenElement.classList.add('active');
-
-      // 결과 화면은 배경이 불투명하므로 무거운 배경 애니메이션을 숨김
-      const bgBlobs = document.querySelector('.bg-blobs');
-      if (bgBlobs) bgBlobs.style.display = screenElement === screens.result ? 'none' : 'block';
-
-      // 배너는 메인화면에서만
-      if (screenElement === screens.main) {
-        mountTossBanner();
-      } else {
-        unmountTossBanner();
-      }
-    };
-    // requestAnimationFrame을 두 번 중첩해 레이아웃 병목을 줄이고 부드럽게 페이드인
-    requestAnimationFrame(() => requestAnimationFrame(activate));
-    // 웹뷰가 가려져 rAF가 멈춘 상태에서도 화면이 비지 않도록 타이머로 한 번 더 보장
-    setTimeout(activate, 150);
+    Object.values(screens).forEach((screen) => screen.classList.toggle('active', screen === screenElement));
+    if (screenElement === screens.main) {
+      renderTodayBadge();
+      mountTossBanner();
+    } else {
+      unmountTossBanner();
+    }
   }
 
   // 새 결과를 띄우기 직전에 모드별 레이아웃을 맞춤
-  function prepareResultScreen() {
+  function prepareResultScreen(firstTab = 'tab-today') {
     const isGeneral = state.mode === 'general';
     const tabNav = document.querySelector('.tab-nav');
     if (tabNav) tabNav.style.display = isGeneral ? 'flex' : 'none';
@@ -412,11 +436,13 @@ function init() {
     $('tab-lifetime').style.display = isGeneral ? '' : 'none';
     chemistrySection.style.display = state.mode === 'chemistry' ? 'block' : 'none';
     friendSection.style.display = state.mode === 'friend' ? 'block' : 'none';
-    btnShare.textContent = MODE_COPY[state.mode].share;
+    screens.result.classList.toggle('fortune-result', isGeneral);
+    if (!isGeneral) screens.result.classList.remove('daily-view');
+    updateShareButton();
 
     lockChemReport();
     if (isGeneral) {
-      activateTab('tab-today');
+      activateTab(firstTab);
     } else {
       const scrollContainer = document.querySelector('.result-scroll');
       if (scrollContainer) scrollContainer.scrollTop = 0;
@@ -444,7 +470,7 @@ function init() {
     }
     tossBannerInstance = TossAds.attachBanner(BANNER_AD_ID, adContainer, {
       variant: 'card',
-      theme: 'dark',
+      theme: 'light',
       callbacks: {
         onAdFailedToRender: (p) => console.error('[Banner] failed', p),
         onNoFill: (p) => console.warn('[Banner] no fill', p),
@@ -579,34 +605,13 @@ function init() {
   }
 
   function lockChemReport() {
-    const container = $('locked-chem-container');
-    const overlay = $('unlock-chem-overlay');
-    if (!container) return;
-    container.classList.remove('is-unlocked');
-    container.classList.add('is-locked');
-    container.querySelectorAll('.lockable-text').forEach((t) => { t.style.filter = ''; });
-    if (overlay) {
-      overlay.style.opacity = '';
-      overlay.style.pointerEvents = '';
-      overlay.style.display = 'flex';
-    }
+    $('locked-chem-container').classList.add('is-locked');
+    $('locked-chem-content').inert = true;
   }
 
   function unlockChemReport() {
-    const container = $('locked-chem-container');
-    const overlay = $('unlock-chem-overlay');
-    if (!container) return;
-    container.classList.remove('is-locked');
-    container.classList.add('is-unlocked');
-    if (overlay) {
-      overlay.style.opacity = '0';
-      overlay.style.pointerEvents = 'none';
-      setTimeout(() => {
-        overlay.style.display = 'none';
-        // 트랜지션이 끝나면 필터를 완전히 제거 (GPU 메모리 절약)
-        container.querySelectorAll('.lockable-text').forEach((t) => { t.style.filter = 'none'; });
-      }, 500);
-    }
+    $('locked-chem-container').classList.remove('is-locked');
+    $('locked-chem-content').inert = false;
   }
 
   const btnUnlockChem = $('btn-unlock-chem');
@@ -628,10 +633,11 @@ function init() {
   // ─── 입력 폼 ───
   const form = {
     dogName: $('dog-name'),
+    dogBreed: $('dog-breed'),
     dogDate: $('dog-date'),
     dogDateLabel: $('dog-date-label'),
     dogTime: $('dog-time'),
-    dogTimeGroup: $('dog-time-group'),
+    birthOptions: $('dog-birth-options'),
     dogLunar: $('dog-lunar'),
     dogLeap: $('dog-leap'),
     dogEstimated: $('dog-estimated'),
@@ -646,6 +652,12 @@ function init() {
     friendLunar: $('friend-lunar'),
     friendLeap: $('friend-leap'),
   };
+
+  form.dogBreed.replaceChildren(
+    new Option('선택 안 함', ''),
+    new Option('믹스견', 'mixed'),
+    ...DOG_BREEDS.map(({ id, label }) => new Option(label, id)),
+  );
 
   [form.dogDate, form.ownerDate, form.friendDate].forEach((input) => {
     input.max = todayIso();
@@ -668,8 +680,8 @@ function init() {
   // 생일을 모르는 아이(입양견 등)는 입양일·추정일 기준으로, 시간·음력 입력은 숨김
   function syncEstimated() {
     const estimated = form.dogEstimated.checked;
-    form.dogDateLabel.textContent = estimated ? '입양일 또는 추정 생일' : '강아지 생년월일';
-    form.dogTimeGroup.classList.toggle('hidden', estimated);
+    form.dogDateLabel.textContent = estimated ? '입양일 또는 추정 생일' : '강아지 생일';
+    form.birthOptions.classList.toggle('hidden', estimated);
     form.dogLunar.disabled = estimated;
     if (estimated) {
       form.dogLunar.checked = false;
@@ -685,24 +697,32 @@ function init() {
     const gender = document.querySelector('input[name="dog-gender"]:checked')?.value;
     return {
       name: form.dogName.value.trim(),
+      breed: form.dogBreed.value,
       birth_date: form.dogDate.value,
       birth_time: estimated ? null : (form.dogTime.value || null),
       is_lunar: lunar,
       is_leap_month: lunar && form.dogLeap.checked,
-      gender: gender === 'F' ? 'FEMALE' : 'MALE',
+      gender: gender || 'MALE',
       is_estimated_birth: estimated,
     };
   }
 
   function fillDogForm(dog) {
     form.dogName.value = dog?.name || '';
+    form.dogBreed.value = dog?.breed || '';
     form.dogDate.value = dog?.birth_date || '';
     form.dogTime.value = dog?.birth_time ? dog.birth_time.slice(0, 5) : '';
     form.dogEstimated.checked = Boolean(dog?.is_estimated_birth);
     form.dogLunar.checked = Boolean(dog?.is_lunar);
     syncEstimated();
     form.dogLeap.checked = Boolean(dog?.is_leap_month) && form.dogLunar.checked;
-    $(dog?.gender === 'FEMALE' ? 'dog-f' : 'dog-m').checked = true;
+    form.birthOptions.open = Boolean(dog?.birth_time || dog?.is_lunar);
+    const neutered = dog?.gender === 'NEUTERED';
+    $('dog-neutered').disabled = !neutered;
+    $('dog-neutered').classList.toggle('hidden', !neutered);
+    $('dog-neutered-label').classList.toggle('hidden', !neutered);
+    const genderId = { MALE: 'dog-m', FEMALE: 'dog-f', NEUTERED: 'dog-neutered' };
+    $(genderId[dog?.gender] || 'dog-m').checked = true;
   }
 
   function getSelectedDog() {
@@ -721,20 +741,36 @@ function init() {
     }
   }
 
-  function openInput(mode) {
+  function openInput(mode, firstTab = 'tab-today') {
     state.mode = mode;
-    $('input-title').innerHTML = MODE_COPY[mode].title;
-    btnSubmit.textContent = MODE_COPY[mode].submit;
+    state.firstResultTab = firstTab;
+    $('input-title').textContent = MODE_COPY[mode].title;
+    const portrait = firstTab === 'tab-lifetime' ? 'lifetime' : MODE_COPY[mode].portrait;
+    $('input-portrait').src = `./assets/minhwa/${portrait}.webp`;
+    btnSubmit.textContent = firstTab === 'tab-lifetime' ? '평생 사주 보기' : MODE_COPY[mode].submit;
     form.ownerSection.classList.toggle('hidden', mode !== 'chemistry');
     form.friendSection.classList.toggle('hidden', mode !== 'friend');
+    clearDogFormError();
     prepareDogForm();
     navigateTo(screens.input);
   }
 
-  $('btn-general').addEventListener('click', () => openInput('general'));
+  function clearDogFormError() {
+    [form.dogName, form.dogDate].forEach((field) => {
+      $(`${field.id}-error`).classList.add('hidden');
+      field.removeAttribute('aria-invalid');
+    });
+  }
+
+  $('btn-input-back').addEventListener('click', () => history.back());
+  $('btn-edit-dog').addEventListener('click', () => openInput('general'));
+  [form.dogName, form.dogDate].forEach((field) => field.addEventListener('input', clearDogFormError));
+  form.dogEstimated.addEventListener('change', clearDogFormError);
+
+  $('btn-lifetime').addEventListener('click', () => openMyFortune('tab-lifetime'));
   $('btn-chemistry').addEventListener('click', () => openInput('chemistry'));
   $('btn-friend').addEventListener('click', () => openInput('friend'));
-  $('btn-share-cta').addEventListener('click', () => openInput('general'));
+  $('btn-share-cta').addEventListener('click', () => openMyFortune());
 
   function buildModeRequest() {
     if (state.mode === 'chemistry') {
@@ -767,13 +803,18 @@ function init() {
     return {};
   }
 
-  btnSubmit.addEventListener('click', async (event) => {
+  $('saju-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     if (state.submitting) return;
 
     const dog = readDogForm();
     if (!dog.name || !dog.birth_date) {
-      showToast('강아지 이름과 생년월일을 입력해주세요!');
+      const field = dog.name ? form.dogDate : form.dogName;
+      const error = $(`${field.id}-error`);
+      field.setAttribute('aria-invalid', 'true');
+      error.textContent = dog.name ? `${form.dogDateLabel.textContent}을 입력해 주세요.` : '강아지 이름을 입력해 주세요.';
+      error.classList.remove('hidden');
+      field.focus();
       return;
     }
     const modeRequest = buildModeRequest();
@@ -781,13 +822,15 @@ function init() {
       showToast(modeRequest.error);
       return;
     }
-    if (!(await requireUserKey())) return;
-
+    const mode = state.mode;
+    const firstTab = state.firstResultTab;
     state.submitting = true;
-    setDogNameDisplays(dog.name);
-    navigateTo(screens.loading, false);
+    btnSubmit.disabled = true;
 
     try {
+      if (!(await requireUserKey()) || activeScreen !== screens.input) return;
+      setDogNameDisplays(dog.name);
+      showResultLoading(mode, firstTab);
       const registration = await api('/api/saju/dogs/', {
         method: 'POST',
         body: { nickname: 'Toss 사용자', dog },
@@ -796,14 +839,16 @@ function init() {
       state.selectedDogId = dogRecord.id;
       state.prefilledDogId = dogRecord.id;
 
-      if (state.mode === 'general') {
-        showGeneralResult(dogRecord, await loadDogBundle(dogRecord.id));
+      if (mode === 'general') {
+        const luck = await loadDailyLuck(dogRecord.id);
+        if (activeScreen === screens.loading) showGeneralResult(dogRecord, luck, firstTab);
       } else {
         const result = await api(`/api/saju/dogs/${dogRecord.id}/${modeRequest.path}/`, {
           method: 'POST',
           body: modeRequest.body,
         });
-        if (state.mode === 'chemistry') {
+        if (activeScreen !== screens.loading) return;
+        if (mode === 'chemistry') {
           showChemistryResult(dogRecord, result);
         } else {
           showFriendResult(dogRecord, result);
@@ -812,22 +857,25 @@ function init() {
       refreshMyDogs();
     } catch (error) {
       console.error(error);
-      showScreen(screens.input);
-      showApiError(error);
+      if (activeScreen === screens.loading) {
+        showScreen(screens.input);
+        showApiError(error);
+      }
     } finally {
       state.submitting = false;
+      btnSubmit.disabled = false;
     }
   });
 
   // ─── 결과 렌더링 ───
-  async function loadDogBundle(dogId) {
-    // 각 API가 원국 계산을 스스로 보장하므로 병렬 호출해도 안전
-    const [basics, personality, luck] = await Promise.all([
-      api(`/api/saju/dogs/${dogId}/basics/`),
-      api(`/api/saju/dogs/${dogId}/personality/`),
-      api(`/api/saju/dogs/${dogId}/daily-luck/`),
-    ]);
-    return { basics, personality, luck };
+  function showResultLoading(mode, firstTab) {
+    $('loading-title').textContent = mode !== 'general' ? '궁합을 살펴보고 있어요'
+      : firstTab === 'tab-lifetime' ? '평생 사주를 살펴보고 있어요' : '운세 카드를 열고 있어요';
+    navigateTo(screens.loading, false);
+  }
+
+  function loadDailyLuck(dogId) {
+    return api(`/api/saju/dogs/${dogId}/daily-luck/`);
   }
 
   function renderChips(container, items) {
@@ -862,52 +910,106 @@ function init() {
   function renderLifetime(dog, basics, personality) {
     updateSajuTable(basics);
     const info = elementInfo(basics.main_element);
-    $('result-img').src = dogImageUrl(basics.main_element);
+    setMinhwaPortrait($('result-img'), dog.breed, basics.main_element);
     $('res-summary').innerHTML = `${formatText(personality.personality_summary)}<br><span class="${info.className}">${escapeHtml(elementLabel(basics.main_element))}</span>의 기운을 타고난 <span class="dog-name-display">${escapeHtml(dog.name)}</span>!`;
-    $('res-food').innerHTML = formatText(personality.treat_luck);
-    $('res-energy').innerHTML = formatText(personality.vitality_analysis);
-    $('res-love').innerHTML = formatText(personality.care_tips);
-    $('res-social').innerHTML = formatText(personality.social_analysis);
+    const reports = [
+      ['res-food', personality.treat_luck],
+      ['res-energy', personality.vitality_analysis],
+      ['res-love', personality.care_tips],
+      ['res-social', personality.social_analysis],
+    ];
+    for (const [id, text] of reports) {
+      const report = $(id);
+      report.closest('details').open = false;
+      report.innerHTML = formatLetterParagraphs(text) || '<p>아직 풀이가 없어요.</p>';
+    }
     $('res-estimated-note').classList.toggle('hidden', !personality.is_estimated_birth);
     renderIljuCard(personality.day_pillar_profile, personality.zodiac);
   }
 
-  function renderToday(luck) {
+  function renderToday(dog, luck) {
+    const date = luck.date || todayIso();
+    const dateLabel = $('res-luck-date');
+    dateLabel.dateTime = date;
+    dateLabel.textContent = fortuneDate(date);
+    $('res-daily-title').textContent = `${dog.name}의 오늘 운세`;
+    setMinhwaPortrait($('res-daily-dog'), dog.breed, luck.today_element || dog.main_element);
     $('res-luck-score').textContent = luck.luck_score;
-    $('res-luck-msg').innerHTML = formatText(luck.message);
+    const message = (luck.message || '').trim();
+    const firstParagraph = message.split(/\r?\n\s*\r?\n/, 1)[0];
+    const firstSentence = firstParagraph.match(/^.*?[.!?。！？](?=\s|$)/su)?.[0];
+    const lead = (firstParagraph.length > 100 && firstSentence) ? firstSentence : firstParagraph;
+    const detail = message.slice(lead.length).trim();
+    $('res-luck-msg').innerHTML = formatText(lead);
+    $('res-luck-detail').innerHTML = formatLetterParagraphs(detail);
+    const theme = $('res-luck-theme');
+    theme.classList.toggle('hidden', !ELEMENTS[luck.today_element]);
+    if (ELEMENTS[luck.today_element]) {
+      theme.replaceChildren(elementIcon(luck.today_element), `오늘의 기운 · ${elementLabel(luck.today_element)}`);
+    }
+    const more = $('res-luck-more');
+    more.open = false;
+    more.classList.toggle('hidden', !detail);
     $('res-luck-color').textContent = luck.lucky_color;
     $('res-luck-dir').textContent = luck.lucky_direction;
-
-    const pillarLine = $('res-today-pillar');
-    if (luck.today_pillar) {
-      pillarLine.replaceChildren(
-        `오늘은 ${luck.today_pillar}(${luck.today_pillar_hanja})일 · `,
-        ...(ELEMENTS[luck.today_element] ? [elementIcon(luck.today_element)] : []),
-        `${elementLabel(luck.today_element)} 기운이 흐르는 날`,
-      );
-      pillarLine.classList.remove('hidden');
-    } else {
-      pillarLine.classList.add('hidden');
-    }
+    const dayNumber = Math.floor(Date.parse(`${date}T00:00:00Z`) / 86400000);
+    $('res-daily-mission').textContent = DAILY_MISSIONS[(dayNumber + Number(dog.id)) % DAILY_MISSIONS.length];
   }
 
-  function showGeneralResult(dog, { basics, personality, luck }) {
+  function showGeneralResult(dog, luck, firstTab) {
     state.mode = 'general';
-    state.currentDog = {
-      ...dog,
-      main_element: basics.main_element,
-      nickname: personality.day_pillar_profile?.nickname || null,
-    };
+    state.currentDog = dog;
+    state.dailyLuck = luck;
+    state.lifetime = { loading: false, loaded: false };
+    $('lifetime-report').classList.add('hidden');
     setDogNameDisplays(dog.name);
-    renderLifetime(dog, basics, personality);
-    renderToday(luck);
+    renderToday(dog, luck);
     renderAttendanceStatus();
-    setElementBars(basics.element_distribution);
-    renderRadarChart(basics.element_distribution);
-    prepareResultScreen();
+    prepareResultScreen(firstTab);
     navigateTo(screens.result);
     stampAttendanceForToday();
   }
+
+  async function loadLifetime() {
+    const result = state.lifetime;
+    if (!result || result.loading || result.loaded) return;
+    const dog = state.currentDog;
+    const status = $('lifetime-status');
+    const retry = $('btn-retry-lifetime');
+    result.loading = true;
+    status.textContent = '평생 사주를 불러오고 있어요.';
+    status.classList.remove('hidden');
+    retry.classList.add('hidden');
+
+    try {
+      const [basics, personality] = await Promise.all([
+        api(`/api/saju/dogs/${dog.id}/basics/`),
+        api(`/api/saju/dogs/${dog.id}/personality/`),
+      ]);
+      if (state.lifetime !== result || state.currentDog !== dog) return;
+      dog.main_element = basics.main_element;
+      dog.nickname = personality.day_pillar_profile?.nickname || null;
+      renderLifetime(dog, basics, personality);
+      setElementBars(basics.element_distribution);
+      renderRadarChart(basics.element_distribution);
+      result.loaded = true;
+      status.classList.add('hidden');
+      $('lifetime-report').classList.remove('hidden');
+      if ($('tab-lifetime').classList.contains('active')) {
+        updateShareButton();
+        revealCards();
+        animateBars();
+      }
+    } catch (error) {
+      if (state.lifetime !== result || state.currentDog !== dog) return;
+      status.textContent = apiErrorMessage(error) || '평생 사주를 불러오지 못했어요.';
+      retry.classList.remove('hidden');
+    } finally {
+      result.loading = false;
+    }
+  }
+
+  $('btn-retry-lifetime').addEventListener('click', loadLifetime);
 
   function renderZodiacLine(element, zodiac, firstName, secondName) {
     if (!zodiac) {
@@ -933,14 +1035,7 @@ function init() {
     $('res-chem-title').textContent = data.title || '궁합 결과';
     setElementLabel($('res-chem-owner-element'), data.owner_element);
     setElementLabel($('res-chem-dog-element'), data.dog_element);
-    // 쉬운 말(닮은꼴형 등)을 위에, 명리 용어는 아래 작게: 한 줄로 두면 칩이 길어져 양옆 이름이 줄바꿈됨
-    const relationChip = $('res-chem-rel');
-    const plainLabel = document.createElement('strong');
-    plainLabel.textContent = relationPlainLabel(data.relationship_type);
-    const termLabel = document.createElement('small');
-    termLabel.textContent = data.relationship_type;
-    relationChip.replaceChildren(plainLabel, termLabel);
-    relationChip.classList.add('two-line');
+    renderCompatibilityRelation($('res-chem-rel'), data.relationship_type);
     $('res-chem-desc').innerHTML = formatText(data.description || '');
     const advice = $('res-chem-advice');
     if (data.advice) {
@@ -968,7 +1063,7 @@ function init() {
     setElementLabel($('res-friend-my-element'), data.my_element);
     $('res-friend-name').textContent = data.friend_name;
     setElementLabel($('res-friend-element'), data.friend_element);
-    $('res-friend-rel').textContent = `✨ ${data.relationship_type} 관계 ✨`;
+    renderCompatibilityRelation($('res-friend-rel'), data.relationship_type);
     $('res-friend-score').textContent = data.score;
     $('res-friend-desc').textContent = data.description;
     $('res-friend-tip').textContent = `💡 ${data.tip}`;
@@ -1092,43 +1187,43 @@ function init() {
 
   // ─── 재방문: 내 강아지 ───
   function renderMyDogs() {
-    const section = $('my-dog-section');
-    if (!state.myDogs.length) {
-      section.classList.add('hidden');
-      return;
-    }
-    section.classList.remove('hidden');
+    const chipList = $('my-dog-chips');
+    chipList.classList.toggle('hidden', !state.myDogs.length);
 
-    const dog = getSelectedDog() || state.myDogs[0];
-    $('my-dog-today-img').src = dogImageUrl(dog.main_element);
-    $('my-dog-today-title').textContent = `${dog.name}의 오늘 운세 보기`;
-    $('my-dog-today-desc').textContent = dog.nickname
-      ? `“${dog.nickname}” ${dog.name}의 오늘 산책운을 확인해 보세요`
-      : '탭 한 번이면 출석 도장까지 쾅!';
-    renderTodayBadge();
+    function updateSelectedDog() {
+      const dog = getSelectedDog() || state.myDogs[0];
+      setMinhwaPortrait($('my-dog-today-img'), dog?.breed, dog?.main_element);
+      $('home-dog-status').classList.toggle('hidden', !dog);
+      chipList.querySelectorAll('[data-dog-id]').forEach((chip) => {
+        const selected = chip.dataset.dogId === String(dog?.id);
+        chip.classList.toggle('active', selected);
+        chip.setAttribute('aria-pressed', String(selected));
+      });
+      renderTodayBadge();
+    }
 
     const chips = state.myDogs.map((item) => {
       const chip = document.createElement('button');
       chip.type = 'button';
-      chip.className = `dog-chip${item.id === dog.id ? ' active' : ''}`;
+      chip.className = 'dog-chip';
+      chip.dataset.dogId = item.id;
       chip.textContent = item.name;
-      chip.setAttribute('role', 'listitem');
       chip.addEventListener('click', () => {
         state.selectedDogId = item.id;
-        renderMyDogs();
+        updateSelectedDog();
       });
       return chip;
     });
     const addChip = document.createElement('button');
     addChip.type = 'button';
     addChip.className = 'dog-chip';
-    addChip.textContent = '+ 새 아이';
-    addChip.setAttribute('role', 'listitem');
+    addChip.textContent = '+ 강아지 추가';
     addChip.addEventListener('click', () => {
       state.selectedDogId = 'new';
       openInput('general');
     });
-    $('my-dog-chips').replaceChildren(...chips, addChip);
+    chipList.replaceChildren(...chips, addChip);
+    updateSelectedDog();
   }
 
   async function refreshMyDogs() {
@@ -1141,29 +1236,44 @@ function init() {
         state.selectedDogId = state.myDogs[0]?.id ?? null;
       }
       renderMyDogs();
-      if (state.myDogs.length && !state.attendance) refreshAttendanceSummary();
+      if (state.myDogs.length && state.attendanceDate !== todayIso()) refreshAttendanceSummary();
     } catch (error) {
       console.warn('[MyDogs] load failed', error);
     }
   }
 
-  async function openDogToday() {
-    const dog = getSelectedDog() || state.myDogs[0];
-    if (!dog || !(await requireUserKey())) return;
-    state.mode = 'general';
-    setDogNameDisplays(dog.name);
-    navigateTo(screens.loading, false);
+  async function openMyFortune(firstTab = 'tab-today') {
+    if (state.submitting) return;
+    const origin = activeScreen;
+    const button = $('btn-my-dog-today');
+    state.submitting = true;
+    button.disabled = true;
     try {
-      showGeneralResult(dog, await loadDogBundle(dog.id));
+      await withTimeout(initialDogs, 1800);
+      if (activeScreen !== origin) return;
+      const dog = getSelectedDog() || state.myDogs[0];
+      if (!dog) {
+        openInput('general', firstTab);
+        return;
+      }
+      if (!(await requireUserKey()) || activeScreen !== origin) return;
+      showResultLoading('general', firstTab);
+      const luck = await loadDailyLuck(dog.id);
+      if (activeScreen === screens.loading) showGeneralResult(dog, luck, firstTab);
     } catch (error) {
       console.error(error);
-      showScreen(screens.main);
-      if (error instanceof ApiError && error.status === 404) refreshMyDogs();
-      showApiError(error);
+      if (activeScreen === screens.loading) {
+        showScreen(origin);
+        if (error instanceof ApiError && error.status === 404) refreshMyDogs();
+        showApiError(error);
+      }
+    } finally {
+      state.submitting = false;
+      button.disabled = false;
     }
   }
 
-  $('btn-my-dog-today').addEventListener('click', openDogToday);
+  $('btn-my-dog-today').addEventListener('click', () => openMyFortune());
 
   // ─── 출석 ───
   function attendanceTotal(data) {
@@ -1172,57 +1282,49 @@ function init() {
 
   function renderTodayBadge() {
     const badge = $('my-dog-today-badge');
-    const data = state.attendance;
-    if (!data) {
-      badge.textContent = '오늘의 산책운 도착 🐾';
-      return;
-    }
-    const streak = data.streak_days || 0;
-    if (data.already_stamped_today) {
-      if (streak > 1) {
-        badge.replaceChildren(streakMedal(streak), `${streak}일 연속 출석 중`);
-      } else {
-        badge.textContent = '✅ 오늘 출석 완료';
-      }
-    } else {
-      badge.textContent = streak > 0 ? `오늘 보면 ${streak + 1}일 연속 출석!` : '오늘의 산책운 도착 🐾';
-    }
+    const data = state.attendanceDate === todayIso() ? state.attendance : null;
+    badge.classList.toggle('hidden', !data?.already_stamped_today);
   }
 
   function renderAttendanceStatus() {
     const status = $('attendance-status');
-    const data = state.attendance;
+    const data = state.attendanceDate === todayIso() ? state.attendance : null;
     if (!data) {
-      status.textContent = '오늘 운세를 보면 출석 도장이 자동으로 찍혀요 🐾';
+      status.textContent = '';
       return;
     }
     const streak = data.streak_days || 0;
     if (!data.already_stamped_today) {
-      status.textContent = `이번 달 ${attendanceTotal(data)}일 출석 · 오늘 도장은 아직이에요`;
+      status.textContent = `이번 달 ${attendanceTotal(data)}일`;
       return;
     }
     status.replaceChildren(
-      `✅ 오늘 출석 완료 · 이번 달 ${attendanceTotal(data)}일`,
+      `오늘 발도장 완료 · 이번 달 ${attendanceTotal(data)}일`,
       ...(streak > 1 ? [' · ', streakMedal(streak), `${streak}일 연속`] : []),
     );
   }
 
-  function applyAttendance(data) {
+  function applyAttendance(data, date = todayIso()) {
     state.attendance = data;
+    state.attendanceDate = date;
     renderAttendanceStatus();
     renderTodayBadge();
     if (!$('attendance-modal').classList.contains('hidden')) renderCalendar();
   }
 
   async function refreshAttendanceSummary() {
+    const date = todayIso();
+    const previous = state.attendance;
     try {
-      applyAttendance(await api('/api/saju/attendance/'));
+      const data = await api('/api/saju/attendance/');
+      if (state.attendance === previous) applyAttendance(data, date);
     } catch (error) {
       console.warn('[Attendance] load failed', error);
     }
   }
 
   async function celebrate() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     try {
       const confetti = await loadConfetti();
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#FF69B4', '#FFD700', '#ffffff'] });
@@ -1231,11 +1333,10 @@ function init() {
     }
   }
 
-  async function stampAttendance({ quiet = false } = {}) {
+  async function stampAttendance({ fromCard = false } = {}) {
     const data = await api('/api/saju/attendance/', { method: 'POST', body: {} });
     applyAttendance(data);
-    if (data.stamped) {
-      if (!quiet) showToast(`🐾 출석 도장 쾅! 이번 달 ${attendanceTotal(data)}번째 출석이에요`);
+    if (data.stamped && !fromCard) {
       celebrate();
       if (data.new_milestone) setTimeout(() => showTalisman(data.new_milestone), 1400);
     }
@@ -1244,9 +1345,9 @@ function init() {
 
   // 오늘 운세를 보면 자동으로 출석 처리
   async function stampAttendanceForToday() {
-    if (state.attendance?.already_stamped_today) return;
+    if (state.attendanceDate === todayIso() && state.attendance?.already_stamped_today) return;
     try {
-      await stampAttendance();
+      await stampAttendance({ fromCard: true });
     } catch (error) {
       console.warn('[Attendance] auto stamp failed', error);
     }
@@ -1256,11 +1357,10 @@ function init() {
     const data = state.attendance || { attended_days: [], streak_days: 0 };
     const attendedDays = data.attended_days || [];
     const total = attendanceTotal(data);
-    const now = new Date();
-    const year = data.year || now.getFullYear();
-    const month = data.month || now.getMonth() + 1;
+    const [todayYear, todayMonth, todayDate] = todayIso().split('-').map(Number);
+    const year = data.year || todayYear;
+    const month = data.month || todayMonth;
     const daysInMonth = new Date(year, month, 0).getDate();
-    const todayDate = now.getDate();
 
     $('calendar-streak').textContent = `${total}일`;
     const run = $('calendar-run');
@@ -1274,8 +1374,8 @@ function init() {
 
     const nextReward = MILESTONES.find((m) => m > total);
     $('calendar-progress-text').textContent = nextReward
-      ? `다음 스페셜 부적까지 ${nextReward - total}일 남았어요!`
-      : '이번 달 부적을 모두 모았어요! 🎉';
+      ? `다음 부적까지 ${nextReward - total}일`
+      : '이번 달 부적을 모두 모았어요.';
     $('calendar-progress-fill').style.width = `${nextReward ? Math.min((total / nextReward) * 100, 100) : 100}%`;
 
     const cells = [];
@@ -1304,7 +1404,7 @@ function init() {
     const stampButton = $('btn-attendance-stamp');
     const alreadyStamped = Boolean(data.already_stamped_today);
     stampButton.disabled = alreadyStamped;
-    stampButton.textContent = alreadyStamped ? '오늘 출석 완료' : '오늘 출석하기';
+    stampButton.textContent = alreadyStamped ? '오늘 발도장 완료' : '오늘 발도장 찍기';
   }
 
   $('btn-open-attendance').addEventListener('click', async () => {
@@ -1322,7 +1422,7 @@ function init() {
   $('btn-attendance-stamp').addEventListener('click', async () => {
     if (state.attendance?.already_stamped_today) return;
     try {
-      await stampAttendance({ quiet: true });
+      await stampAttendance();
     } catch (error) {
       showApiError(error);
     }
@@ -1440,31 +1540,39 @@ function init() {
 
   btnShare.addEventListener('click', async () => {
     const dog = state.currentDog;
-    if (!dog || btnShare.disabled) return;
-    const originalText = btnShare.textContent;
-    btnShare.textContent = '공유 링크 만드는 중... 🐾';
-    btnShare.disabled = true;
+    if (!dog || state.sharing || btnShare.disabled) return;
+    const daily = state.mode === 'general' && $('tab-today').classList.contains('active') ? state.dailyLuck : null;
+    const message = daily
+      ? `${fortuneDate(daily.date || todayIso())}, ${dog.name}의 산책운은 ${daily.luck_score}점 🐾\n우리 강아지 오늘 운세도 뽑아 보세요!`
+      : buildShareMessage();
+    const element = daily?.today_element || dog.main_element;
+    state.sharing = true;
+    updateShareButton();
 
     try {
-      const { token } = await api(`/api/saju/dogs/${dog.id}/share/`, { method: 'POST', body: {} });
+      let link = APP_SCHEME;
+      if (!daily) {
+        const { token } = await api(`/api/saju/dogs/${dog.id}/share/`, { method: 'POST', body: {} });
+        link += `?share=${encodeURIComponent(token)}`;
+      }
       // 링크 미리보기 썸네일: 백엔드가 고정 URL로 제공하는 오행별 공유 카드(1200×630, scripts/og 로 생성)
-      const ogImageUrl = `${API_BASE_URL}/static/assets/og_${elementInfo(dog.main_element).slug}.jpg`;
-      const tossLink = await getTossShareLink(`${APP_SCHEME}?share=${encodeURIComponent(token)}`, ogImageUrl);
-      await share({ message: `${buildShareMessage()}\n\n${tossLink}` });
+      const ogImageUrl = `${API_BASE_URL}/static/assets/og_${elementInfo(element).slug}.jpg`;
+      const tossLink = await getTossShareLink(link, ogImageUrl);
+      await share({ message: `${message}\n\n${tossLink}` });
     } catch (error) {
       console.error(error);
       showToast(error instanceof ApiError
         ? (apiErrorMessage(error) || '공유 링크를 만들지 못했어요. 잠시 후 다시 시도해주세요.')
         : '공유하기는 토스 앱에서 사용할 수 있어요.');
     } finally {
-      btnShare.textContent = originalText;
-      btnShare.disabled = false;
+      state.sharing = false;
+      updateShareButton();
     }
   });
 
   // 공유 링크로 들어온 경우: 친구의 공개 카드
   function renderSharedCard(card) {
-    $('share-img').src = dogImageUrl(card.main_element);
+    setMinhwaPortrait($('share-img'), card.breed, card.main_element);
     $('share-dog-name').textContent = card.dog_name;
     $('share-nickname').textContent = card.profile
       ? `“${card.profile.nickname}”`
@@ -1480,7 +1588,9 @@ function init() {
 
   async function openSharedCard(token) {
     try {
-      renderSharedCard(await api(`/api/saju/share/${encodeURIComponent(token)}/`));
+      const card = await api(`/api/saju/share/${encodeURIComponent(token)}/`);
+      if (activeScreen !== screens.main) return;
+      renderSharedCard(card);
       navigateTo(screens.share);
     } catch (error) {
       console.warn('[Share] card load failed', error);
@@ -1494,7 +1604,7 @@ function init() {
 
   const shareToken = readShareToken();
   if (shareToken) openSharedCard(shareToken);
-  refreshMyDogs();
+  const initialDogs = refreshMyDogs();
 }
 
 if (document.readyState === 'loading') {

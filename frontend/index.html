@@ -4,19 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>댕사주</title>
 
   <!-- Toss App Icon / Brand Logo Settings -->
-  <link rel="icon" href="/assets/logo.png">
-  <link rel="apple-touch-icon" href="/assets/logo.png">
+  <link rel="icon" href="/assets/minhwa/hanji-dog.webp" type="image/webp">
   <meta property="og:title" content="댕사주">
-  <meta property="og:image" content="/assets/logo.png">
+  <meta property="og:image" content="/assets/minhwa/hanji-dog.webp">
 
   <link rel="stylesheet" href="/src/style.css">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <link rel="stylesheet" as="style" crossorigin
-    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
   <!-- 이모지 서체 Tossface (https://github.com/toss/tossface). 화면에 나온 이모지가 속한 묶음만 내려받음 -->
   <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/toss/tossface@1.6.1/dist/tossface.css" />
 </head>
@@ -24,62 +21,50 @@
 <body>
   <div id="root">
     <div class="app-container">
-      <!-- Decorative Background -->
-      <div class="bg-blobs">
-        <div class="stars"></div>
-        <div class="shooting-stars">
-          <span></span><span></span><span></span><span></span><span></span>
-          <span></span><span></span><span></span><span></span><span></span>
-        </div>
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
-      </div>
-
-
-      <!-- 1. 메인 선택 화면 -->
+      <!-- 1. 오늘의 운세 홈 -->
       <section id="main-screen" class="screen active">
         <div class="body-content main-body">
           <div class="main-stack">
-            <h2 class="main-title text-center" id="main-title">어떤 운세를<br>알아볼까요?</h2>
-
-            <!-- 재방문: 등록한 강아지의 오늘 운세 바로가기 -->
-            <div id="my-dog-section" class="my-dog-section hidden">
-              <button type="button" id="btn-my-dog-today" class="today-card">
-                <img id="my-dog-today-img" class="today-card-img" alt="" decoding="async">
-                <span class="today-card-text">
-                  <span id="my-dog-today-badge" class="today-card-badge">오늘의 산책운 도착 🐾</span>
-                  <span id="my-dog-today-title" class="today-card-title">댕댕이의 오늘 운세 보기</span>
-                  <span id="my-dog-today-desc" class="today-card-desc">탭 한 번이면 출석 도장까지 쾅!</span>
+            <h1 class="main-title" id="main-title">오늘의<br>강아지 운세</h1>
+            <p class="home-intro">오늘의 운세가 도착했어요.</p>
+            <div id="home-dog-status" class="home-dog-status hidden">
+              <div class="home-dog-label">
+                <p>내 강아지</p>
+                <button type="button" id="btn-edit-dog">정보 수정</button>
+              </div>
+              <span id="my-dog-today-badge" class="hidden" role="img" aria-label="출석 완료" title="출석 완료">
+                출석
+                <svg aria-hidden="true"><use href="./assets/icons/sprite.svg#paw-stamp"></use></svg>
+              </span>
+            </div>
+            <div id="my-dog-chips" class="my-dog-chips hidden" role="group" aria-label="내 강아지"></div>
+            <div class="home-envelope">
+              <div class="envelope-letter">
+                <span class="minhwa-portrait home-dog-art">
+                  <img id="my-dog-today-img" src="./assets/minhwa/breeds/mixed.webp" alt="" width="264" height="264" decoding="async">
                 </span>
-                <svg class="today-card-arrow" aria-hidden="true"><use href="./assets/icons/sprite.svg#chevron-right"></use></svg>
-              </button>
-              <div id="my-dog-chips" class="my-dog-chips" role="list"></div>
+              </div>
+              <div class="envelope-pocket" aria-hidden="true"></div>
+              <button type="button" id="btn-my-dog-today" class="btn-primary">오늘 운세 뽑기</button>
             </div>
 
-            <div class="menu-cards">
-              <button type="button" class="menu-card" id="btn-general">
-                <svg class="menu-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#menu-saju"></use></svg>
-                <span class="menu-text">
-                  <span class="menu-title">일반 댕사주</span>
-                  <span class="menu-desc">우리아이의 타고난 기질과 성격 알아보기</span>
-                </span>
+            <nav class="fortune-links" aria-label="다른 풀이">
+              <button type="button" id="btn-lifetime">
+                <img class="fortune-link-art" src="./assets/minhwa/lifetime.webp" alt="" width="64" height="64" decoding="async">
+                <span>평생 사주</span>
+                <svg aria-hidden="true" class="btn-icon"><use href="./assets/icons/sprite.svg#chevron-right"></use></svg>
               </button>
-              <button type="button" class="menu-card" id="btn-chemistry">
-                <svg class="menu-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#menu-match"></use></svg>
-                <span class="menu-text">
-                  <span class="menu-title">댕궁합 보기</span>
-                  <span class="menu-desc">보호자와 강아지의 찰떡 케미 확인하기</span>
-                </span>
+              <button type="button" id="btn-chemistry">
+                <img class="fortune-link-art" src="./assets/minhwa/guardian.webp" alt="" width="64" height="64" decoding="async">
+                <span>보호자 궁합</span>
+                <svg aria-hidden="true" class="btn-icon"><use href="./assets/icons/sprite.svg#chevron-right"></use></svg>
               </button>
-              <button type="button" class="menu-card" id="btn-friend">
-                <svg class="menu-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#menu-friend"></use></svg>
-                <span class="menu-text">
-                  <span class="menu-title">댕친 궁합</span>
-                  <span class="menu-desc">우리 아이와 친구 강아지의 케미 확인하기</span>
-                </span>
+              <button type="button" id="btn-friend">
+                <img class="fortune-link-art" src="./assets/minhwa/friends.webp" alt="" width="64" height="64" decoding="async">
+                <span>친구 강아지 궁합</span>
+                <svg aria-hidden="true" class="btn-icon"><use href="./assets/icons/sprite.svg#chevron-right"></use></svg>
               </button>
-            </div>
+            </nav>
           </div>
           <!-- Toss Banner Ad -->
           <div id="toss-ad-container" class="toss-ad-container"></div>
@@ -90,38 +75,56 @@
       <section id="input-screen" class="screen">
 
         <div class="body-content">
-          <h2 class="main-title" id="input-title">우리아이의 타고난<br>기질을 알아볼까요?</h2>
+          <button type="button" id="btn-input-back" class="input-back">
+            <svg aria-hidden="true" class="btn-icon"><use href="./assets/icons/sprite.svg#chevron-right"></use></svg>
+            뒤로
+          </button>
+          <div class="reading-heading">
+            <h2 class="main-title" id="input-title">우리 강아지 정보</h2>
+            <img id="input-portrait" class="reading-heading-art" alt="" width="76" height="76" decoding="async">
+          </div>
 
           <form id="saju-form" novalidate>
             <div class="form-group">
               <label for="dog-name">강아지 이름</label>
-              <input type="text" id="dog-name" placeholder="예: 댕댕이" maxlength="20" autocomplete="off" required>
+              <input type="text" id="dog-name" placeholder="예: 보리" maxlength="20" autocomplete="off" aria-describedby="dog-name-error" required>
+              <p id="dog-name-error" class="form-error hidden" role="alert"></p>
             </div>
 
             <div class="form-group">
-              <label for="dog-date" id="dog-date-label">강아지 생년월일</label>
-              <input type="date" id="dog-date" min="1990-01-01" required>
-              <div class="checkbox-group" id="dog-calendar-options">
-                <label><input type="checkbox" id="dog-lunar"> 음력</label>
-                <label><input type="checkbox" id="dog-leap" disabled> 윤달</label>
-              </div>
-              <label class="checkbox-inline"><input type="checkbox" id="dog-estimated"> 정확한 생일을 몰라요 (입양일·추정일로 볼게요)</label>
+              <label for="dog-breed">품종 (선택)</label>
+              <select id="dog-breed"></select>
             </div>
 
-            <div class="form-group" id="dog-time-group">
-              <label for="dog-time">강아지 태어난 시간 (선택)</label>
-              <input type="time" id="dog-time">
+            <div class="form-group">
+              <label for="dog-date" id="dog-date-label">강아지 생일</label>
+              <input type="date" id="dog-date" min="1990-01-01" aria-describedby="dog-date-error" required>
+              <p id="dog-date-error" class="form-error hidden" role="alert"></p>
+              <label class="checkbox-inline"><input type="checkbox" id="dog-estimated"> 생일을 몰라요</label>
             </div>
-
             <div class="form-group">
               <span class="form-label">강아지 성별</span>
               <div class="segment-control">
-                <input type="radio" name="dog-gender" id="dog-m" value="M" checked>
+                <input type="radio" name="dog-gender" id="dog-m" value="MALE" checked>
                 <label for="dog-m">남아</label>
-                <input type="radio" name="dog-gender" id="dog-f" value="F">
+                <input type="radio" name="dog-gender" id="dog-f" value="FEMALE">
                 <label for="dog-f">여아</label>
+                <input type="radio" name="dog-gender" id="dog-neutered" value="NEUTERED" class="hidden" disabled>
+                <label for="dog-neutered" id="dog-neutered-label" class="hidden">중성화</label>
               </div>
             </div>
+
+            <details id="dog-birth-options" class="birth-options">
+              <summary>태어난 시간 · 음력 설정</summary>
+              <div class="form-group">
+                <label for="dog-time">태어난 시간 (선택)</label>
+                <input type="time" id="dog-time">
+                <div class="checkbox-group">
+                  <label><input type="checkbox" id="dog-lunar"> 음력</label>
+                  <label><input type="checkbox" id="dog-leap" disabled> 윤달</label>
+                </div>
+              </div>
+            </details>
 
             <!-- 궁합 사주시 추가 입력 영역 -->
             <div id="owner-input-section" class="hidden form-extra-section">
@@ -159,19 +162,15 @@
           </form>
         </div>
         <div class="fab-wrapper">
-          <button id="btn-submit" class="btn-primary">운세 보기</button>
+          <button id="btn-submit" type="submit" form="saju-form" class="btn-primary">오늘 운세 뽑기</button>
         </div>
       </section>
 
       <!-- 3. 로딩 화면 -->
       <section id="loading-screen" class="screen">
         <div class="body-content flex-center">
-          <div class="lottie-placeholder">
-            <!-- 간단한 CSS 애니메이션 대체 -->
-            <div class="jumping-dog">🐕</div>
-          </div>
-          <h2 class="loading-text">우리아이의 운세를<br>계산하는 중이에요...</h2>
-          <p class="loading-subtext">타고난 기운을 살펴보고 있어요</p>
+          <span class="fortune-loader" aria-hidden="true"></span>
+          <h2 class="loading-text" id="loading-title" role="status">운세 카드를 열고 있어요</h2>
         </div>
       </section>
 
@@ -192,50 +191,64 @@
                ======================= -->
           <div id="tab-today" class="tab-content active">
 
-            <div class="card result-card chemistry-card fade-in">
-              <p id="res-today-pillar" class="today-pillar-line hidden"></p>
-              <h3 class="card-title text-center" style="margin-bottom:16px;">🍀 <span
-                  class="dog-name-display">댕댕이</span>의
-                오늘의 럭키템</h3>
-              <div class="chemistry-match" style="margin-bottom:16px;">
-                <div class="chem-profile">컬러<br><span id="res-luck-color"
-                    style="font-size:16px; font-weight:700; color:var(--color-primary-text)">-</span></div>
-                <div class="chem-heart">✨</div>
-                <div class="chem-profile">산책방향<br><span id="res-luck-dir"
-                    style="font-size:16px; font-weight:700; color:var(--color-primary-text)">-</span></div>
+            <header class="daily-heading">
+              <time id="res-luck-date" class="fortune-date"></time>
+              <h2 id="res-daily-title"></h2>
+              <p id="res-luck-msg"></p>
+            </header>
+            <article class="daily-ticket" aria-label="오늘의 산책운">
+              <div class="daily-ticket-hero">
+                <div>
+                  <p class="daily-score-label">오늘의 산책운</p>
+                  <p class="daily-score"><strong id="res-luck-score"></strong><span>점</span></p>
+                </div>
+                <span class="minhwa-portrait daily-dog-art">
+                  <img id="res-daily-dog" src="./assets/minhwa/breeds/mixed.webp" alt="" width="116" height="116" decoding="async">
+                </span>
               </div>
-              <p class="chem-desc">오늘은 이 색 리드줄이나 소품을 챙겨서 이 방향으로 산책해 보세요!</p>
-            </div>
-
-            <!-- Daily Luck Card -->
-            <div class="card detail-card card-daily fade-in">
-              <div class="detail-icon">🐾</div>
-              <div class="detail-content" style="width: 100%;">
-                <h4>오늘의 산책 컨디션</h4>
-                <div style="font-size: 32px; font-weight:700; color: var(--color-primary); margin: 10px 0;"><span
-                    id="res-luck-score">--</span>점</div>
-                <p id="res-luck-msg"
-                  style="font-weight: 500; font-size: 16px; color: var(--color-text-body); line-height:1.6;">불러오는 중이에요...</p>
+              <dl class="daily-lucky">
+                <div><dt>행운의 색</dt><dd id="res-luck-color"></dd></div>
+                <div><dt>행운의 방향</dt><dd id="res-luck-dir"></dd></div>
+              </dl>
+            </article>
+            <div class="daily-mission">
+              <div>
+                <h3>오늘 같이 해요</h3>
+                <p id="res-daily-mission"></p>
               </div>
             </div>
-
-            <!-- Attendance -->
-            <div class="card detail-card attendance-card fade-in">
-              <p id="attendance-status" class="attendance-status">오늘 운세를 보면 출석 도장이 자동으로 찍혀요 🐾</p>
-              <button id="btn-open-attendance" class="btn-primary attendance-open-btn">🧧 출석 달력 · 부적 모음 보기</button>
+            <details id="res-luck-more" class="daily-more hidden">
+              <summary>
+                운세 더 보기
+                <svg class="btn-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#chevron-right"></use></svg>
+              </summary>
+              <div class="daily-letter">
+                <p id="res-luck-theme" class="daily-letter-theme hidden"></p>
+                <div id="res-luck-detail" class="fortune-letter-copy"></div>
+              </div>
+            </details>
+            <div class="fortune-footer">
+              <p id="attendance-status" class="attendance-status" aria-live="polite"></p>
+              <button id="btn-open-attendance" type="button">
+                발도장과 부적
+                <svg aria-hidden="true" class="btn-icon"><use href="./assets/icons/sprite.svg#chevron-right"></use></svg>
+              </button>
             </div>
-
           </div>
-
           <!-- =======================
                TAB 2: 평생 사주
                ======================= -->
           <div id="tab-lifetime" class="tab-content">
+            <p id="lifetime-status" class="lifetime-status hidden" role="status"></p>
+            <button type="button" id="btn-retry-lifetime" class="btn-primary hidden">다시 불러오기</button>
+            <div id="lifetime-report" class="hidden">
 
             <!-- Summary Section -->
             <div class="card result-card summary-card fade-in">
               <div class="result-image-wrapper">
-                <img id="result-img" alt="성향 일러스트" class="result-img" decoding="async">
+                <span class="result-img minhwa-portrait">
+                  <img id="result-img" src="./assets/minhwa/breeds/mixed.webp" alt="" width="160" height="160" decoding="async">
+                </span>
               </div>
               <h2 class="result-title" id="res-summary">활동량이 넘치는 에너자이저,<br><span class="text-fire">불(火)</span>의 기운을 타고난
                 <span class="dog-name-display">댕댕이</span>!
@@ -321,66 +334,52 @@
               </div>
             </div>
 
-            <!-- Detailed Analysis Cards (Expanded) -->
-            <h3 class="section-header">영역별 심층 분석 리포트</h3>
-
-            <div id="locked-reports-container">
-              <div id="locked-cards-content">
-                <div class="card detail-card card-food fade-in" style="flex-direction: column;">
-                  <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
-                    <div class="detail-icon" style="flex-shrink:0;">🍖</div>
-                    <h4 style="font-size: 18px; margin:0;">평생 간식/식복 안내</h4>
-                  </div>
-                  <div class="detail-content" style="width: 100%;">
-                    <p id="res-food"
-                      style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">불러오는 중이에요...</p>
-                  </div>
-                </div>
-
-                <div class="card detail-card card-energy fade-in" style="flex-direction: column;">
-                  <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
-                    <div class="detail-icon" style="flex-shrink:0;">⚡</div>
-                    <h4 style="font-size: 18px; margin:0;">건강/에너지 사이클</h4>
-                  </div>
-                  <div class="detail-content" style="width: 100%;">
-                    <p id="res-energy"
-                      style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">불러오는 중이에요...</p>
-                  </div>
-                </div>
-
-                <div class="card detail-card card-love fade-in" style="flex-direction: column;">
-                  <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
-                    <div class="detail-icon" style="flex-shrink:0;">💖</div>
-                    <h4 style="font-size: 18px; margin:0;">보호자와의 교감 팁</h4>
-                  </div>
-                  <div class="detail-content" style="width: 100%;">
-                    <p id="res-love"
-                      style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">불러오는 중이에요...</p>
-                  </div>
-                </div>
-
-                <div class="card detail-card card-social fade-in" style="flex-direction: column;">
-                  <div style="display:flex; align-items: center; gap: 12px; margin-bottom:12px;">
-                    <div class="detail-icon" style="flex-shrink:0;">🐾</div>
-                    <h4 style="font-size: 18px; margin:0;">사회성과 무리 생활</h4>
-                  </div>
-                  <div class="detail-content" style="width: 100%;">
-                    <p id="res-social"
-                      style="font-size:16px; color:var(--color-text-body); line-height: 1.6;">불러오는 중이에요...</p>
-                  </div>
-                </div>
-              </div>
-            </div><!-- end locked-reports-container -->
-
+            <section class="report-letters" aria-labelledby="report-letters-title">
+              <h3 id="report-letters-title">영역별 심층 분석 리포트</h3>
+              <details class="report-letter report-letter-food">
+                <summary>
+                  <svg class="report-letter-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#report-bowl"></use></svg>
+                  <span>평생 간식과 식복</span>
+                  <svg class="btn-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#chevron-right"></use></svg>
+                </summary>
+                <div id="res-food" class="fortune-letter-copy"></div>
+              </details>
+              <details class="report-letter report-letter-energy">
+                <summary>
+                  <svg class="report-letter-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#el-fire"></use></svg>
+                  <span>건강과 에너지</span>
+                  <svg class="btn-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#chevron-right"></use></svg>
+                </summary>
+                <div id="res-energy" class="fortune-letter-copy"></div>
+              </details>
+              <details class="report-letter report-letter-love">
+                <summary>
+                  <svg class="report-letter-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#report-heart"></use></svg>
+                  <span>보호자와의 교감 팁</span>
+                  <svg class="btn-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#chevron-right"></use></svg>
+                </summary>
+                <div id="res-love" class="fortune-letter-copy"></div>
+              </details>
+              <details class="report-letter report-letter-social">
+                <summary>
+                  <svg class="report-letter-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#paw-stamp"></use></svg>
+                  <span>사회성과 무리 생활</span>
+                  <svg class="btn-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#chevron-right"></use></svg>
+                </summary>
+                <div id="res-social" class="fortune-letter-copy"></div>
+              </details>
+            </section>
+            </div>
           </div> <!-- End of Tab 2 -->
 
           <!-- Compatibility Card (Hidden by default) -->
           <div id="chemistry-result-section" class="card result-card chemistry-card"
             style="display: none; margin-top:20px;">
-            <h3 class="card-title text-center">💖 <span id="res-chem-title">궁합 결과</span></h3>
+            <img src="./assets/minhwa/guardian.webp" class="compatibility-art" alt="" width="122" height="122" loading="lazy" decoding="async">
+            <h3 class="card-title text-center" id="res-chem-title">보호자 궁합</h3>
             <div class="chemistry-match">
               <div class="chem-profile">보호자<br><span id="res-chem-owner-element">(-)</span></div>
-              <div class="chem-heart" id="res-chem-rel">✨ 궁합 분석 ✨</div>
+              <div class="chem-heart" id="res-chem-rel">궁합 분석</div>
               <div class="chem-profile"><strong class="dog-name-display">댕댕이</strong><br><span
                   id="res-chem-dog-element">(-)</span></div>
             </div>
@@ -397,13 +396,13 @@
               </div>
 
               <!-- Unlock Overlay -->
-              <div id="unlock-chem-overlay" class="unlock-overlay">
+              <div class="unlock-overlay">
                 <div class="unlock-overlay-content">
                   <div class="unlock-lock-icon">🔒</div>
                   <p class="unlock-title">자세한 궁합 풀이</p>
-                  <p class="unlock-desc">짧은 광고를 보면 전체 풀이와<br>함께 지내는 팁을 볼 수 있어요</p>
-                  <button id="btn-unlock-chem" class="btn-unlock">
-                    <span class="btn-unlock-icon">🎬</span>
+                  <p class="unlock-desc">짧은 광고를 보면 전체 풀이와 함께 지내는 팁을 볼 수 있어요</p>
+                  <button type="button" id="btn-unlock-chem" class="btn-unlock">
+                    <span class="btn-unlock-icon" aria-hidden="true">🎬</span>
                     광고 보고 전체 풀이 보기
                   </button>
                 </div>
@@ -414,10 +413,11 @@
 
           <!-- 댕친 궁합 결과 (Hidden by default) -->
           <div id="friend-result-section" class="card result-card chemistry-card" style="display: none; margin-top:20px;">
-            <h3 class="card-title text-center">🐶 <span id="res-friend-title">댕친 궁합</span></h3>
+            <img src="./assets/minhwa/friends.webp" class="compatibility-art" alt="" width="122" height="122" loading="lazy" decoding="async">
+            <h3 class="card-title text-center" id="res-friend-title">친구 강아지 궁합</h3>
             <div class="chemistry-match">
               <div class="chem-profile"><strong class="dog-name-display">댕댕이</strong><br><span id="res-friend-my-element">(-)</span></div>
-              <div class="chem-heart" id="res-friend-rel">✨ 케미 분석 ✨</div>
+              <div class="chem-heart" id="res-friend-rel">궁합 분석</div>
               <div class="chem-profile"><strong id="res-friend-name">친구</strong><br><span id="res-friend-element">(-)</span></div>
             </div>
             <div class="score-line">궁합 점수 <span id="res-friend-score">--</span>점</div>
@@ -427,21 +427,22 @@
             <p id="res-friend-profile" class="friend-profile-line hidden"></p>
           </div>
 
-          <div style="height: 100px;"></div>
         </div>
 
         <div class="fab-wrapper">
-          <button id="btn-share" class="btn-primary">운세 공유하기</button>
+          <button id="btn-share" class="btn-primary">사주 카드 공유하기</button>
         </div>
       </section>
 
       <!-- 5. 공유 카드 (공유 링크로 들어온 경우) -->
       <section id="share-screen" class="screen">
         <div class="body-content share-body">
-          <p class="share-eyebrow">친구가 보낸 댕사주 카드 💌</p>
+          <p class="share-eyebrow">친구가 보낸 댕사주 카드</p>
           <div class="card result-card summary-card share-card">
             <div class="result-image-wrapper">
-              <img id="share-img" alt="공유된 강아지의 오행 일러스트" class="result-img" decoding="async">
+              <span class="result-img minhwa-portrait">
+                <img id="share-img" src="./assets/minhwa/breeds/mixed.webp" alt="" width="160" height="160" decoding="async">
+              </span>
             </div>
             <p class="share-dog-name"><span id="share-dog-name">댕댕이</span></p>
             <h2 class="result-title share-nickname" id="share-nickname">-</h2>
@@ -449,10 +450,9 @@
             <p id="share-summary" class="chem-desc share-summary"></p>
             <div id="share-keywords" class="keyword-chips keyword-chips-center"></div>
           </div>
-          <p class="share-hint">우리 아이는 어떤 일주 캐릭터일까요?</p>
         </div>
         <div class="fab-wrapper">
-          <button id="btn-share-cta" class="btn-primary">우리 아이 사주도 보기</button>
+          <button id="btn-share-cta" class="btn-primary">우리 강아지 오늘 운세 보기</button>
         </div>
       </section>
 
@@ -461,21 +461,21 @@
     <!-- Attendance (Monthly Calendar) Modal -->
     <div id="attendance-modal" class="modal-overlay hidden">
       <div class="calendar-modal">
-        <button id="btn-close-attendance" class="close-btn-dark">
+        <button id="btn-close-attendance" class="calendar-close">
           <svg class="btn-icon" aria-hidden="true"><use href="./assets/icons/sprite.svg#close"></use></svg>닫기
         </button>
         <div class="calendar-header">
-          <p class="streak-status">이번 달 <strong id="calendar-streak">0일</strong> 출석했어요!</p>
+          <p class="streak-status">이번 달 발도장 <strong id="calendar-streak">0일</strong></p>
           <p id="calendar-run" class="streak-run hidden"></p>
           <div class="progress-container">
-            <span id="calendar-progress-text" class="progress-text">다음 스페셜 부적까지 단 -일 남았어요!</span>
+            <span id="calendar-progress-text" class="progress-text"></span>
             <div class="progress-bar-bg">
               <div id="calendar-progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
             </div>
           </div>
         </div>
         <div id="calendar-grid" class="calendar-grid"></div>
-        <button id="btn-attendance-stamp" class="btn-primary" style="margin-top: 20px;">오늘 출석하기</button>
+        <button id="btn-attendance-stamp" class="btn-primary" style="margin-top: 20px;">오늘 발도장 찍기</button>
       </div>
     </div>
 
@@ -483,7 +483,7 @@
     <div id="talisman-modal" class="modal-overlay talisman-modal-overlay hidden">
       <div class="talisman-modal" id="talisman-content-wrapper">
         <div class="talisman-content">
-          <h2>🎉 스페셜 댕댕 부적 획득 🎉</h2>
+          <h2>오늘의 부적을 받았어요</h2>
           <div class="talisman-image-placeholder">
             <img id="talisman-img" alt="부적" decoding="async"
               style="width:100%; height:100%; object-fit:contain; border-radius:15px;" />
@@ -499,26 +499,20 @@
     </div>
 
     <!-- Image Save Modal (Mobile Fallback) -->
-    <div id="image-modal"
-      style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; align-items: center; justify-content: center;">
-      <p style="color: white; margin-bottom: 20px; font-weight: 700; font-size: 16px;">이미지를 길게 눌러서 저장하세요 🐾</p>
-      <img id="generated-image" alt="저장할 부적 이미지"
-        style="max-width: 85%; max-height: 70vh; border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.5);" />
-      <button id="close-modal" class="btn-primary" style="margin-top: 30px; width: 85%;">닫기</button>
+    <div id="image-modal" class="modal-overlay" style="display: none;">
+      <div class="image-save-content">
+        <p>이미지를 길게 눌러 저장해 주세요.</p>
+        <img id="generated-image" alt="저장할 부적 이미지">
+        <button id="close-modal" class="btn-primary">닫기</button>
+      </div>
     </div>
 
     <!-- Custom Error Modal -->
-    <div id="error-modal"
-      style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 2000; flex-direction: column; align-items: center; justify-content: center;">
-      <div
-        style="background: var(--color-surface); padding: 32px 24px; border-radius: 20px; width: 80%; max-width: 320px; text-align: center; box-shadow: 0 16px 40px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
-        <div style="font-size: 48px; margin-bottom: 16px;">🐕💨</div>
-        <h3 style="color: var(--color-text-title); font-size: 20px; font-weight: 700; margin-bottom: 12px;">앗, 오류가
-          발생했어요!</h3>
-        <p id="error-message" style="color: var(--color-text-body); font-size: 15px; line-height: 1.5; margin-bottom: 24px; white-space: pre-line;">서버 댕댕이가 간식을 먹으러 가서
-잠시 지연되고 있어요 🐾
-잠시 후 다시 시도해주세요.</p>
-        <button id="btn-close-error" class="btn-primary" style="width: 100%;">확인</button>
+    <div id="error-modal" class="modal-overlay" style="display: none;">
+      <div class="error-sheet" role="alertdialog" aria-labelledby="error-title" aria-describedby="error-message">
+        <h3 id="error-title">잠깐, 확인해 주세요</h3>
+        <p id="error-message">잠시 후 다시 시도해 주세요.</p>
+        <button id="btn-close-error" class="btn-primary">확인</button>
       </div>
     </div>
 

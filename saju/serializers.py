@@ -35,9 +35,11 @@ def clean_name(value, label):
 
 
 class DogSerializer(serializers.ModelSerializer):
+    breed = serializers.RegexField(r'\A[a-z0-9]+(?:-[a-z0-9]+)*\Z', max_length=40, required=False, allow_blank=True)
+
     class Meta:
         model = Dog
-        fields = ['id', 'name', 'birth_date', 'birth_time', 'is_lunar', 'is_leap_month', 'gender', 'is_estimated_birth']
+        fields = ['id', 'name', 'breed', 'birth_date', 'birth_time', 'is_lunar', 'is_leap_month', 'gender', 'is_estimated_birth']
         extra_kwargs = {'birth_date': {'required': True, 'allow_null': False}}
 
     def validate_name(self, value):

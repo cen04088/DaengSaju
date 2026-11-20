@@ -7,6 +7,25 @@
     - chevron-right / close: 앱인토스 design 가이드 기본 아이콘과 같은 형태(stroke currentColor).
   -->
 
+  <symbol id="paw-stamp" viewBox="0 0 24 24">
+    <g fill="currentColor">
+      <ellipse cx="4.7" cy="10.4" rx="2.2" ry="3" transform="rotate(-28 4.7 10.4)"/>
+      <ellipse cx="9.4" cy="6.4" rx="2.2" ry="3.1" transform="rotate(-13 9.4 6.4)"/>
+      <ellipse cx="14.6" cy="6.4" rx="2.2" ry="3.1" transform="rotate(13 14.6 6.4)"/>
+      <ellipse cx="19.3" cy="10.4" rx="2.2" ry="3" transform="rotate(28 19.3 10.4)"/>
+      <path d="M12 12c-2.1 0-3.4 1.9-4.9 3.4-1.7 1.6-2.1 4 .1 5 1.7.8 3.1-.4 4.8-.4s3.1 1.2 4.8.4c2.2-1 1.8-3.4.1-5C15.4 13.9 14.1 12 12 12Z"/>
+    </g>
+  </symbol>
+
+  <symbol id="report-bowl" viewBox="0 0 24 24">
+    <path d="M4 11h16l-2 7H6l-2-7Zm2 0a6 6 0 0 1 12 0M4 20h16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="12" cy="14.5" r="1.5" fill="currentColor"/>
+  </symbol>
+
+  <symbol id="report-heart" viewBox="0 0 24 24">
+    <path d="M12 20c-1.4-1.2-7.8-5.7-8.4-9.9a4.4 4.4 0 0 1 8.4-2.2 4.4 4.4 0 0 1 8.4 2.2C19.8 14.3 13.4 18.8 12 20Z" fill="currentColor"/>
+  </symbol>
+
   <!-- 목(木): 새싹 -->
   <symbol id="el-wood" viewBox="0 0 24 24">
     <path d="M12 21.5v-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>

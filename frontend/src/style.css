@@ -1,51 +1,43 @@
+@import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
+@import "@fontsource/noto-serif-kr/700.css";
+
 :root {
-  /* Mystic Dark Theme Palette */
-  --color-primary: #8B5CF6; /* Mystic Purple */
-  --color-primary-soft: rgba(139, 92, 246, 0.15);
-  /* 흰 글자를 얹는 배경: 흰 글자 대비 5.2:1 이상 (WCAG AA) */
-  --color-primary-gradient: linear-gradient(135deg, #7C3AED, #2563EB);
-  /* 어두운 배경 위 작은 보라 글자 (primary는 큰 글자에만) */
-  --color-primary-text: #A78BFA;
-  --color-bg: #0B1121; /* Deep space navy */
-  --color-card: rgba(30, 41, 59, 0.6); /* Dark Glass */
-  --color-surface: #1E293B; /* Solid modal surface */
-  --color-text-title: #FFFFFF;
-  --color-text-body: #FFFFFF;
-  --color-text-hint: #F1F5F9;
-  --color-border: rgba(255, 255, 255, 0.1);
-  /* 포인트 색: 배지·강조 글자 */
-  --color-accent-gold: #FDE68A;
-  --color-accent-violet: #C4B5FD;
-  --color-accent-pink: #FF69B4;
-  --color-accent-orange: #FDBA74;
-  --color-text-subtle: #E2E8F0;
-  --color-text-muted: #B1B5C4;
-  /* 색이 칠해진 버튼·칩 위 글자 */
-  --color-on-primary: #FFFFFF;
-  /* 출석 부적 */
-  --color-talisman-gold: #FFD700;
-  --color-talisman-ink: #1E1E2A;
-  /* 광고 보고 열기 버튼: 흰 글자 대비 4.8:1 이상 */
-  --color-ad-gradient: linear-gradient(135deg, #C2410C, #DC2626);
-  /* 연속 출석 메달 단계 (동 → 은 → 금 → 보라) */
-  --color-streak-1: #D97706;
-  --color-streak-2: #94A3B8;
-  --color-streak-3: #FACC15;
-  --color-streak-4: #A78BFA;
-  
-  /* Modern Shadow (Layered Glows in dark mode) */
-  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
-  --shadow-premium: 0 0 20px rgba(139, 92, 246, 0.2);
+  --fortune-page: #fff8ec;
+  --fortune-ink: #32251e;
+  --fortune-muted: #6d594c;
+  --fortune-accent: #823e2f;
+  --fortune-pressed: #683326;
+  --fortune-sheet: #f7e6d6;
+  --fortune-line: #dec8b5;
+  --fortune-solid: #fffdf7;
+  --fortune-display: 'Noto Serif KR', 'AppleMyungjo', 'Batang', 'Noto Serif CJK KR', serif;
+  --fortune-body: 'Pretendard Variable', 'Tossface', -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+  --hanji-grain: url('/assets/minhwa/hanji-paper.webp');
+  --hanji-surface: linear-gradient(#fff8ec66, #fff8ec66), var(--hanji-grain);
+  --seal-edge: inset 0 0 0 1px #fff4df48;
 
-  /* Five Elements Colors (Neon/Vibrant Dark mode) */
-  --elem-wood: #4ADE80; /* Bright Green */
-  --elem-fire: #FF7043; /* Neon Orange */
-  --elem-earth: #FCD34D; /* Gold */
-  --elem-metal: #E2E8F0; /* Muted silver */
-  --elem-water: #60A5FA; /* Neon Blue */
+  --color-primary: var(--fortune-accent);
+  --color-primary-soft: var(--fortune-sheet);
+  --color-bg: var(--fortune-page);
+  --color-text-title: var(--fortune-ink);
+  --color-text-body: var(--fortune-ink);
+  --color-text-hint: var(--fortune-muted);
+  --color-text-muted: var(--fortune-muted);
+  --color-text-subtle: var(--fortune-muted);
+  --color-border: var(--fortune-line);
+  --color-on-primary: #fff;
+  --color-accent-gold: #835d19;
+  --color-streak-1: #9d5938;
+  --color-streak-2: #627078;
+  --color-streak-3: #835d19;
+  --color-streak-4: #6d5577;
+  --shadow-md: 0 8px 24px #4b2d2129;
 
+  --elem-wood: #386241;
+  --elem-fire: #a24632;
+  --elem-earth: #835d19;
+  --elem-metal: #5e646a;
+  --elem-water: #315e79;
   --border-radius-sm: 12px;
   --border-radius-md: 20px;
   --border-radius-lg: 32px;
@@ -72,8 +64,8 @@ strong {
 /* Tossface는 Pretendard 바로 다음: 맨 앞에 두면 Tossface가 가진 숫자·#·* 글리프가 본문 숫자를 덮고,
    시스템 글꼴(-apple-system 등) 뒤에 두면 그 안의 시스템 이모지가 먼저 잡혀 적용되지 않음 */
 body {
-  font-family: 'Pretendard', 'Tossface', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
-  background: #000;
+  font-family: var(--fortune-body);
+  background: #eaddca;
   color: var(--color-text-title);
   -webkit-font-smoothing: antialiased;
   line-height: 1.6;
@@ -97,182 +89,22 @@ body {
   flex-direction: column;
 }
 
-/* Background Gradients */
-.bg-blobs {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-/* 매 프레임 blur(100px) 필터를 계산하던 방식 대신, 같은 모양의 퍼짐을 방사형 그라데이션으로 미리 그려 둠.
-   (400px 원 + blur(100px)과 같은 중심·퍼짐이 되도록 800px 박스에 감쇠 단계를 맞춤) */
-.blob {
-  position: absolute;
-  width: 800px;
-  height: 800px;
-  opacity: 0.25; /* More subtle for premium feel */
-  animation: float 25s infinite alternate ease-in-out;
-}
-
-.blob-1 {
-  background: radial-gradient(circle closest-side, rgba(76, 29, 149, 0.86) 0%, rgba(76, 29, 149, 0.8) 25%, rgba(76, 29, 149, 0.5) 50%, rgba(76, 29, 149, 0.18) 75%, rgba(76, 29, 149, 0) 100%);
-  top: -350px;
-  right: -350px;
-}
-.blob-2 {
-  background: radial-gradient(circle closest-side, rgba(30, 58, 138, 0.86) 0%, rgba(30, 58, 138, 0.8) 25%, rgba(30, 58, 138, 0.5) 50%, rgba(30, 58, 138, 0.18) 75%, rgba(30, 58, 138, 0) 100%);
-  bottom: calc(5% - 200px);
-  left: -350px;
-  animation-delay: -7s;
-}
-.blob-3 {
-  background: radial-gradient(circle closest-side, rgba(17, 94, 89, 0.86) 0%, rgba(17, 94, 89, 0.8) 25%, rgba(17, 94, 89, 0.5) 50%, rgba(17, 94, 89, 0.18) 75%, rgba(17, 94, 89, 0) 100%);
-  top: calc(35% - 200px);
-  right: -300px;
-  animation-delay: -12s;
-}
-
-/* Premium Stars & Ring
-   background-position 애니메이션은 매 프레임 메인 스레드에서 다시 그려야 해서,
-   한 타일(550px)만큼 큰 레이어를 transform으로 옮기는 방식으로 바꿈 (GPU 합성만 사용) */
-.stars {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: calc(100% + 550px);
-  height: calc(100% + 550px);
-  background-image: 
-    radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
-    radial-gradient(1.5px 1.5px at 100px 150px, #fff, rgba(0,0,0,0)),
-    radial-gradient(1px 1px at 250px 200px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
-    radial-gradient(1.2px 1.2px at 400px 50px, #fff, rgba(0,0,0,0)),
-    radial-gradient(1px 1px at 150px 400px, rgba(255,255,255,0.5), rgba(0,0,0,0)),
-    radial-gradient(1.5px 1.5px at 300px 500px, #fff, rgba(0,0,0,0));
-  background-size: 550px 550px;
-  opacity: 0.2;
-  animation: starFloat 60s linear infinite;
-}
-
-/* Meteor Shower (Shooting Stars) Effect */
-.shooting-stars {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 5;
-  overflow: hidden;
-}
-
-.shooting-stars span {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 4px;
-  height: 4px;
-  background: #fff;
-  border-radius: 50%;
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1), 0 0 0 8px rgba(255, 255, 255, 0.1), 0 0 20px rgba(255, 255, 255, 1);
-  animation: shoot 3s linear infinite;
-  opacity: 0;
-}
-
-.shooting-stars span::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 300px;
-  height: 2px;
-  background: linear-gradient(90deg, #fff, transparent);
-}
-
-.shooting-stars span:nth-child(1) { top: 0; left: 0; animation-delay: 0s; animation-duration: 1s; }
-.shooting-stars span:nth-child(2) { top: 0; left: 80px; animation-delay: 0.2s; animation-duration: 3s; }
-.shooting-stars span:nth-child(3) { top: 80px; left: 0; animation-delay: 0.4s; animation-duration: 2s; }
-.shooting-stars span:nth-child(4) { top: 0; left: 180px; animation-delay: 0.6s; animation-duration: 1.5s; }
-.shooting-stars span:nth-child(5) { top: 0; left: 400px; animation-delay: 0.8s; animation-duration: 2.5s; }
-.shooting-stars span:nth-child(6) { top: 0; left: 600px; animation-delay: 1s; animation-duration: 3s; }
-.shooting-stars span:nth-child(7) { top: 300px; left: 0; animation-delay: 1.2s; animation-duration: 1.75s; }
-.shooting-stars span:nth-child(8) { top: 0; left: 700px; animation-delay: 1.4s; animation-duration: 1.25s; }
-.shooting-stars span:nth-child(9) { top: 0; left: 300px; animation-delay: 0.75s; animation-duration: 2.25s; }
-.shooting-stars span:nth-child(10) { top: 0; left: 450px; animation-delay: 2.75s; animation-duration: 2.25s; }
-
-@keyframes shoot {
-  0% {
-    transform: rotate(315deg) translateX(0);
-    opacity: 1;
-  }
-  70% {
-    opacity: 1;
-  }
-  100% {
-    transform: rotate(315deg) translateX(-1000px);
-    opacity: 0;
-  }
-}
-
-.saju-ring {
-  position: absolute;
-  top: 15%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  border: 1px solid rgba(139, 92, 246, 0.15);
-  box-shadow: 0 0 60px rgba(139, 92, 246, 0.1);
-  pointer-events: none;
-  animation: ringGlide 15s infinite alternate ease-in-out;
-}
-
-@keyframes starFloat {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(-550px, -550px, 0); }
-}
-
-@keyframes ringGlide {
-  0% { transform: translateX(-50%) translateY(0) scale(1); opacity: 0.5; }
-  100% { transform: translateX(-48%) translateY(20px) scale(1.05); opacity: 0.8; }
-}
-
-@keyframes float {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  100% { transform: translate(40px, 60px) rotate(15deg); }
-}
-
-
 .screen {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: var(--color-card);
-  /* 비활성 화면은 레이아웃에서 빼 둠: 숨긴 화면의 글자·이모지까지 서체를 미리 내려받지 않게.
-     전환 중 표시는 showScreen이 인라인 display로 관리 */
+  background-color: var(--fortune-page);
+  background-image: var(--hanji-surface);
+  background-size: auto, 340px auto;
   display: none;
   flex-direction: column;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 1;
-  transition: opacity 0.25s ease-in-out;
-  visibility: hidden;
-  /* 화면마다 상시 GPU 레이어를 잡아두면 메모리를 크게 차지하므로, 전환 중에만 브라우저가 자동 승격하도록 둠 */
 }
 
 .screen.active {
   display: flex;
-  opacity: 1;
-  pointer-events: auto;
   z-index: 10;
-  visibility: visible;
 }
 
 .bg-gray {
@@ -287,7 +119,7 @@ body {
   padding-left: 20px;
   padding-right: 20px;
   position: relative;
-  background: rgba(15, 23, 42, 0.9);
+  background: var(--fortune-page);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: 20;
@@ -307,7 +139,7 @@ body {
 }
 
 .back-btn {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--fortune-solid);
   border: 1px solid var(--color-border);
   width: 36px;
   height: 36px;
@@ -330,8 +162,8 @@ body {
 /* Tabs */
 .tab-nav {
   display: flex;
-  /* 스크롤할 때마다 뒤 내용을 다시 흐리게 계산하는 backdrop-filter 대신 거의 불투명한 배경 */
-  background: rgba(15, 23, 42, 0.97);
+  background: var(--fortune-page);
+  border-bottom: 1px solid var(--fortune-line);
   z-index: 19;
   padding: 8px 20px;
   gap: 8px;
@@ -344,29 +176,21 @@ body {
 .tab-btn {
   flex: 1;
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   font-size: 15px;
   font-weight: 700;
   color: var(--color-text-hint);
   min-height: 44px;
   padding: 10px 0;
   cursor: pointer;
-  border-radius: 12px;
-  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
 }
+
 .tab-btn.active {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--color-text-title);
-}
-.tab-btn.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background-color: var(--color-text-title);
-  border-radius: 3px 3px 0 0;
+  background: var(--fortune-sheet);
+  border-color: var(--fortune-line);
+  color: var(--fortune-accent);
 }
 
 .tab-content {
@@ -400,22 +224,11 @@ body {
   justify-content: center;
 }
 
-/* 메인: 내용이 넘쳐도 위가 잘리지 않도록 auto margin으로 가운데 정렬 */
 .main-body {
   display: flex;
   flex-direction: column;
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
-
-.main-stack {
-  margin: auto 0;
-  padding-top: env(safe-area-inset-top);
-}
-
-.main-body .main-title {
-  margin-bottom: 28px;
-}
-
 /* 배너 컨테이너는 화면 너비와 같아야 함(앱인토스 WebView 배너 가이드) → 본문 좌우 여백 24px만큼 넓힘.
    광고 모양(좌우 여백·모서리)은 직접 자르지 않고 SDK의 card 변형이 그림 */
 .toss-ad-container {
@@ -439,68 +252,12 @@ body {
 }
 
 .section-subtitle {
+  font-family: var(--fortune-display);
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 16px;
   margin-top: 16px;
   color: var(--color-text-title);
-}
-
-/* Menu Cards */
-.menu-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.menu-card {
-  display: block;
-  width: 100%;
-  text-align: left;
-  font-family: inherit;
-  color: inherit;
-  background: rgba(30, 41, 59, 0.92);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius-lg);
-  padding: 24px;
-  cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.menu-card:active {
-  transform: scale(0.95);
-}
-
-.menu-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.menu-icon {
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-}
-
-.menu-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.menu-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--color-text-title);
-}
-
-.menu-desc {
-  color: var(--color-text-body);
-  font-size: 15px;
-  opacity: 0.8;
-  word-break: keep-all;
 }
 
 /* Forms */
@@ -551,7 +308,7 @@ input[type="time"] {
   border-radius: var(--border-radius-sm);
   background-color: rgba(255, 255, 255, 0.05);
   color: var(--color-text-title);
-  font-family: 'Pretendard', 'Tossface', sans-serif;
+  font-family: inherit;
   transition: border-color 0.2s;
   user-select: auto;
   -webkit-user-select: auto;
@@ -631,60 +388,33 @@ input[type="time"]:focus {
 .btn-primary {
   width: 100%;
   height: 56px;
-  background: var(--color-primary-gradient);
+  background: var(--fortune-accent);
   color: var(--color-on-primary);
-  border: none;
-  border-radius: 20px;
+  border: 1px solid var(--fortune-pressed);
+  border-radius: 10px;
+  box-shadow: var(--seal-edge);
   font-size: 17px;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: background-color 160ms ease, transform 160ms ease;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-/* 하단에 떠 있는 버튼만 그림자로 띄움 (본문 안 버튼·카드는 평평하게) */
-.fab-wrapper .btn-primary {
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
 }
 
 .btn-primary:active {
-  transform: scale(0.96);
+  background: var(--fortune-pressed);
+  transform: scale(0.985);
+  transition-duration: 80ms;
 }
 
-/* Loading */
-.lottie-placeholder {
-  width: 150px;
-  height: 150px;
-  margin: 0 auto 30px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.jumping-dog {
-  font-size: 80px;
-  animation: jump 0.8s infinite alternate ease-in-out;
-}
-
-@keyframes jump {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-30px); }
+.btn-primary:disabled {
+  opacity: 0.58;
 }
 
 .loading-text {
   text-align: center;
-  font-size: 22px;
-  margin-bottom: 10px;
-  animation: pulse 1.5s infinite;
-}
-
-.loading-subtext {
-  text-align: center;
-  color: var(--color-text-hint);
-  font-size: 15px;
 }
 
 /* Results */
@@ -704,7 +434,7 @@ input[type="time"]:focus {
 }
 
 .card {
-  background: rgba(30, 41, 59, 0.92);
+  background: var(--fortune-solid);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-lg);
   padding: 32px 24px;
@@ -712,8 +442,7 @@ input[type="time"]:focus {
 }
 
 .summary-card {
-  background: rgba(15, 23, 42, 0.8); /* Darker base for main summary */
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--fortune-sheet);
 }
 
 .result-image-wrapper {
@@ -724,17 +453,15 @@ input[type="time"]:focus {
 .result-img {
   width: 160px;
   height: 160px;
-  object-fit: cover;
-  border-radius: 50%;
-  background-color: var(--color-bg);
-  box-shadow: 0 0 30px rgba(139, 92, 246, 0.3); /* Mystic glow */
-  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-radius: 46% 45% 42% 44%;
+  border: 1px solid var(--fortune-line);
 }
 
 .result-title {
+  font-family: var(--fortune-display);
   text-align: center;
-  font-size: 22px;
-  line-height: 1.6;
+  font-size: clamp(1.1875rem, 5.5vw, 1.375rem);
+  line-height: 1.48;
   font-weight: 700;
   margin-bottom: 24px;
   letter-spacing: -0.5px;
@@ -747,10 +474,10 @@ input[type="time"]:focus {
 .text-water { color: var(--elem-water); font-weight: 700; }
 
 .saju-table-wrapper {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--fortune-page);
   border-radius: var(--border-radius-lg);
   padding: 24px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--fortune-line);
 }
 
 .saju-table {
@@ -768,21 +495,20 @@ input[type="time"]:focus {
 }
 
 .saju-table td {
-  background: rgba(30, 41, 59, 0.8);
+  background: var(--fortune-solid);
   border-radius: 12px;
   padding: 12px 0;
   font-size: 16px;
   color: var(--color-text-body);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--fortune-line);
 }
 
 .saju-table td.highlight {
-  background: rgba(139, 92, 246, 0.2);
-  border: 1px solid rgba(139, 92, 246, 0.5);
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+  background: var(--fortune-sheet);
 }
 
 .hanja {
+  font-family: var(--fortune-display);
   font-size: 20px;
   font-weight: 700;
   color: var(--color-text-title);
@@ -799,6 +525,7 @@ input[type="time"]:focus {
 
 /* Graph */
 .card-title {
+  font-family: var(--fortune-display);
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 4px;
@@ -847,7 +574,7 @@ input[type="time"]:focus {
 .bar-track {
   flex: 1;
   height: 14px;
-  background-color: rgba(0,0,0,0.05);
+  background-color: var(--fortune-sheet);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -865,88 +592,51 @@ input[type="time"]:focus {
 .bg-metal { background-color: var(--elem-metal); }
 .bg-water { background-color: var(--elem-water); }
 
-/* Detail Cards */
-.section-header {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 32px 0 16px 8px;
-  color: var(--color-text-title);
-}
-
-.detail-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 24px 20px;
-}
-
-.detail-icon {
-  font-size: 28px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--color-border);
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 16px;
-}
-
-.detail-content h4 {
-  font-size: 16px;
-  margin-bottom: 6px;
-  color: var(--color-text-title);
-}
-
-.detail-content p {
-  font-size: 15px;
-  color: var(--color-text-body);
-  line-height: 1.8;
-  word-break: keep-all;
-  white-space: pre-wrap;
-}
-
 /* Bullet Point Indentation for AI generated lists - Note: CSS cannot directly select text nodes like '+' '-' */
 /* If needed, wrap bullets in spans during formatting in JS */
 
 
 /* Highlighter effect */
 .highlight-text {
-  background: linear-gradient(to top, rgba(139, 92, 246, 0.3) 40%, transparent 40%);
+  background: linear-gradient(to top, #efd4c0 45%, transparent 45%);
   font-weight: 700;
   padding: 0 2px;
   color: var(--color-text-title);
 }
 
 
-.card-food { background: rgba(30, 41, 59, 0.6); }
-.card-energy { background: rgba(30, 41, 59, 0.6); }
-.card-love { background: rgba(30, 41, 59, 0.6); }
-.card-social { background: rgba(30, 41, 59, 0.6); }
-
 /* Chemistry Card */
 .chemistry-card {
-  background: linear-gradient(to bottom right, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.92));
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.1);
+  background: var(--fortune-solid);
+}
+
+.compatibility-art {
+  display: block;
+  margin: 0 auto 13px;
+  width: min(45%, 122px);
+  height: auto;
+}
+
+.chemistry-card .card-title {
+  color: var(--fortune-ink);
+  font-family: var(--fortune-display);
+  font-size: clamp(1.25rem, 5.8vw, 1.625rem);
+  line-height: 1.35;
 }
 
 .chemistry-match {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr) minmax(0, 1fr);
   align-items: center;
   margin: 20px 0;
-  gap: 12px;
+  gap: 6px;
 }
 
 .chem-profile {
-  flex: 1;
   text-align: center;
   font-size: 15px;
   font-weight: 700;
   color: var(--color-text-title);
-  min-width: 0; /* Allow shrinking for long text */
-  word-break: keep-all; /* "보호자"처럼 짧은 단어가 중간에서 끊기지 않게 */
 }
 
 .chem-profile span {
@@ -956,32 +646,25 @@ input[type="time"]:focus {
 }
 
 .chem-heart {
-  background: var(--color-primary-gradient);
-  color: var(--color-on-primary);
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-/* 관계 칩: 쉬운 말 + 명리 용어 두 줄 */
-.chem-heart.two-line {
   display: flex;
   flex-direction: column;
   align-items: center;
-  flex-shrink: 0;
-  padding: 6px 14px;
+  justify-self: center;
+  max-width: 100%;
+  background: var(--fortune-accent);
+  color: var(--color-on-primary);
+  padding: 6px 8px;
   border-radius: 16px;
+  text-align: center;
   line-height: 1.3;
-  white-space: nowrap;
 }
 
-.chem-heart.two-line strong {
+.chem-heart strong {
   font-size: 14px;
   font-weight: 700;
 }
 
-.chem-heart.two-line small {
+.chem-heart small {
   font-size: 12px;
   font-weight: 600;
 }
@@ -1005,56 +688,31 @@ input[type="time"]:focus {
    Ad Unlock (Locked Report) System
    ============================================= */
 
-/* Outer container - provides the stacking context for blur + overlay */
-.locked-container {
-  position: relative;
-}
-
-/* Chemistry locked container needs a min-height so the overlay button shows */
-#locked-chem-container {
-  min-height: 200px;
-}
-
-/* When locked: blur the text content inside each card */
-.locked-container.is-locked .lockable-text {
-  filter: blur(6px);
-  user-select: none;
-  -webkit-user-select: none;
-  transition: filter 0.5s ease;
-  /* Fake placeholder text lines that look real when blurred */
-}
-
-/* Unlock overlay - sits on top of the blurred cards */
 .unlock-overlay {
-  display: none; /* hidden by default, shown via JS when .is-locked */
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: var(--border-radius-lg);
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    rgba(11, 17, 33, 0.0) 10%,
-    rgba(11, 17, 33, 0.75) 25%,
-    rgba(11, 17, 33, 0.95) 40%,
-    rgba(11, 17, 33, 0.98) 100%
-  );
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 88px;
-  padding-bottom: 0;
-  z-index: 10;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
+  display: none;
 }
 
-.locked-container.is-locked .unlock-overlay {
-  opacity: 1;
-  pointer-events: auto;
+#locked-chem-container.is-locked {
+  display: grid;
+  isolation: isolate;
+}
+
+#locked-chem-container.is-locked > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+#locked-chem-container.is-locked #locked-chem-content {
+  max-height: 115px;
+  overflow: hidden;
+  filter: blur(6px);
+}
+
+#locked-chem-container.is-locked .unlock-overlay {
+  z-index: 1;
+  display: block;
+  padding: 48px 12px 8px;
+  background: linear-gradient(transparent, var(--fortune-solid) 100px);
 }
 
 .unlock-overlay-content {
@@ -1062,9 +720,7 @@ input[type="time"]:focus {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  width: 100%; /* 안내 문구 길이에 따라 버튼 폭이 줄지 않게 */
   text-align: center;
-  padding: 0 24px;
 }
 
 .unlock-lock-icon {
@@ -1087,7 +743,7 @@ input[type="time"]:focus {
 
 .unlock-desc {
   font-size: 15px;
-  color: rgba(255,255,255,0.7);
+  color: var(--fortune-muted);
   line-height: 1.6;
   margin-bottom: 4px;
 }
@@ -1100,12 +756,13 @@ input[type="time"]:focus {
   gap: 8px;
   width: 100%;
   max-width: 280px;
-  height: 52px;
-  padding: 0 20px;
-  background: var(--color-ad-gradient); /* 흰 글자 대비 4.8:1 이상 */
+  min-height: 52px;
+  padding: 8px 12px;
+  background: var(--fortune-accent);
   color: var(--color-on-primary);
-  border: none;
-  border-radius: 16px;
+  border: 1px solid var(--fortune-pressed);
+  border-radius: 10px;
+  box-shadow: var(--seal-edge);
   font-size: 16px;
   font-weight: 700;
   font-family: inherit;
@@ -1119,20 +776,15 @@ input[type="time"]:focus {
 }
 
 .btn-unlock-icon {
+  flex-shrink: 0;
   font-size: 18px;
 }
 
 /* Watching ad state */
 .btn-unlock.is-loading {
-  background: rgba(255,255,255,0.15);
+  background: var(--fortune-pressed);
   box-shadow: none;
   cursor: not-allowed;
-}
-
-/* Unlock reveal animation: fade in + slide up each card */
-.locked-container.is-unlocked .lockable-text {
-  filter: blur(0px);
-  transition: filter 0.5s ease;
 }
 
 @keyframes unlock-card-reveal {
@@ -1151,16 +803,20 @@ input[type="time"]:focus {
 /* ========================================= */
 
 .calendar-modal {
-  background: rgba(30, 30, 42, 0.95);
+  background-color: var(--fortune-page);
+  background-image: var(--hanji-surface);
+  background-size: auto, 340px auto;
   border: 1px solid var(--color-border);
   border-radius: 24px;
   width: 90%;
   max-width: 400px;
   padding: 50px 20px 30px; /* top padding to make room for close-btn */
   position: relative;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
+  max-height: 88dvh;
+  overflow-y: auto;
 }
 
 .calendar-header {
@@ -1168,8 +824,8 @@ input[type="time"]:focus {
   color: var(--color-text-title);
   margin-bottom: 20px;
 }
-/* 다크 테마 닫기 버튼 (왼쪽 위) */
-.close-btn-dark {
+/* 달력의 닫기 버튼 */
+.calendar-close {
   position: absolute;
   top: 8px;
   left: 12px;
@@ -1177,10 +833,10 @@ input[type="time"]:focus {
   align-items: center;
   gap: 4px;
   min-height: 44px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--fortune-solid);
+  border: 1px solid var(--fortune-line);
   border-radius: 10px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--fortune-accent);
   font-size: 14px;
   font-weight: 600;
   padding: 0 14px 0 10px;
@@ -1188,19 +844,18 @@ input[type="time"]:focus {
   transition: background 0.2s, color 0.2s;
   font-family: inherit;
 }
-.close-btn-dark:active {
-  background: rgba(255, 255, 255, 0.15);
+.calendar-close:active {
+  background: var(--fortune-sheet);
   color: var(--color-text-title);
 }
-.calendar-header h2 { font-size: 22px; margin: 0 0 10px 0; color: #f8c3d3; font-weight: 700; }
 .streak-status { font-size: 15px; margin: 0 0 12px; color: var(--color-text-subtle); text-align: center; }
 /* 문장 안 숫자는 크기를 키우지 않고 색·굵기로만 강조 */
-.streak-status strong { color: var(--color-accent-pink); text-shadow: 0 0 8px rgba(255,105,180,0.5); font-weight: 700; }
+.streak-status strong { color: var(--fortune-accent); font-weight: 700; }
 
 .progress-container { margin-top: 15px; }
-.progress-text { font-size: 13px; color: #9da4b4; display: block; margin-bottom: 8px; font-weight: 600; }
-.progress-bar-bg { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; }
-.progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--color-accent-pink), var(--color-talisman-gold)); border-radius: 10px; transition: width 0.5s ease; }
+.progress-text { font-size: 13px; color: var(--fortune-muted); display: block; margin-bottom: 8px; font-weight: 600; }
+.progress-bar-bg { width: 100%; height: 8px; background: var(--fortune-sheet); border-radius: 10px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: var(--fortune-accent); border-radius: 10px; transition: width 0.5s ease; }
 
 .calendar-grid {
   display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
@@ -1208,8 +863,8 @@ input[type="time"]:focus {
 
 .calendar-cell {
   aspect-ratio: 1;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: var(--fortune-solid);
+  border: 1px solid var(--fortune-line);
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   position: relative; transition: background-color 0.2s, border-color 0.2s;
@@ -1220,16 +875,12 @@ input[type="time"]:focus {
 .day-number { color: var(--color-text-title); font-weight: 600; z-index: 1; font-size: 14px; }
 
 .calendar-cell.today-pending {
-  border: 2px dashed var(--color-accent-pink);
-  cursor: pointer;
-  background: rgba(255,105,180,0.12);
-  animation: pulse-pink 1.5s infinite;
+  border: 1px dashed var(--fortune-accent);
+  background: var(--fortune-sheet);
 }
 
 .calendar-cell.stamped {
-  background: rgba(255, 105, 180, 0.2);
-  border: 1px solid rgba(255, 105, 180, 0.5);
-  box-shadow: 0 0 12px rgba(255,105,180,0.15);
+  background: var(--fortune-sheet);
 }
 
 .calendar-cell.stamped .day-number { color: transparent; }
@@ -1237,8 +888,7 @@ input[type="time"]:focus {
 .paw-stamp {
   position: absolute;
   font-size: 20px;
-  text-shadow: 0 0 8px var(--color-accent-pink), 0 0 15px var(--color-talisman-gold);
-  animation: stampDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  color: var(--fortune-accent);
 }
 
 /* Talisman Modal */
@@ -1246,21 +896,23 @@ input[type="time"]:focus {
   z-index: 2000;
 }
 .talisman-modal {
-  background: linear-gradient(135deg, var(--color-talisman-ink) 0%, #292938 100%);
-  border: 2px solid var(--color-talisman-gold);
+  background: var(--fortune-page);
+  border: 1px solid var(--fortune-line);
   border-radius: 20px;
   padding: 30px; width: 90%; max-width: 340px; text-align: center;
-  box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+  box-shadow: var(--shadow-md);
   position: relative;
+  max-height: 88dvh;
+  overflow-y: auto;
 }
 
-.talisman-content h2 { color: var(--color-talisman-gold); font-size: 20px; margin-bottom: 20px; font-weight: 700; }
+.talisman-content h2 { color: var(--fortune-accent); font-family: var(--fortune-display); font-size: 21px; margin-bottom: 20px; font-weight: 700; }
 .talisman-image-placeholder {
   width: 180px; height: 260px;
   margin: 0 auto;
-  background: rgba(0,0,0,0.4); border: 2px dashed rgba(255,215,0,0.5);
+  background: var(--fortune-sheet); border: 1px solid var(--fortune-line);
   border-radius: 15px; display: flex; align-items: center; justify-content: center;
-  font-size: 50px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+  font-size: 50px; margin-bottom: 20px;
   overflow: hidden;
 }
 .talisman-name { color: var(--color-text-title); font-size: 22px; margin-bottom: 8px; font-weight: 700; }
@@ -1268,17 +920,17 @@ input[type="time"]:focus {
 
 .talisman-actions { display: flex; flex-direction: column; gap: 10px; }
 .action-btn { padding: 14px; border-radius: 16px; border: none; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.2s;}
-.download-btn { background: var(--color-talisman-gold); color: var(--color-talisman-ink); }
+.download-btn { background: var(--fortune-accent); color: var(--color-on-primary); border: 1px solid var(--fortune-pressed); border-radius: 10px; box-shadow: var(--seal-edge); }
 .share-btn { background: rgba(255,255,255,0.1); color: var(--color-on-primary); border: 1px solid rgba(255,255,255,0.2); }
 /* 보조 버튼도 버튼으로 읽히게 옅은 배경·테두리 (밑줄 글자만으로는 버튼인지 알기 어려움) */
-.close-talisman-btn { background: rgba(255, 255, 255, 0.06); color: var(--color-text-muted); border: 1px solid rgba(255, 255, 255, 0.12); margin-top: 5px; font-size: 15px; padding: 10px; min-height: 44px; }
+.close-talisman-btn { background: var(--fortune-solid); color: var(--fortune-muted); border: 1px solid var(--fortune-line); margin-top: 5px; font-size: 15px; padding: 10px; min-height: 44px; }
 
 /* Modal overlay general */
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; width: 100vw; height: 100vh;
   /* 뒤에서 폭죽 효과가 움직이는 동안 매 프레임 블러를 다시 계산하지 않도록 불투명 오버레이만 사용 */
-  background: rgba(10, 10, 18, 0.9);
+  background: #33251cb3;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1286,106 +938,13 @@ input[type="time"]:focus {
   animation: fadeIn 0.3s ease-out;
 }
 
-@keyframes pulse-pink {
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,105,180,0.4); }
-  70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(255,105,180,0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,105,180,0); }
-}
-
-@keyframes stampDown {
-  0% { transform: scale(5) rotate(-20deg); opacity: 0; }
-  50% { transform: scale(0.8) rotate(10deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
-}
-
 /* ========================================= */
 /* 재방문: 내 강아지 오늘 운세 바로가기        */
 /* ========================================= */
-.my-dog-section {
-  margin-bottom: 20px;
-}
-
-.today-card {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px 18px;
-  border: 1px solid rgba(139, 92, 246, 0.45);
-  border-radius: 24px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.28), rgba(59, 130, 246, 0.18));
-  box-shadow: var(--shadow-premium);
-  color: var(--color-text-title);
-  font-family: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.today-card:active {
-  transform: scale(0.97);
-}
-
-.today-card-img {
-  width: 64px;
-  height: 64px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  background: var(--color-bg);
-}
-
-.today-card-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-
-.today-card-badge {
-  align-self: flex-start;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-accent-gold);
-  background: rgba(253, 230, 138, 0.12);
-  border-radius: 999px;
-  padding: 2px 10px;
-}
-
-.today-card-title {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.today-card-desc {
-  font-size: 15px;
-  line-height: 1.45;
-  opacity: 0.8;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  word-break: keep-all;
-}
-
-.today-card-arrow {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-  color: var(--color-text-hint);
-  opacity: 0.7;
-}
-
 .my-dog-chips {
   display: flex;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
   overflow-x: auto;
   padding-bottom: 2px;
 }
@@ -1397,9 +956,9 @@ input[type="time"]:focus {
   min-height: 44px;
   padding: 0 16px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--color-text-title);
+  border: 1px solid #ded3e4;
+  background: #fffaf3;
+  color: #43344f;
   font-family: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -1407,28 +966,14 @@ input[type="time"]:focus {
 }
 
 .dog-chip.active {
-  border-color: rgba(139, 92, 246, 0.8);
-  background: var(--color-primary-soft);
+  border-color: #825bbd;
+  background: #efe5fc;
+  color: #4c287e;
 }
 
 /* ========================================= */
 /* 오늘의 운세 탭                             */
 /* ========================================= */
-.today-pillar-line {
-  text-align: center;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-accent-violet);
-  margin-bottom: 8px;
-}
-
-.attendance-card {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 12px;
-  padding: 20px;
-}
-
 .attendance-status {
   text-align: center;
   font-size: 15px;
@@ -1436,15 +981,10 @@ input[type="time"]:focus {
   color: var(--color-text-hint);
 }
 
-.attendance-open-btn {
-  height: 50px;
-  font-size: 16px;
-}
-
 .streak-run {
   font-size: 15px;
   font-weight: 700;
-  color: var(--color-accent-orange);
+  color: var(--fortune-accent);
   margin: -4px 0 8px;
 }
 
@@ -1453,18 +993,18 @@ input[type="time"]:focus {
 /* ========================================= */
 .ilju-card {
   text-align: center;
-  background: linear-gradient(160deg, rgba(76, 29, 149, 0.55), rgba(15, 23, 42, 0.92));
-  border: 1px solid rgba(196, 181, 253, 0.25);
+  background: var(--fortune-sheet);
 }
 
 .ilju-eyebrow {
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-accent-violet);
+  color: var(--fortune-accent);
   margin-bottom: 6px;
 }
 
 .ilju-nickname {
+  font-family: var(--fortune-display);
   font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.5px;
@@ -1522,7 +1062,7 @@ input[type="time"]:focus {
   padding: 6px 12px;
   border-radius: 999px;
   background: var(--color-primary-soft);
-  border: 1px solid rgba(139, 92, 246, 0.35);
+  border: 1px solid var(--fortune-line);
 }
 
 .estimated-note {
@@ -1557,7 +1097,7 @@ input[type="time"]:focus {
 .tip-box {
   font-size: 15px;
   color: var(--color-text-body);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--fortune-sheet);
   padding: 16px;
   border-radius: 12px;
   border: 1px solid var(--color-border);
@@ -1584,7 +1124,7 @@ input[type="time"]:focus {
   text-align: center;
   font-size: 15px;
   font-weight: 700;
-  color: var(--color-accent-violet);
+  color: var(--fortune-accent);
   margin-bottom: 16px;
 }
 
@@ -1605,19 +1145,12 @@ input[type="time"]:focus {
   text-align: center;
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-accent-violet);
+  color: var(--fortune-accent);
   margin-bottom: 16px;
 }
 
 .share-summary {
   margin-bottom: 16px;
-}
-
-.share-hint {
-  text-align: center;
-  font-size: 15px;
-  color: var(--color-text-hint);
-  opacity: 0.8;
 }
 
 /* ========================================= */
@@ -1631,8 +1164,8 @@ input[type="time"]:focus {
   max-width: min(420px, calc(100vw - 40px));
   padding: 12px 18px;
   border-radius: 14px;
-  background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--fortune-solid);
+  border: 1px solid var(--fortune-line);
   box-shadow: var(--shadow-md);
   color: var(--color-text-title);
   font-size: 14px;
@@ -1663,25 +1196,26 @@ input[type="time"]:focus {
 
 .radar-grid {
   fill: none;
-  stroke: rgba(148, 163, 184, 0.1);
+  stroke: var(--fortune-line);
   stroke-width: 1;
 }
 
 .radar-area {
-  fill: rgba(139, 92, 246, 0.15);
-  stroke: rgba(139, 92, 246, 0.8);
+  fill: var(--fortune-sheet);
+  fill-opacity: 0.65;
+  stroke: var(--fortune-accent);
   stroke-width: 3;
   stroke-linejoin: round;
 }
 
 .radar-point {
-  fill: #fff;
-  stroke: rgb(139, 92, 246);
+  fill: var(--fortune-solid);
+  stroke: var(--fortune-accent);
   stroke-width: 1.5;
 }
 
 .radar-label {
-  fill: #94A3B8;
+  fill: var(--fortune-muted);
   font-size: 13px;
   font-weight: 700;
   dominant-baseline: middle;
@@ -1701,26 +1235,11 @@ input[type="time"]:focus {
 /* ========================================= */
 /* 성능: 화면 밖 카드 렌더링 생략 · 동작 줄이기   */
 /* ========================================= */
-/* 평생 사주 탭의 긴 분석 카드는 스크롤로 다가올 때까지 레이아웃·페인트를 건너뜀 (탭 전환 비용 절감) */
-#locked-cards-content .detail-card {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 420px;
-}
-
 /* 기기 설정에서 '동작 줄이기'를 켠 사용자에게는 장식 애니메이션을 끔 */
 @media (prefers-reduced-motion: reduce) {
-  .stars,
-  .blob,
   .radar-data,
-  .shooting-stars span,
-  .jumping-dog,
-  .unlock-lock-icon,
-  .calendar-cell.today-pending {
+  .unlock-lock-icon {
     animation: none !important;
-  }
-
-  .shooting-stars {
-    display: none;
   }
 
   .fade-in {
@@ -1783,3 +1302,805 @@ input[type="time"]:focus {
 .streak-tier-2 { color: var(--color-streak-2); }
 .streak-tier-3 { color: var(--color-streak-3); }
 .streak-tier-4 { color: var(--color-streak-4); }
+
+/* 민화 봉투 */
+.app-container {
+  height: 100dvh;
+  box-shadow: 0 0 54px #59372420;
+}
+
+.main-body {
+  padding-top: calc(16px + env(safe-area-inset-top));
+}
+
+.fortune-date {
+  color: var(--fortune-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.main-body .main-title {
+  margin: 8px 0;
+  font-size: clamp(2.25rem, 11vw, 3.375rem);
+  font-family: var(--fortune-display);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.055em;
+}
+
+.home-intro {
+  color: var(--fortune-muted);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.home-envelope {
+  position: relative;
+  isolation: isolate;
+  block-size: clamp(13.5rem, 65vw, 17rem);
+  margin-top: 13px;
+}
+
+.envelope-letter {
+  position: absolute;
+  inset: 8px 14% 32px;
+  display: grid;
+  place-items: start center;
+  overflow: hidden;
+  border: 1px solid #e7cdb2;
+  border-radius: 14px;
+  background: var(--portrait-paper, #fff3db);
+  box-shadow: 0 4px 10px #68362025, inset 0 0 0 4px #fffdf58c;
+  transform: rotate(-5deg);
+}
+
+.home-dog-art {
+  width: min(95%, 16rem);
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.envelope-pocket {
+  position: absolute;
+  inset: auto 0 0;
+  block-size: clamp(106px, 31vw, 132px);
+  border: 1px solid #dfac91;
+  border-radius: 8px 8px 19px 19px;
+  background:
+    url('/assets/minhwa/plum-cloud-border.webp') center bottom / 100% auto no-repeat,
+    linear-gradient(148deg, transparent 49.5%, #e3ad8f 50%, transparent 51%) left / 51% 100% no-repeat,
+    linear-gradient(-148deg, transparent 49.5%, #e3ad8f 50%, transparent 51%) right / 51% 100% no-repeat,
+    #f3cfb9;
+  clip-path: polygon(0 0, 50% 39%, 100% 0, 100% 100%, 0 100%);
+}
+
+.home-dog-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.home-dog-status p {
+  color: var(--fortune-muted);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.home-dog-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#btn-edit-dog {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--fortune-accent);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#my-dog-today-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fortune-accent);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+#my-dog-today-badge svg {
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+  border: 1px solid var(--fortune-accent);
+  border-radius: 6px;
+  background: var(--fortune-accent);
+  box-shadow: var(--seal-edge);
+  color: var(--color-on-primary);
+}
+
+#btn-my-dog-today {
+  position: absolute;
+  inset: auto 8% 11px;
+  width: 84%;
+  height: 49px;
+  font-size: 1rem;
+}
+
+.my-dog-chips {
+  margin-top: 6px;
+}
+
+.my-dog-chips .dog-chip {
+  border-color: var(--fortune-line);
+  background: transparent;
+  color: var(--fortune-muted);
+}
+
+.my-dog-chips .dog-chip.active {
+  border-color: #c2947d;
+  background: var(--fortune-sheet);
+  color: var(--fortune-ink);
+}
+
+.fortune-links {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.fortune-links button {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 70px;
+  padding: 5px 13px 5px 8px;
+  border: 1px solid var(--fortune-line);
+  border-radius: 11px;
+  background: var(--reading-paper, var(--fortune-solid));
+  color: var(--fortune-ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fortune-links button:active {
+  background: var(--fortune-sheet);
+}
+
+#btn-lifetime { --reading-paper: #fdf3e1; }
+#btn-chemistry { --reading-paper: #fdf0e8; }
+#btn-friend { --reading-paper: #f9f0dc; }
+
+.fortune-link-art {
+  display: block;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.fortune-links .btn-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--fortune-muted);
+}
+
+.fortune-footer button,
+.input-back {
+  min-height: 44px;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: var(--fortune-accent);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fortune-footer button:active,
+.input-back:active {
+  opacity: 0.65;
+}
+
+#toss-ad-container:empty {
+  display: none;
+}
+
+#input-screen .main-title {
+  margin: 0;
+  font-family: var(--fortune-display);
+  font-size: clamp(1.5rem, 7vw, 2rem);
+  line-height: 1.15;
+  letter-spacing: -0.055em;
+}
+
+.reading-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 8px 0 18px;
+  min-height: 66px;
+}
+
+.reading-heading-art {
+  flex: 0 0 auto;
+  width: clamp(52px, 20vw, 76px);
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+#input-screen .body-content {
+  padding-top: calc(10px + env(safe-area-inset-top));
+}
+
+.input-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.input-back .btn-icon {
+  transform: rotate(180deg);
+}
+
+#input-screen input[type="text"],
+#input-screen input[type="date"],
+#input-screen input[type="time"],
+#input-screen select {
+  min-height: 52px;
+  padding: 12px 14px;
+  background: var(--fortune-solid);
+  color-scheme: light;
+}
+
+#input-screen select {
+  width: 100%;
+  border: 1px solid var(--fortune-line);
+  border-radius: var(--border-radius-sm);
+  color: var(--fortune-ink);
+  font: inherit;
+}
+
+#input-screen input {
+  accent-color: var(--fortune-accent);
+}
+
+#input-screen .segment-control {
+  background: var(--fortune-sheet);
+}
+
+#input-screen .segment-control input {
+  display: block;
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+}
+
+#input-screen .segment-control input:checked + label {
+  background: var(--fortune-solid);
+  color: var(--fortune-accent);
+}
+
+.form-error {
+  margin-top: 10px;
+  color: #9b302d;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+#input-screen input[aria-invalid="true"] {
+  border-color: #9b302d;
+}
+
+.birth-options {
+  border-top: 1px solid var(--fortune-line);
+  border-bottom: 1px solid var(--fortune-line);
+}
+
+.birth-options summary {
+  display: list-item;
+  min-height: 44px;
+  padding: 11px 0;
+  color: var(--fortune-accent);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.birth-options .form-group {
+  margin: 6px 0 10px;
+}
+
+.fortune-loader {
+  display: block;
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 15px;
+  border: 2px solid var(--fortune-line);
+  border-top-color: var(--fortune-accent);
+  border-radius: 50%;
+  animation: fortune-spin 0.7s linear infinite;
+}
+
+@keyframes fortune-spin {
+  to { transform: rotate(1turn); }
+}
+
+#loading-screen .loading-text {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+.fortune-result .tab-nav {
+  padding-bottom: 9px;
+}
+
+#tab-today.active {
+  animation: none;
+}
+
+.fortune-result.daily-view .result-scroll {
+  padding: 0 22px calc(104px + env(safe-area-inset-bottom));
+}
+
+.daily-heading {
+  padding-top: 13px;
+}
+
+.daily-heading h2 {
+  margin: 5px 0 8px;
+  font-size: clamp(1.75rem, 7.8vw, 2.375rem);
+  font-family: var(--fortune-display);
+  font-weight: 700;
+  letter-spacing: -0.055em;
+  line-height: 1.14;
+  overflow-wrap: anywhere;
+}
+
+#res-luck-msg {
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.55;
+}
+
+.daily-more {
+  border: 1px solid var(--fortune-line);
+  border-radius: 14px;
+  background: var(--fortune-solid);
+}
+
+.daily-more summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: 13px;
+  list-style: none;
+  color: var(--fortune-accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+:is(.daily-more, .report-letter) summary::-webkit-details-marker {
+  display: none;
+}
+
+.daily-more[open] summary {
+  border-radius: 13px 13px 0 0;
+  background: var(--fortune-sheet);
+}
+
+:is(.daily-more, .report-letter)[open] summary .btn-icon {
+  transform: rotate(90deg);
+}
+
+.daily-letter {
+  padding: clamp(13px, 4vw, 21px);
+  border-top: 1px solid var(--fortune-line);
+  border-radius: 0 0 13px 13px;
+  background-image: var(--hanji-surface);
+  background-size: auto, 340px auto;
+}
+
+.daily-letter-theme {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+  color: var(--fortune-accent);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.fortune-letter-copy {
+  display: grid;
+  gap: 12px;
+  line-height: 1.65;
+}
+
+.fortune-letter-copy p:first-child {
+  padding: 10px 12px;
+  border-inline-start: 3px solid var(--letter-ink, var(--fortune-accent));
+  border-radius: 0 8px 8px 0;
+  background: var(--letter-wash, var(--fortune-sheet));
+  font-weight: 650;
+}
+
+.report-letters {
+  display: grid;
+  gap: 10px;
+  margin: 24px 0;
+}
+
+.report-letters h3 {
+  margin-bottom: 3px;
+  padding-inline-start: 12px;
+  border-inline-start: 3px solid var(--fortune-accent);
+  font-family: var(--fortune-display);
+  font-size: clamp(1.125rem, 5.5vw, 1.5rem);
+  line-height: 1.4;
+}
+
+.report-letter {
+  border: 1px solid var(--fortune-line);
+  border-radius: 13px;
+  background: var(--fortune-solid);
+}
+
+.report-letter-food {
+  --letter-ink: #775117;
+  --letter-wash: #f4e8cf;
+}
+
+.report-letter-energy {
+  --letter-ink: var(--elem-wood);
+  --letter-wash: #e8eddf;
+}
+
+.report-letter-love {
+  --letter-ink: var(--fortune-accent);
+  --letter-wash: #f5e3db;
+}
+
+.report-letter-social {
+  --letter-ink: var(--elem-water);
+  --letter-wash: #e4edf0;
+}
+
+.report-letter summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--letter-wash);
+  color: var(--letter-ink);
+  list-style: none;
+  font-family: var(--fortune-display);
+  font-size: clamp(1rem, 4.5vw, 1.25rem);
+  font-weight: 700;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.report-letter[open] summary {
+  border-radius: 12px 12px 0 0;
+}
+
+.report-letter-icon {
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  border-radius: 8px;
+  background: var(--letter-ink);
+  box-shadow: var(--seal-edge);
+  color: var(--fortune-solid);
+}
+
+.report-letter .fortune-letter-copy {
+  padding: clamp(12px, 4vw, 20px);
+  border-top: 1px solid var(--fortune-line);
+  border-radius: 0 0 12px 12px;
+  background-image: var(--hanji-surface);
+  background-size: auto, 340px auto;
+}
+
+.daily-ticket {
+  margin-top: 15px;
+  padding: 12px 17px 11px;
+  border: 1px solid var(--fortune-line);
+  border-radius: 23px 23px 23px 7px;
+  background-color: var(--fortune-sheet);
+  background-image: var(--hanji-surface);
+  background-blend-mode: multiply;
+  background-size: auto, 340px auto;
+}
+
+#result-screen.active .daily-ticket {
+  animation: open-fortune 240ms cubic-bezier(0.18, 0.82, 0.22, 1) both;
+}
+
+@keyframes open-fortune {
+  from { opacity: 0.65; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.daily-ticket-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.daily-dog-art {
+  flex: 0 0 auto;
+  width: min(38%, 104px);
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 44%;
+}
+
+.minhwa-portrait {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--portrait-paper, #fff3db);
+}
+
+.minhwa-portrait::before {
+  content: '';
+  position: absolute;
+  inset: 3% 2% auto auto;
+  width: 34%;
+  aspect-ratio: 1;
+  background: var(--portrait-motif, none) center / contain no-repeat;
+}
+
+.minhwa-portrait img {
+  position: relative;
+  display: block;
+  width: 82%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.minhwa-portrait[data-element="wood"],
+.envelope-letter:has([data-element="wood"]) {
+  --portrait-paper: #e9edd9;
+  --portrait-motif: url('/assets/minhwa/breeds/motif-wood.webp');
+}
+.minhwa-portrait[data-element="fire"],
+.envelope-letter:has([data-element="fire"]) {
+  --portrait-paper: #f6ded1;
+  --portrait-motif: url('/assets/minhwa/breeds/motif-fire.webp');
+}
+.minhwa-portrait[data-element="earth"],
+.envelope-letter:has([data-element="earth"]) {
+  --portrait-paper: #f1e1bf;
+  --portrait-motif: url('/assets/minhwa/breeds/motif-earth.webp');
+}
+.minhwa-portrait[data-element="metal"],
+.envelope-letter:has([data-element="metal"]) {
+  --portrait-paper: #f0ede6;
+  --portrait-motif: url('/assets/minhwa/breeds/motif-metal.webp');
+}
+.minhwa-portrait[data-element="water"],
+.envelope-letter:has([data-element="water"]) {
+  --portrait-paper: #e2ebed;
+  --portrait-motif: url('/assets/minhwa/breeds/motif-water.webp');
+}
+
+.daily-score-label {
+  margin-bottom: 3px;
+  font-size: 0.875rem;
+  font-weight: 650;
+  color: var(--fortune-muted);
+}
+
+.daily-score {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--fortune-accent);
+  line-height: 1;
+}
+
+.daily-score strong {
+  font-size: clamp(2.5rem, 12vw, 3.625rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.05em;
+}
+
+.daily-score span {
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.daily-lucky {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--fortune-line);
+}
+
+.daily-lucky dt {
+  color: var(--fortune-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.daily-lucky dd {
+  font-size: 0.9375rem;
+  font-weight: 750;
+}
+
+.daily-mission {
+  margin: 17px 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--fortune-accent);
+}
+
+.daily-mission h3 {
+  color: var(--fortune-accent);
+  font-size: 0.9375rem;
+  font-weight: 750;
+}
+
+.daily-mission p {
+  margin-top: 3px;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.fortune-footer {
+  display: flex;
+  flex-wrap: wrap-reverse;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 10px;
+  margin: 3px 0;
+}
+
+.fortune-footer .attendance-status {
+  color: var(--fortune-muted);
+  font-size: 0.8125rem;
+  text-align: left;
+}
+
+.fortune-footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.fortune-footer .btn-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.fortune-result .fab-wrapper {
+  background: linear-gradient(transparent, var(--fortune-page) 36%);
+}
+
+.lifetime-status {
+  margin: 20px 0;
+  text-align: center;
+  white-space: pre-line;
+}
+
+#tab-lifetime .result-img {
+  padding: 6px;
+}
+
+#tab-lifetime .keyword-chip,
+#tab-lifetime .zodiac-badge {
+  background: var(--fortune-solid);
+  border-color: var(--fortune-line);
+}
+
+#tab-lifetime .estimated-note,
+#tab-lifetime .ilju-eyebrow,
+#tab-lifetime .zodiac-badge {
+  color: var(--fortune-accent);
+  opacity: 1;
+}
+
+#share-screen .share-card {
+  background: var(--fortune-sheet) url('/assets/minhwa/plum-cloud-border.webp') center bottom / 100% auto no-repeat;
+  padding-bottom: 64px;
+}
+
+#share-screen .keyword-chip {
+  background: var(--fortune-solid);
+  border-color: var(--fortune-line);
+}
+
+#error-modal {
+  z-index: 2100;
+}
+
+#image-modal {
+  z-index: 2050;
+}
+
+.error-sheet,
+.image-save-content {
+  width: min(90%, 340px);
+  max-height: 88dvh;
+  overflow-y: auto;
+  border: 1px solid var(--fortune-line);
+  border-radius: 18px;
+  padding: 24px;
+  background-color: var(--fortune-page);
+  background-image: var(--hanji-surface);
+  background-size: auto, 340px auto;
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.error-sheet h3 {
+  font-family: var(--fortune-display);
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+}
+
+.error-sheet p {
+  white-space: pre-line;
+  margin-bottom: 17px;
+}
+
+.image-save-content img {
+  display: block;
+  max-width: 100%;
+  max-height: 60dvh;
+  margin: 14px auto;
+  border: 1px solid var(--fortune-line);
+  border-radius: 10px;
+}
+
+.screen :focus-visible,
+.modal-overlay :focus-visible,
+#input-screen .segment-control input:focus-visible + label {
+  outline: 2px solid var(--fortune-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #result-screen.active .daily-ticket,
+  .fortune-loader {
+    animation: none;
+  }
+
+  .btn-primary,
+  .btn-primary:active,
+  .tab-btn {
+    transform: none;
+    transition: none;
+  }
+}

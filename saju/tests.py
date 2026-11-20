@@ -121,6 +121,26 @@ class DogRegisterViewTests(TestCase):
         self.assertIn('음력', response.data['error'])
         self.assertFalse(Dog.objects.exists())
 
+    def test_breed_can_be_changed_without_resetting_saved_saju(self):
+        result = self.post(dog_payload(breed='welsh-corgi'))
+        self.assertEqual(result.status_code, 201)
+        dog = Dog.objects.get(id=result.data['dog_id'])
+        self.assertEqual(dog.breed, 'welsh-corgi')
+        basics = SajuBasics.objects.create(
+            dog=dog, year_pillar='己亥', month_pillar='丙子', day_pillar='甲子', hour_pillar=None,
+            main_element='목', element_distribution={'목': 100}, relationship_type='비겁', secondary_element='목',
+        )
+
+        update = self.post(dog_payload(breed='maltese'))
+        legacy_update = self.post(dog_payload())
+
+        self.assertEqual(update.status_code, 200)
+        self.assertTrue(update.data['updated'])
+        self.assertEqual(legacy_update.status_code, 200)
+        dog.refresh_from_db()
+        self.assertEqual(dog.breed, 'maltese')
+        self.assertTrue(SajuBasics.objects.filter(pk=basics.pk).exists())
+
     def test_rejects_future_birth_date(self):
         tomorrow = (timezone.localdate() + timedelta(days=1)).isoformat()
 
@@ -487,7 +507,9 @@ class ShareCardTests(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = make_user()
-        self.dog = Dog.objects.create(user=self.user, name='Mung', birth_date='2020-01-01', gender='MALE')
+        self.dog = Dog.objects.create(
+            user=self.user, name='Mung', birth_date='2020-01-01', gender='MALE', breed='poodle',
+        )
 
     def test_share_token_is_stable_and_public_card_hides_birth_info(self):
         url = f'/api/saju/dogs/{self.dog.id}/share/'
@@ -500,6 +522,7 @@ class ShareCardTests(TestCase):
         card = self.client.get(f"/api/saju/share/{first.data['token']}/")
         self.assertEqual(card.status_code, 200)
         self.assertEqual(card.data['dog_name'], 'Mung')
+        self.assertEqual(card.data['breed'], 'poodle')
         self.assertTrue(card.data['profile']['nickname'])
         for hidden in ('birth_date', 'birth_time', 'year_pillar', 'day_pillar', 'dog_id'):
             self.assertNotIn(hidden, card.data)

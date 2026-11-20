@@ -392,17 +392,18 @@ class DogRegisterView(TossUserAPIView):
                 status=status.HTTP_201_CREATED,
             )
 
-        changed = any(getattr(dog, field) != value for field, value in values.items())
-        if changed:
-            for field, value in values.items():
+        changes = {field: value for field, value in values.items() if getattr(dog, field) != value}
+        if changes:
+            for field, value in changes.items():
                 setattr(dog, field, value)
-            dog.save()
-            clear_dog_results(dog)
+            dog.save(update_fields=[*changes, 'updated_at'])
+            if changes.keys() - {'breed'}:
+                clear_dog_results(dog)
         else:
             dog.save(update_fields=['updated_at'])  # 최근에 본 강아지가 목록 맨 앞에 오도록
 
         return Response(
-            {"message": "등록 완료", "user_nickname": user.nickname, "dog_id": dog.id, "updated": changed},
+            {"message": "등록 완료", "user_nickname": user.nickname, "dog_id": dog.id, "updated": bool(changes)},
             status=status.HTTP_200_OK,
         )
 
@@ -652,6 +653,7 @@ class SharedCardView(APIView):
         return Response(
             {
                 'dog_name': dog.name,
+                'breed': dog.breed,
                 'main_element': saju.main_element,
                 'profile': get_day_pillar_profile(saju.day_pillar),
                 'zodiac': get_zodiac(saju.year_pillar),

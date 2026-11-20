@@ -33,6 +33,7 @@ class Dog(TimeStampedModel):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='dogs', verbose_name="보호자")
     name = models.CharField(max_length=50, verbose_name="강아지 이름")
+    breed = models.CharField(max_length=40, blank=True, default="", verbose_name="품종")
     birth_date = models.DateField(null=True, blank=True, verbose_name="생년월일")
     birth_time = models.TimeField(null=True, blank=True, verbose_name="태어난 시간")
     is_lunar = models.BooleanField(default=False, verbose_name="음력 여부")
